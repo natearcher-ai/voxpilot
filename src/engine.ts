@@ -18,6 +18,9 @@ export class VoxPilotEngine {
   private speechBuffer: Buffer[] = [];
   private lastTranscript = '';
   private audioChunkCount = 0;
+  private pendingAudio = Buffer.alloc(0);
+  private readonly FRAME_SIZE = 960 * 2; // 30ms at 16kHz mono 16-bit = 960 samples * 2 bytes
+  private readonly MAX_SPEECH_BYTES = 15 * 16000 * 2; // 15 seconds max
   private outputChannel: vscode.OutputChannel;
 
   constructor(private context: vscode.ExtensionContext, statusBar: StatusBarManager) {
@@ -112,6 +115,8 @@ export class VoxPilotEngine {
     }
 
     this.speechBuffer = [];
+    this.pendingAudio = Buffer.alloc(0);
+    this.audioChunkCount = 0;
     this.vad.reset();
     this.audio.start();
     this.isListening = true;
@@ -134,23 +139,40 @@ export class VoxPilotEngine {
   }
 
   private onAudioChunk(chunk: Buffer): void {
-    const result = this.vad.process(chunk);
+    // Sox sends variable-size chunks. Split into fixed 30ms frames for VAD.
+    this.pendingAudio = Buffer.concat([this.pendingAudio, chunk]);
 
-    // Log periodically for debugging (every ~1s at typical chunk rates)
-    this.audioChunkCount = (this.audioChunkCount || 0) + 1;
-    if (this.audioChunkCount % 30 === 1) {
-      const rms = this.computeRMS(chunk);
+    while (this.pendingAudio.length >= this.FRAME_SIZE) {
+      const frame = this.pendingAudio.subarray(0, this.FRAME_SIZE);
+      this.pendingAudio = this.pendingAudio.subarray(this.FRAME_SIZE);
+      this.processFrame(Buffer.from(frame));
+    }
+  }
+
+  private processFrame(frame: Buffer): void {
+    const result = this.vad.process(frame);
+
+    this.audioChunkCount++;
+    if (this.audioChunkCount % 100 === 1) {
       this.outputChannel.appendLine(
-        `[${new Date().toISOString()}] Audio: chunks=${this.audioChunkCount}, rms=${rms.toFixed(4)}, threshold=${result.threshold.toFixed(4)}, speaking=${result.isSpeech}, buffered=${this.speechBuffer.length}`,
+        `[${new Date().toISOString()}] Audio: frames=${this.audioChunkCount}, rms=${result.rms.toFixed(4)}, threshold=${result.threshold.toFixed(4)}, speaking=${result.isSpeech}, buffered=${this.speechBuffer.length}`,
       );
     }
 
     if (result.isSpeech || result.speechEnded) {
-      this.speechBuffer.push(chunk);
+      this.speechBuffer.push(frame);
     }
 
     if (result.speechStarted) {
       this.outputChannel.appendLine(`[${new Date().toISOString()}] Speech detected`);
+    }
+
+    // Auto-transcribe if buffer exceeds max duration (model can't handle long audio)
+    const totalBytes = this.speechBuffer.reduce((sum, b) => sum + b.length, 0);
+    if (result.isSpeech && totalBytes >= this.MAX_SPEECH_BYTES) {
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Max speech duration reached, transcribing segment...`);
+      this.finalizeSpeech();
+      return;
     }
 
     if (result.speechEnded) {
