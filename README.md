@@ -14,7 +14,7 @@ Talk to your IDE coding assistant with your voice. On-device speech recognition,
 ## Quick Start
 
 1. Install VoxPilot from the marketplace
-2. Press `Ctrl+Alt+V` (`Cmd+Alt+V` on Mac) to start listening
+2. Press `Ctrl+Alt+V` (`Cmd+Option+V` on Mac) to start listening
 3. Speak your prompt
 4. VoxPilot transcribes and sends it to your coding assistant
 

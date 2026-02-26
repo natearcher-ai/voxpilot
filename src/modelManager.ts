@@ -100,7 +100,7 @@ export class ModelManager {
       const file = fs.createWriteStream(dest);
       const get = url.startsWith('https') ? https.get : http.get;
       get(url, (res) => {
-        if (res.statusCode === 302 || res.statusCode === 301) {
+        if (res.statusCode && [301, 302, 303, 307, 308].includes(res.statusCode)) {
           file.close();
           this.downloadFile(res.headers.location!, dest).then(resolve).catch(reject);
           res.resume();

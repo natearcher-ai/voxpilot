@@ -23,8 +23,8 @@ interface ModelConfig {
  *   decoder_model_merged.onnx  — decoder with merged KV cache
  */
 export class Transcriber {
-  private encoderSession!: InstanceType<typeof ort.InferenceSession>;
-  private decoderSession!: InstanceType<typeof ort.InferenceSession>;
+  private encoderSession!: any;
+  private decoderSession!: any;
   private vocab: string[] = [];
   private bosToken = 1;
   private eosToken = 2;
@@ -40,7 +40,7 @@ export class Transcriber {
     // Load model config for token IDs
     this.loadConfig();
 
-    const opts: InstanceType<typeof ort.InferenceSession.SessionOptions> = {
+    const opts: any = {
       executionProviders: ['cpu'],
       graphOptimizationLevel: 'all',
     };
@@ -91,7 +91,7 @@ export class Transcriber {
     return this.detokenize(tokens);
   }
 
-  private async greedyDecode(encoderHidden: InstanceType<typeof ort.Tensor>): Promise<number[]> {
+  private async greedyDecode(encoderHidden: any): Promise<number[]> {
     const maxTokens = 448;
     const tokens: number[] = [];
 
@@ -111,8 +111,8 @@ export class Transcriber {
     let useCacheBranch = new ort.Tensor('bool', new Uint8Array([0]), [1]);
 
     // Build initial KV cache (zeros) — we need to inspect decoder input names
-    const kvInputNames = this.decoderSession.inputNames.filter(n => n.startsWith('past_key_values'));
-    const kvCache: Record<string, InstanceType<typeof ort.Tensor>> = {};
+    const kvInputNames = this.decoderSession.inputNames.filter((n: string) => n.startsWith('past_key_values'));
+    const kvCache: Record<string, any> = {};
 
     for (const name of kvInputNames) {
       // Determine shape from name pattern. For first pass, use empty tensors.
