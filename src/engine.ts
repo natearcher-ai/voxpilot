@@ -253,39 +253,55 @@ export class VoxPilotEngine {
     const config = vscode.workspace.getConfiguration('voxpilot');
     const participant = config.get<string>('targetChatParticipant', '');
     const isKiro = vscode.env.appName.toLowerCase().includes('kiro');
-
-    // Kiro doesn't support @participant mentions
     const query = (!isKiro && participant) ? `@${participant} ${text}` : text;
 
+    // Method 1: Standard VS Code query arg
     try {
-      // Try the standard VS Code way: pass query object with auto-submit
       await vscode.commands.executeCommand('workbench.action.chat.open', {
         query,
         isPartialQuery: false,
       });
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Sent to chat via workbench.action.chat.open (query arg)`);
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Sent via chat.open query arg`);
       return;
-    } catch {
-      // Fall through to clipboard fallback
+    } catch (e: any) {
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] chat.open query failed: ${e.message}`);
     }
 
-    // Fallback: clipboard paste approach (works on Kiro, Cursor, etc.)
+    // Method 2: Open chat, then type into the input field
+    try {
+      await vscode.commands.executeCommand('workbench.action.chat.open');
+      await new Promise(r => setTimeout(r, 300));
+      // 'type' command types at current cursor (which should be chat input)
+      await vscode.commands.executeCommand('default:type', { text: query });
+      // Submit with Enter
+      await vscode.commands.executeCommand('default:type', { text: '\n' });
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Sent via chat.open + type command`);
+      return;
+    } catch (e: any) {
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] type command failed: ${e.message}`);
+    }
+
+    // Method 3: Clipboard paste
     try {
       const original = await vscode.env.clipboard.readText();
       await vscode.env.clipboard.writeText(query);
       await vscode.commands.executeCommand('workbench.action.chat.open');
-      await new Promise(r => setTimeout(r, 200));
+      await new Promise(r => setTimeout(r, 300));
       await vscode.commands.executeCommand('editor.action.clipboardPasteAction');
-      await vscode.env.clipboard.writeText(original); // restore
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Sent to chat via clipboard paste fallback`);
+      // Try submitting
+      await new Promise(r => setTimeout(r, 100));
+      try { await vscode.commands.executeCommand('workbench.action.chat.acceptInput'); } catch {}
+      await vscode.env.clipboard.writeText(original);
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Sent via clipboard paste`);
       return;
-    } catch {
-      // Final fallback
+    } catch (e: any) {
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] clipboard paste failed: ${e.message}`);
     }
 
+    // Final fallback
     await vscode.env.clipboard.writeText(query);
     vscode.window.showInformationMessage(`VoxPilot: Transcript copied to clipboard. Paste into chat with Cmd+V.`);
-    this.outputChannel.appendLine(`[${new Date().toISOString()}] Chat unavailable, copied to clipboard`);
+    this.outputChannel.appendLine(`[${new Date().toISOString()}] All methods failed, copied to clipboard`);
   }
 
   private insertAtCursor(text: string): void {
