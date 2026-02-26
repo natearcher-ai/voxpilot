@@ -30,7 +30,7 @@
   ],
   "activationEvents": [],
   "main": "./dist/extension.js",
-  "icon": "media/icon.svg",
+  "icon": "media/icon.png",
   "contributes": {
     "commands": [
       {
