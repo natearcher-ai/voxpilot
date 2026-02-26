@@ -17,6 +17,7 @@ export class VoxPilotEngine {
   private isQuickCapture = false;
   private speechBuffer: Buffer[] = [];
   private lastTranscript = '';
+  private audioChunkCount = 0;
   private outputChannel: vscode.OutputChannel;
 
   constructor(private context: vscode.ExtensionContext, statusBar: StatusBarManager) {
@@ -119,9 +120,15 @@ export class VoxPilotEngine {
   }
 
   private stopListening(): void {
+    // Transcribe any buffered speech before stopping
+    if (this.speechBuffer.length > 0) {
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Stopping with ${this.speechBuffer.length} buffered chunks, transcribing...`);
+      this.finalizeSpeech();
+    }
     this.audio.stop();
     this.isListening = false;
     this.isQuickCapture = false;
+    this.audioChunkCount = 0;
     this.statusBar.setIdle();
     this.outputChannel.appendLine(`[${new Date().toISOString()}] Listening stopped`);
   }
@@ -129,17 +136,42 @@ export class VoxPilotEngine {
   private onAudioChunk(chunk: Buffer): void {
     const result = this.vad.process(chunk);
 
+    // Log periodically for debugging (every ~1s at typical chunk rates)
+    this.audioChunkCount = (this.audioChunkCount || 0) + 1;
+    if (this.audioChunkCount % 30 === 1) {
+      const rms = this.computeRMS(chunk);
+      this.outputChannel.appendLine(
+        `[${new Date().toISOString()}] Audio: chunks=${this.audioChunkCount}, rms=${rms.toFixed(4)}, speaking=${result.isSpeech}, buffered=${this.speechBuffer.length}`,
+      );
+    }
+
     if (result.isSpeech || result.speechEnded) {
       this.speechBuffer.push(chunk);
     }
 
+    if (result.speechStarted) {
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Speech detected`);
+    }
+
     if (result.speechEnded) {
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Speech ended, transcribing...`);
       this.finalizeSpeech().then(() => {
         if (this.isQuickCapture) {
           this.stopListening();
         }
       });
     }
+  }
+
+  private computeRMS(pcm16: Buffer): number {
+    const samples = pcm16.length / 2;
+    if (samples === 0) { return 0; }
+    let sumSq = 0;
+    for (let i = 0; i < pcm16.length; i += 2) {
+      const sample = pcm16.readInt16LE(i) / 32768;
+      sumSq += sample * sample;
+    }
+    return Math.sqrt(sumSq / samples);
   }
 
   private async finalizeSpeech(): Promise<void> {
