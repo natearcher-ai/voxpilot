@@ -141,7 +141,7 @@ export class VoxPilotEngine {
     if (this.audioChunkCount % 30 === 1) {
       const rms = this.computeRMS(chunk);
       this.outputChannel.appendLine(
-        `[${new Date().toISOString()}] Audio: chunks=${this.audioChunkCount}, rms=${rms.toFixed(4)}, speaking=${result.isSpeech}, buffered=${this.speechBuffer.length}`,
+        `[${new Date().toISOString()}] Audio: chunks=${this.audioChunkCount}, rms=${rms.toFixed(4)}, threshold=${result.threshold.toFixed(4)}, speaking=${result.isSpeech}, buffered=${this.speechBuffer.length}`,
       );
     }
 
