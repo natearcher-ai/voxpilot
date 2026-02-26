@@ -252,15 +252,38 @@ export class VoxPilotEngine {
   private async sendToChat(text: string): Promise<void> {
     const config = vscode.workspace.getConfiguration('voxpilot');
     const participant = config.get<string>('targetChatParticipant', '');
+    const query = participant ? `@${participant} ${text}` : text;
 
-    try {
-      await vscode.commands.executeCommand('workbench.action.chat.open', {
-        query: participant ? `@${participant} ${text}` : text,
-      });
-    } catch {
-      await vscode.env.clipboard.writeText(text);
-      vscode.window.showInformationMessage('VoxPilot: Transcript copied to clipboard (chat API unavailable).');
+    // Try multiple chat commands — different VS Code forks use different ones
+    const chatCommands = [
+      { cmd: 'workbench.action.chat.open', args: { query } },
+      { cmd: 'workbench.action.chat.open', args: query },
+      { cmd: 'workbench.panel.chat.view.copilot.focus', args: undefined },
+      { cmd: 'workbench.action.chat.newChat', args: undefined },
+    ];
+
+    for (const { cmd, args } of chatCommands) {
+      try {
+        const allCommands = await vscode.commands.getCommands(true);
+        if (!allCommands.includes(cmd)) { continue; }
+        await vscode.commands.executeCommand(cmd, args);
+        // If we used a focus/newChat command, paste the text into the input
+        if (cmd !== 'workbench.action.chat.open') {
+          // Small delay to let the panel open, then type into it
+          await new Promise(r => setTimeout(r, 300));
+          try { await vscode.commands.executeCommand('workbench.action.chat.acceptInput', query); } catch {}
+        }
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Sent to chat via ${cmd}`);
+        return;
+      } catch {
+        continue;
+      }
     }
+
+    // Fallback: copy to clipboard
+    await vscode.env.clipboard.writeText(query);
+    vscode.window.showInformationMessage(`VoxPilot: Transcript copied to clipboard. Paste into chat with Cmd+V.`);
+    this.outputChannel.appendLine(`[${new Date().toISOString()}] Chat command not available, copied to clipboard`);
   }
 
   private insertAtCursor(text: string): void {
