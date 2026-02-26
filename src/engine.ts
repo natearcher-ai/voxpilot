@@ -178,11 +178,15 @@ export class VoxPilotEngine {
     if (this.speechBuffer.length === 0) { return; }
 
     const audioData = Buffer.concat(this.speechBuffer);
+    const chunkCount = this.speechBuffer.length;
     this.speechBuffer = [];
     this.statusBar.setProcessing();
 
+    this.outputChannel.appendLine(`[${new Date().toISOString()}] Transcribing ${chunkCount} chunks (${audioData.length} bytes, ~${(audioData.length / 32000).toFixed(1)}s audio)`);
+
     try {
       const text = await this.transcriber!.transcribe(audioData);
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Raw transcript: "${text}"`);
       if (text.trim()) {
         this.lastTranscript = text.trim();
         this.outputChannel.appendLine(`[${new Date().toISOString()}] Transcript: ${this.lastTranscript}`);
@@ -193,9 +197,11 @@ export class VoxPilotEngine {
         } else {
           this.showTranscriptNotification(this.lastTranscript);
         }
+      } else {
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Transcript was empty`);
       }
     } catch (err: any) {
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Error: ${err.message}`);
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Transcription error: ${err.message}`);
       vscode.window.showErrorMessage(`VoxPilot transcription error: ${err.message}`);
     }
 
