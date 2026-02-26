@@ -2,7 +2,7 @@
   "name": "voxpilot",
   "displayName": "VoxPilot — Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "publisher": "natearcher-ai",
   "license": "MIT",
   "repository": {
@@ -49,6 +49,10 @@
       {
         "command": "voxpilot.sendToChat",
         "title": "VoxPilot: Send Last Transcript to Chat"
+      },
+      {
+        "command": "voxpilot.clearCache",
+        "title": "VoxPilot: Clear Cache"
       }
     ],
     "keybindings": [
