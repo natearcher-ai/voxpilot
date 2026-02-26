@@ -5,6 +5,8 @@ import * as https from 'https';
 import * as http from 'http';
 import { execSync } from 'child_process';
 
+const ONNX_RUNTIME_VERSION = '1.17.0';
+
 const MODEL_REGISTRY: Record<string, ModelInfo> = {
   'moonshine-tiny': {
     name: 'Moonshine Tiny',
@@ -41,9 +43,47 @@ interface ModelInfo {
 
 export class ModelManager {
   private modelsDir: string;
+  private runtimeDir: string;
 
   constructor(private context: vscode.ExtensionContext) {
     this.modelsDir = path.join(context.globalStorageUri.fsPath, 'models');
+    this.runtimeDir = path.join(context.globalStorageUri.fsPath, 'runtime');
+  }
+
+  /**
+   * Ensure onnxruntime-node is installed locally and return a require-able path.
+   */
+  async ensureOnnxRuntime(): Promise<string> {
+    const onnxDir = path.join(this.runtimeDir, 'node_modules', 'onnxruntime-node');
+    if (fs.existsSync(path.join(onnxDir, 'package.json'))) {
+      return onnxDir;
+    }
+
+    fs.mkdirSync(this.runtimeDir, { recursive: true });
+
+    await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: 'VoxPilot: Installing ONNX Runtime (one-time setup)',
+        cancellable: false,
+      },
+      async () => {
+        execSync(
+          `npm install --prefix "${this.runtimeDir}" onnxruntime-node@${ONNX_RUNTIME_VERSION} --no-save`,
+          { stdio: 'pipe', timeout: 120000 },
+        );
+      },
+    );
+
+    if (!fs.existsSync(path.join(onnxDir, 'package.json'))) {
+      throw new Error('Failed to install onnxruntime-node');
+    }
+
+    return onnxDir;
+  }
+
+  getOnnxRuntimePath(): string {
+    return path.join(this.runtimeDir, 'node_modules', 'onnxruntime-node');
   }
 
   getModelPath(modelId: string): string {

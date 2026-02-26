@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 
-// onnxruntime-node is optional — loaded dynamically
+// onnxruntime-node is optional — loaded dynamically from runtime dir
 let ort: typeof import('onnxruntime-node');
 
 interface TokenizerConfig {
@@ -30,12 +30,16 @@ export class Transcriber {
   private eosToken = 2;
   private loaded = false;
 
-  constructor(private modelDir: string) {}
+  constructor(private modelDir: string, private onnxRuntimePath?: string) {}
 
   async load(): Promise<void> {
     if (this.loaded) { return; }
 
-    ort = require('onnxruntime-node');
+    if (this.onnxRuntimePath) {
+      ort = require(this.onnxRuntimePath);
+    } else {
+      ort = require('onnxruntime-node');
+    }
 
     // Load model config for token IDs
     this.loadConfig();

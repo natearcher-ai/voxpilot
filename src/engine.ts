@@ -218,7 +218,8 @@ export class VoxPilotEngine {
     const modelId = config.get<string>('model', 'moonshine-tiny');
 
     const modelPath = await this.modelManager.ensureModel(modelId);
-    this.transcriber = new Transcriber(modelPath);
+    const onnxRuntimePath = await this.modelManager.ensureOnnxRuntime();
+    this.transcriber = new Transcriber(modelPath, onnxRuntimePath);
     await this.transcriber.load();
     this.outputChannel.appendLine(`Model loaded: ${modelId}`);
   }
