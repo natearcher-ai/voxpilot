@@ -98,11 +98,20 @@ export class ModelManager {
       if (!fs.existsSync(dir)) { fs.mkdirSync(dir, { recursive: true }); }
 
       const file = fs.createWriteStream(dest);
-      const get = url.startsWith('https') ? https.get : http.get;
-      get(url, (res) => {
-        if (res.statusCode && [301, 302, 303, 307, 308].includes(res.statusCode)) {
+      let parsedUrl: URL;
+      try {
+        parsedUrl = new URL(url);
+      } catch {
+        reject(new Error(`Invalid URL: ${url}`));
+        return;
+      }
+      const get = parsedUrl.protocol === 'https:' ? https.get : http.get;
+      get(parsedUrl, (res) => {
+        if (res.statusCode && [301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
           file.close();
-          this.downloadFile(res.headers.location!, dest).then(resolve).catch(reject);
+          // Resolve relative redirects against the original URL
+          const redirectUrl = new URL(res.headers.location, url).toString();
+          this.downloadFile(redirectUrl, dest).then(resolve).catch(reject);
           res.resume();
           return;
         }
