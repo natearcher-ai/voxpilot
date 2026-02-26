@@ -1,0 +1,116 @@
+{
+  "name": "voxpilot",
+  "displayName": "VoxPilot — Voice to Code",
+  "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
+  "version": "0.1.0",
+  "publisher": "natearcher-ai",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/natearcher-ai/voxpilot"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other",
+    "Machine Learning",
+    "Chat"
+  ],
+  "keywords": [
+    "voice",
+    "speech",
+    "transcription",
+    "copilot",
+    "assistant",
+    "hands-free",
+    "accessibility",
+    "moonshine",
+    "asr"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "icon": "media/icon.svg",
+  "contributes": {
+    "commands": [
+      {
+        "command": "voxpilot.toggleListening",
+        "title": "VoxPilot: Toggle Voice Input",
+        "icon": "$(mic)"
+      },
+      {
+        "command": "voxpilot.pushToTalk",
+        "title": "VoxPilot: Quick Voice Capture (Toggle)"
+      },
+      {
+        "command": "voxpilot.selectModel",
+        "title": "VoxPilot: Select ASR Model"
+      },
+      {
+        "command": "voxpilot.sendToChat",
+        "title": "VoxPilot: Send Last Transcript to Chat"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "voxpilot.toggleListening",
+        "key": "ctrl+alt+v",
+        "mac": "cmd+alt+v"
+      }
+    ],
+    "configuration": {
+      "title": "VoxPilot",
+      "properties": {
+        "voxpilot.model": {
+          "type": "string",
+          "default": "moonshine-tiny",
+          "enum": [
+            "moonshine-tiny",
+            "moonshine-base"
+          ],
+          "description": "ASR model to use. Tiny (~26MB) is faster, Base (~60MB) is more accurate."
+        },
+        "voxpilot.vadSensitivity": {
+          "type": "number",
+          "default": 0.5,
+          "minimum": 0.1,
+          "maximum": 0.95,
+          "description": "Voice activity detection threshold. Lower = more sensitive."
+        },
+        "voxpilot.autoSendToChat": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically send completed transcripts to the active chat participant."
+        },
+        "voxpilot.targetChatParticipant": {
+          "type": "string",
+          "default": "",
+          "description": "Chat participant ID to send voice input to (e.g. 'github.copilot'). Leave empty for default."
+        },
+        "voxpilot.silenceTimeout": {
+          "type": "number",
+          "default": 1500,
+          "description": "Milliseconds of silence before finalizing a transcript segment."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --external:onnxruntime-node --format=cjs --platform=node --target=node18",
+    "watch": "npm run build -- --watch --sourcemap",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package"
+  },
+  "dependencies": {},
+  "optionalDependencies": {
+    "onnxruntime-node": "^1.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.4.0",
+    "@vscode/vsce": "^2.24.0"
+  }
+}
