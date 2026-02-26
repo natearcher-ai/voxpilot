@@ -277,9 +277,9 @@ export class VoxPilotEngine {
     const config = vscode.workspace.getConfiguration('voxpilot');
     const modelId = config.get<string>('model', 'moonshine-tiny');
 
-    const modelPath = await this.modelManager.ensureModel(modelId);
-    const onnxRuntimePath = await this.modelManager.ensureOnnxRuntime();
-    this.transcriber = new Transcriber(modelPath, onnxRuntimePath);
+    const runtimeDir = await this.modelManager.ensureOnnxRuntime();
+    const cacheDir = this.modelManager.getModelPath(modelId);
+    this.transcriber = new Transcriber(modelId, runtimeDir, cacheDir);
     await this.transcriber.load();
     this.outputChannel.appendLine(`Model loaded: ${modelId}`);
   }

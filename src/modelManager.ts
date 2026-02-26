@@ -51,12 +51,13 @@ export class ModelManager {
   }
 
   /**
-   * Ensure onnxruntime-node is installed locally and return a require-able path.
+   * Ensure onnxruntime-node and @huggingface/transformers are installed locally.
    */
   async ensureOnnxRuntime(): Promise<string> {
+    const transformersDir = path.join(this.runtimeDir, 'node_modules', '@huggingface', 'transformers');
     const onnxDir = path.join(this.runtimeDir, 'node_modules', 'onnxruntime-node');
-    if (fs.existsSync(path.join(onnxDir, 'package.json'))) {
-      return onnxDir;
+    if (fs.existsSync(path.join(onnxDir, 'package.json')) && fs.existsSync(path.join(transformersDir, 'package.json'))) {
+      return this.runtimeDir;
     }
 
     fs.mkdirSync(this.runtimeDir, { recursive: true });
@@ -64,22 +65,22 @@ export class ModelManager {
     await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
-        title: 'VoxPilot: Installing ONNX Runtime (one-time setup)',
+        title: 'VoxPilot: Installing runtime dependencies (one-time setup)',
         cancellable: false,
       },
       async () => {
         execSync(
-          `npm install --prefix "${this.runtimeDir}" onnxruntime-node@${ONNX_RUNTIME_VERSION} --no-save`,
-          { stdio: 'pipe', timeout: 120000 },
+          `npm install --prefix "${this.runtimeDir}" onnxruntime-node@${ONNX_RUNTIME_VERSION} @huggingface/transformers --no-save`,
+          { stdio: 'pipe', timeout: 180000 },
         );
       },
     );
 
     if (!fs.existsSync(path.join(onnxDir, 'package.json'))) {
-      throw new Error('Failed to install onnxruntime-node');
+      throw new Error('Failed to install runtime dependencies');
     }
 
-    return onnxDir;
+    return this.runtimeDir;
   }
 
   getOnnxRuntimePath(): string {
