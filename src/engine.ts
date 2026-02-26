@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { AudioCapture } from './audioCapture';
 import { VoiceActivityDetector } from './vad';
 import { Transcriber } from './transcriber';
@@ -278,7 +279,7 @@ export class VoxPilotEngine {
     const modelId = config.get<string>('model', 'moonshine-tiny');
 
     const runtimeDir = await this.modelManager.ensureOnnxRuntime();
-    const cacheDir = this.modelManager.getModelPath(modelId);
+    const cacheDir = path.join(this.context.globalStorageUri.fsPath, 'hf-cache');
     this.transcriber = new Transcriber(modelId, runtimeDir, cacheDir);
     await this.transcriber.load();
     this.outputChannel.appendLine(`Model loaded: ${modelId}`);
