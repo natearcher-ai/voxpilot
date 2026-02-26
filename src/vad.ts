@@ -24,10 +24,10 @@ export class VoiceActivityDetector {
 
   constructor(sensitivity: number = 0.5, silenceTimeoutMs: number = 1500, frameDurationMs: number = 30) {
     // Higher sensitivity = lower multiplier = easier to trigger
-    // sensitivity 0.5 → multiplier ~3x noise floor
-    // sensitivity 0.9 → multiplier ~1.5x noise floor
-    // sensitivity 0.1 → multiplier ~6x noise floor
-    this.sensitivityMultiplier = 1.5 + (1 - sensitivity) * 5;
+    // sensitivity 0.5 → multiplier ~2x noise floor
+    // sensitivity 0.9 → multiplier ~1.3x noise floor
+    // sensitivity 0.1 → multiplier ~3x noise floor
+    this.sensitivityMultiplier = 1.3 + (1 - sensitivity) * 2;
     this.silenceOnsetFrames = Math.ceil(silenceTimeoutMs / frameDurationMs);
   }
 
@@ -49,12 +49,14 @@ export class VoiceActivityDetector {
       return { isSpeech: false, speechStarted: false, speechEnded: false, rms, threshold: 0 };
     }
 
+    const threshold = Math.max(this.noiseFloor * this.sensitivityMultiplier, this.minThreshold);
+
     // Slowly adapt noise floor during silence (exponential moving average)
-    if (!this.isSpeaking) {
+    // Only adapt if rms is below current threshold (don't let speech raise the floor)
+    if (!this.isSpeaking && rms < threshold) {
       this.noiseFloor = this.noiseFloor * 0.95 + rms * 0.05;
     }
 
-    const threshold = Math.max(this.noiseFloor * this.sensitivityMultiplier, this.minThreshold);
     const frameIsSpeech = rms > threshold;
 
     let speechStarted = false;
