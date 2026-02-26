@@ -1,6 +1,5 @@
 import * as path from 'path';
 
-let pipeline: any;
 let pipelineInstance: any;
 
 /**
@@ -15,26 +14,35 @@ export class Transcriber {
   async load(): Promise<void> {
     if (this.loaded) { return; }
 
-    // Ensure onnxruntime-node is resolvable from the runtime dir
-    const onnxPath = path.join(this.runtimeDir, 'node_modules', 'onnxruntime-node');
-    // Register it so transformers.js can find it
-    require(onnxPath);
+    try {
+      const runtimeModules = path.join(this.runtimeDir, 'node_modules');
 
-    const transformers = require(path.join(this.runtimeDir, 'node_modules', '@huggingface/transformers'));
+      // Add runtime node_modules to Node's module resolution so that
+      // @huggingface/transformers can find onnxruntime-node at require time
+      const Module = require('module');
+      if (!Module.globalPaths.includes(runtimeModules)) {
+        Module.globalPaths.unshift(runtimeModules);
+      }
 
-    // Configure cache directory and environment
-    transformers.env.cacheDir = this.cacheDir;
-    transformers.env.allowLocalModels = true;
+      const transformers = require(path.join(runtimeModules, '@huggingface', 'transformers'));
 
-    const repo = this.modelId === 'moonshine-base'
-      ? 'onnx-community/moonshine-base-ONNX'
-      : 'onnx-community/moonshine-tiny-ONNX';
+      // Configure cache directory and environment
+      transformers.env.cacheDir = this.cacheDir;
+      transformers.env.allowLocalModels = true;
 
-    pipelineInstance = await transformers.pipeline('automatic-speech-recognition', repo, {
-      dtype: 'fp32',
-    });
+      const repo = this.modelId === 'moonshine-base'
+        ? 'onnx-community/moonshine-base-ONNX'
+        : 'onnx-community/moonshine-tiny-ONNX';
 
-    this.loaded = true;
+      pipelineInstance = await transformers.pipeline('automatic-speech-recognition', repo, {
+        dtype: 'fp32',
+      });
+
+      this.loaded = true;
+    } catch (err: any) {
+      this.loaded = false;
+      throw new Error(`Failed to initialize transcriber: ${err.message}`);
+    }
   }
 
   /**
