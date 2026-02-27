@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://natearcher-ai.github.io/voxpilot/sitemap.xml
