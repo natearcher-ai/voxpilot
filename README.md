@@ -1,75 +1,125 @@
 # VoxPilot — Voice to Code
 
-Talk to your IDE coding assistant with your voice. On-device speech recognition, no API keys, no cloud dependency.
+[![Open VSX](https://img.shields.io/open-vsx/v/natearcher-ai/voxpilot?label=Open%20VSX&color=purple)](https://open-vsx.org/extension/natearcher-ai/voxpilot)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![GitHub](https://img.shields.io/github/stars/natearcher-ai/voxpilot?style=social)](https://github.com/natearcher-ai/voxpilot)
 
-## Features
+Talk to your IDE coding assistant with your voice. On-device speech recognition. No API keys. No cloud. Just your voice.
 
-- **On-device ASR** — Powered by Moonshine ONNX models. Your audio never leaves your machine.
-- **Works with any chat participant** — Copilot, Continue, Kiro, or any VS Code chat extension.
-- **Voice Activity Detection** — Automatically detects when you start and stop speaking.
-- **Quick Capture mode** — Toggle on, speak, auto-sends on silence and stops.
-- **Multiple actions** — Send to chat, insert at cursor, or copy to clipboard.
-- **Tiny footprint** — The smallest model is just ~27MB.
+> "Hey Copilot, refactor this function to use async/await" — spoken, not typed.
+
+## Why VoxPilot?
+
+Every coding assistant requires typing. But sometimes your hands are busy, you have RSI, or you just think faster than you type. VoxPilot bridges voice and code by transcribing your speech and sending it directly to your IDE's chat assistant.
+
+- **100% on-device** — Your audio never leaves your machine. Zero network calls.
+- **Works with any chat participant** — GitHub Copilot, Continue, Kiro, Cody, or any VS Code chat extension.
+- **Tiny models** — 27MB (Tiny) or 65MB (Base). Downloads once, runs forever.
+- **Cross-platform** — Linux, macOS, Windows.
+- **Open source** — MIT licensed. Fork it, extend it, ship it.
+
+## Demo
+
+```
+[Ctrl+Alt+V] → 🎙️ "Create a REST API endpoint for user authentication using JWT"
+              → 📝 Transcribed and sent to Copilot Chat
+              → 💻 Copilot generates the code
+```
 
 ## Quick Start
 
-1. Install VoxPilot from the marketplace
-2. Press `Ctrl+Alt+V` (`Cmd+Option+V` on Mac) to start listening
+1. Install from [Open VSX](https://open-vsx.org/extension/natearcher-ai/voxpilot)
+2. Press `Ctrl+Alt+V` (`Cmd+Alt+V` on Mac)
 3. Speak your prompt
 4. VoxPilot transcribes and sends it to your coding assistant
 
-On first use, VoxPilot downloads the ASR model (~27MB for Tiny, ~65MB for Base).
+First run downloads the ASR model (~27MB). Takes about 10 seconds.
 
-## Requirements
-
-One of these audio capture tools must be available on your system:
+## Audio Requirements
 
 | Platform | Tool | Install |
 |----------|------|---------|
 | Linux | `arecord` | `sudo apt install alsa-utils` |
 | macOS | `sox` | `brew install sox` |
-| Windows | `ffmpeg` | [ffmpeg.org](https://ffmpeg.org) (add to PATH) |
+| Windows | `ffmpeg` | [ffmpeg.org](https://ffmpeg.org) |
 
-VoxPilot checks for these on activation and warns you if none are found.
+VoxPilot checks on activation and tells you if something's missing.
 
 ## Commands
 
 | Command | Keybinding | Description |
 |---------|-----------|-------------|
-| `VoxPilot: Toggle Voice Input` | `Ctrl+Alt+V` | Start/stop continuous listening |
-| `VoxPilot: Quick Voice Capture` | — | Listen, transcribe on silence, then stop |
-| `VoxPilot: Select ASR Model` | — | Switch between Tiny and Base models |
-| `VoxPilot: Send Last Transcript to Chat` | — | Re-send the last transcript |
+| Toggle Voice Input | `Ctrl+Alt+V` | Start/stop continuous listening |
+| Quick Voice Capture | — | Listen → transcribe → stop |
+| Select ASR Model | — | Switch Tiny ↔ Base |
+| Send Last Transcript | — | Re-send last transcript to chat |
+| Clear Cache | — | Free disk space by removing downloaded models |
 
 ## Settings
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `voxpilot.model` | `moonshine-tiny` | ASR model (`moonshine-tiny` or `moonshine-base`) |
-| `voxpilot.vadSensitivity` | `0.5` | VAD threshold (lower = more sensitive) |
+| `voxpilot.model` | `moonshine-tiny` | `moonshine-tiny` (fast) or `moonshine-base` (accurate) |
+| `voxpilot.vadSensitivity` | `0.5` | Voice detection threshold (lower = more sensitive) |
 | `voxpilot.autoSendToChat` | `false` | Auto-send transcripts to chat |
-| `voxpilot.targetChatParticipant` | `""` | Chat participant to target (e.g. `github.copilot`) |
-| `voxpilot.silenceTimeout` | `1500` | Silence duration (ms) before finalizing |
+| `voxpilot.targetChatParticipant` | `""` | Target participant (e.g. `github.copilot`) |
+| `voxpilot.silenceTimeout` | `1500` | Silence before finalizing (ms) |
 
 ## How It Works
 
-1. **Audio Capture** — Records from your microphone via native CLI tools
-2. **Voice Activity Detection** — Energy-based VAD detects speech boundaries
-3. **Transcription** — Moonshine ONNX models run locally via ONNX Runtime
-4. **Delivery** — Transcript is sent to VS Code's chat input, inserted at cursor, or copied
+```
+Microphone → PCM Audio → Voice Activity Detection → Moonshine ASR (ONNX) → Text → VS Code Chat
+```
+
+1. Native audio capture via CLI tools (arecord/sox/ffmpeg)
+2. Energy-based VAD detects speech start/stop
+3. Moonshine ONNX models transcribe locally via ONNX Runtime
+4. Three-tier delivery: VS Code Chat API → clipboard paste → direct input
 
 ## Models
 
-VoxPilot uses [Moonshine](https://github.com/moonshine-ai/moonshine) ASR models (MIT licensed), served via [onnx-community](https://huggingface.co/onnx-community) ONNX conversions:
+[Moonshine](https://github.com/moonshine-ai/moonshine) by Useful Sensors (MIT licensed), served as ONNX via [onnx-community](https://huggingface.co/onnx-community):
 
-- **Moonshine Tiny** (~27MB) — Fast, good for quick commands
-- **Moonshine Base** (~65MB) — More accurate, better for longer dictation
+| Model | Size | Speed | Use case |
+|-------|------|-------|----------|
+| Moonshine Tiny | ~27MB | Fast | Quick commands, short prompts |
+| Moonshine Base | ~65MB | Moderate | Longer dictation, complex prompts |
 
-Models are downloaded on first use and cached in VS Code's global storage.
+Models download on first use and cache in VS Code's global storage.
+
+## Use Cases
+
+- **Hands-free coding** — RSI, carpal tunnel, or just prefer talking
+- **Pair programming** — Speak to your AI assistant while reading code
+- **Quick prompts** — Faster than typing "refactor this to use dependency injection"
+- **Accessibility** — Voice input for developers with mobility limitations
+- **Mobile workflows** — When you're on a laptop without a great keyboard
 
 ## Privacy
 
-All processing happens on your device. No audio or transcripts are sent anywhere.
+All processing happens on your device. No telemetry. No analytics. No network calls. Your voice data is never stored or transmitted.
+
+## Contributing
+
+PRs welcome. The codebase is small and straightforward:
+
+```
+src/
+├── extension.ts      — Entry point, command registration
+├── engine.ts         — Core orchestration (listen → transcribe → deliver)
+├── transcriber.ts    — Moonshine ONNX inference
+├── modelManager.ts   — Model download and caching
+├── audioCapture.ts   — Platform-specific mic capture
+├── vad.ts            — Voice activity detection
+└── statusBar.ts      — Status bar UI
+```
+
+```bash
+git clone https://github.com/natearcher-ai/voxpilot
+cd voxpilot
+npm install
+npm run build
+```
 
 ## License
 
@@ -80,3 +130,7 @@ MIT — see [LICENSE](LICENSE).
 - ASR models by [Moonshine AI](https://moonshine.ai) (MIT License)
 - ONNX conversions by [onnx-community](https://huggingface.co/onnx-community)
 - Built by [natearcher-ai](https://github.com/natearcher-ai)
+
+---
+
+**Star the repo** if VoxPilot helps you code faster. It helps others find it. ⭐
