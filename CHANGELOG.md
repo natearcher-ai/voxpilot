@@ -2,6 +2,11 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.2.8] - 2026-02-27
+
+### Fixed
+- Full detailed changelog covering all releases
+
 ## [0.2.7] - 2026-02-27
 
 ### Added
@@ -13,6 +18,35 @@ All notable changes to VoxPilot will be documented in this file.
 ### Changed
 - Upgraded README with badges, use cases, architecture diagram
 - Improved chat delivery reliability with fallback chain
+
+## [0.2.0] - 2026-02-26
+
+### Changed
+- **Major:** Replaced manual ONNX inference with `@huggingface/transformers` pipeline
+- Eliminates MatMul/KV cache dimension errors
+- Runtime installs both `onnxruntime-node` and `@huggingface/transformers`
+
+## [0.1.8] - 2026-02-26
+
+### Fixed
+- Split incoming audio into proper 30ms frames for accurate VAD timing
+- Cap speech buffer at 15 seconds (Moonshine's practical limit)
+
+## [0.1.5] - 2026-02-26
+
+### Added
+- Adaptive VAD — calibrates to ambient noise floor instead of fixed threshold
+
+## [0.1.3] - 2026-02-26
+
+### Added
+- Auto-install `onnxruntime-node` at runtime for cross-platform support
+
+## [0.1.1] - 2026-02-26
+
+### Fixed
+- Handle HTTP 307 redirects for HuggingFace model downloads
+- Clarify Mac keybinding: `Cmd+Option+V` (not `Cmd+Alt+V`)
 
 ## [0.1.0] - 2026-02-26
 
