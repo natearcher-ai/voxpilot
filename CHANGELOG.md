@@ -2,6 +2,24 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.3.2] - 2026-02-28
+
+### Fixed
+- Cleaned up Kiro chat delivery — use proven focus+paste+submit method directly
+- Removed noisy error log from customQuickActionSendToChat
+
+## [0.3.1] - 2026-02-28
+
+### Added
+- Kiro-native chat delivery using `kiroAgent.acpChatView.focus` + clipboard paste + `chat.submit`
+- Separate Kiro and VS Code code paths for reliability
+
+## [0.3.0] - 2026-02-28
+
+### Added
+- Smart chat command discovery — enumerates all available chat commands at runtime
+- Detailed logging of app name and available commands for debugging
+
 ## [0.2.8] - 2026-02-27
 
 ### Fixed
