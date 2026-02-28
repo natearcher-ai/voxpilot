@@ -255,47 +255,86 @@ export class VoxPilotEngine {
     const isKiro = vscode.env.appName.toLowerCase().includes('kiro');
     const query = (!isKiro && participant) ? `@${participant} ${text}` : text;
 
-    // Method 1: Standard VS Code query arg
+    // Discover available chat commands for debugging
+    const allCommands = await vscode.commands.getCommands(true);
+    const chatCommands = allCommands.filter(c => c.toLowerCase().includes('chat'));
+    this.outputChannel.appendLine(`[${new Date().toISOString()}] Available chat commands: ${chatCommands.join(', ')}`);
+    this.outputChannel.appendLine(`[${new Date().toISOString()}] App name: ${vscode.env.appName}, isKiro: ${isKiro}`);
+
+    // Method 1: Standard VS Code chat.open with query
     try {
       await vscode.commands.executeCommand('workbench.action.chat.open', {
         query,
         isPartialQuery: false,
       });
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Sent via chat.open query arg`);
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Sent via chat.open query arg (no error thrown)`);
+      // Note: this may silently succeed without actually filling the input
+      // We return here but log so user can verify
       return;
     } catch (e: any) {
       this.outputChannel.appendLine(`[${new Date().toISOString()}] chat.open query failed: ${e.message}`);
     }
 
-    // Method 2: Open chat, then type into the input field
+    // Method 2: Open chat, focus input, use clipboard to paste
     try {
       await vscode.commands.executeCommand('workbench.action.chat.open');
-      await new Promise(r => setTimeout(r, 300));
-      // 'type' command types at current cursor (which should be chat input)
-      await vscode.commands.executeCommand('default:type', { text: query });
-      // Submit with Enter
-      await vscode.commands.executeCommand('default:type', { text: '\n' });
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Sent via chat.open + type command`);
-      return;
-    } catch (e: any) {
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] type command failed: ${e.message}`);
-    }
+      await new Promise(r => setTimeout(r, 500));
 
-    // Method 3: Clipboard paste
-    try {
+      // Try to focus the chat input explicitly
+      const focusCommands = chatCommands.filter(c =>
+        c.includes('focus') || c.includes('input') || c.includes('Input'),
+      );
+      for (const cmd of focusCommands) {
+        try {
+          await vscode.commands.executeCommand(cmd);
+          this.outputChannel.appendLine(`[${new Date().toISOString()}] Focused via ${cmd}`);
+          break;
+        } catch {}
+      }
+
+      await new Promise(r => setTimeout(r, 200));
+
+      // Save clipboard, paste, restore
       const original = await vscode.env.clipboard.readText();
       await vscode.env.clipboard.writeText(query);
-      await vscode.commands.executeCommand('workbench.action.chat.open');
-      await new Promise(r => setTimeout(r, 300));
-      await vscode.commands.executeCommand('editor.action.clipboardPasteAction');
-      // Try submitting
+
+      // Try chat-specific paste/insert commands first
+      let pasted = false;
+      const insertCommands = chatCommands.filter(c =>
+        c.includes('insert') || c.includes('Insert') || c.includes('paste') || c.includes('Paste'),
+      );
+      for (const cmd of insertCommands) {
+        try {
+          await vscode.commands.executeCommand(cmd, query);
+          this.outputChannel.appendLine(`[${new Date().toISOString()}] Inserted via ${cmd}`);
+          pasted = true;
+          break;
+        } catch {}
+      }
+
+      if (!pasted) {
+        // Generic paste
+        await vscode.commands.executeCommand('editor.action.clipboardPasteAction');
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Pasted via editor.action.clipboardPasteAction`);
+      }
+
+      // Try to submit
       await new Promise(r => setTimeout(r, 100));
-      try { await vscode.commands.executeCommand('workbench.action.chat.acceptInput'); } catch {}
+      const submitCommands = chatCommands.filter(c =>
+        c.includes('accept') || c.includes('Accept') || c.includes('submit') || c.includes('Submit'),
+      );
+      for (const cmd of submitCommands) {
+        try {
+          await vscode.commands.executeCommand(cmd);
+          this.outputChannel.appendLine(`[${new Date().toISOString()}] Submitted via ${cmd}`);
+          break;
+        } catch {}
+      }
+
       await vscode.env.clipboard.writeText(original);
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Sent via clipboard paste`);
       return;
     } catch (e: any) {
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] clipboard paste failed: ${e.message}`);
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Method 2 failed: ${e.message}`);
     }
 
     // Final fallback
