@@ -258,17 +258,7 @@ export class VoxPilotEngine {
     this.outputChannel.appendLine(`[${new Date().toISOString()}] sendToChat: "${query.slice(0, 50)}..." isKiro=${isKiro}`);
 
     if (isKiro) {
-      // Kiro-specific: try kiroAgent commands first
-      // Method K1: customQuickActionSendToChat
-      try {
-        await vscode.commands.executeCommand('kiroAgent.customQuickActionSendToChat', query);
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Sent via kiroAgent.customQuickActionSendToChat`);
-        return;
-      } catch (e: any) {
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] customQuickActionSendToChat failed: ${e.message}`);
-      }
-
-      // Method K2: Focus Kiro chat, paste, submit
+      // Kiro-specific: focus chat panel, paste transcript, submit
       try {
         await vscode.commands.executeCommand('kiroAgent.acpChatView.focus');
         await new Promise(r => setTimeout(r, 400));
@@ -279,25 +269,10 @@ export class VoxPilotEngine {
         await new Promise(r => setTimeout(r, 150));
         await vscode.commands.executeCommand('workbench.action.chat.submit');
         await vscode.env.clipboard.writeText(original);
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Sent via kiroAgent.acpChatView.focus + paste + submit`);
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Sent to Kiro chat`);
         return;
       } catch (e: any) {
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Kiro focus+paste+submit failed: ${e.message}`);
-      }
-
-      // Method K3: Open chat with query arg (may work in future Kiro versions)
-      try {
-        await vscode.commands.executeCommand('workbench.action.chat.open', {
-          query,
-          isPartialQuery: false,
-        });
-        // Give it a moment, then try submit in case query was placed but not sent
-        await new Promise(r => setTimeout(r, 300));
-        await vscode.commands.executeCommand('workbench.action.chat.submit');
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Sent via chat.open + submit`);
-        return;
-      } catch (e: any) {
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] chat.open + submit failed: ${e.message}`);
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Kiro chat delivery failed: ${e.message}`);
       }
     } else {
       // Standard VS Code
