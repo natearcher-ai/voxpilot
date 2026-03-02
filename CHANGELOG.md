@@ -2,6 +2,12 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.3.4] - 2026-03-02
+
+### Changed
+- Default ASR model changed from Moonshine Tiny (~27MB) to Moonshine Base (~65MB) for better transcription accuracy
+- Existing users with `moonshine-tiny` explicitly set in settings are not affected
+
 ## [0.3.2] - 2026-02-28
 
 ### Fixed
