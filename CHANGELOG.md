@@ -2,6 +2,13 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.3.5] - 2026-03-02
+
+### Added
+- Live status bar states: Calibrating → Listening → Speaking → Transcribing → Sent
+- Status bar shows truncated transcript for 3 seconds after delivery
+- Calibrating state shown during initial noise floor measurement
+
 ## [0.3.4] - 2026-03-02
 
 ### Changed

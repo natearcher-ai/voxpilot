@@ -121,7 +121,7 @@ export class VoxPilotEngine {
     this.vad.reset();
     this.audio.start();
     this.isListening = true;
-    this.statusBar.setListening();
+    this.statusBar.setCalibrating();
     this.outputChannel.appendLine(`[${new Date().toISOString()}] Listening started`);
   }
 
@@ -165,7 +165,13 @@ export class VoxPilotEngine {
     }
 
     if (result.speechStarted) {
+      this.statusBar.setSpeechDetected();
       this.outputChannel.appendLine(`[${new Date().toISOString()}] Speech detected`);
+    }
+
+    // Switch from calibrating to listening once VAD has a threshold
+    if (result.threshold > 0 && this.audioChunkCount === 31) {
+      this.statusBar.setListening();
     }
 
     // Auto-transcribe if buffer exceeds max duration (model can't handle long audio)
@@ -217,8 +223,10 @@ export class VoxPilotEngine {
         const config = vscode.workspace.getConfiguration('voxpilot');
         if (config.get<boolean>('autoSendToChat', false)) {
           await this.sendToChat(this.lastTranscript);
+          this.statusBar.setSent(this.lastTranscript);
         } else {
           this.showTranscriptNotification(this.lastTranscript);
+          this.statusBar.setSent(this.lastTranscript);
         }
       } else {
         this.outputChannel.appendLine(`[${new Date().toISOString()}] Transcript was empty`);
