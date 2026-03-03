@@ -2,6 +2,14 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.3.6] - 2026-03-03
+
+### Added
+- Audio input device selector command (`VoxPilot: Select Audio Input Device`)
+- New `voxpilot.audioDevice` setting to persist selected device
+- Cross-platform device enumeration: ALSA + PulseAudio (Linux), CoreAudio (macOS), DirectShow (Windows)
+- Quick pick shows all detected input devices plus system default option
+
 ## [0.3.5] - 2026-03-02
 
 ### Added

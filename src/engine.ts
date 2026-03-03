@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { AudioCapture } from './audioCapture';
+import { AudioCapture, AudioDevice } from './audioCapture';
 import { VoiceActivityDetector } from './vad';
 import { Transcriber } from './transcriber';
 import { ModelManager } from './modelManager';
@@ -34,6 +34,12 @@ export class VoxPilotEngine {
     const sensitivity = config.get<number>('vadSensitivity', 0.5);
     const silenceTimeout = config.get<number>('silenceTimeout', 1500);
     this.vad = new VoiceActivityDetector(sensitivity, silenceTimeout);
+
+    // Restore saved audio device preference
+    const savedDevice = config.get<string>('audioDevice', '');
+    if (savedDevice) {
+      this.audio.setDevice(savedDevice);
+    }
 
     this.audio.on('audio', (chunk: Buffer) => this.onAudioChunk(chunk));
     this.audio.on('error', (err: Error) => {
@@ -73,6 +79,30 @@ export class VoxPilotEngine {
     } else {
       this.isQuickCapture = true;
       await this.startListening();
+    }
+  }
+
+  async selectAudioDevice(): Promise<void> {
+    const devices = AudioCapture.listDevices();
+    const items: Array<vscode.QuickPickItem & { deviceId: string }> = [
+      { label: '$(mic) System Default', description: 'Use the default audio input', deviceId: '' },
+      ...devices.map(d => ({ label: d.name, description: d.id, deviceId: d.id })),
+    ];
+
+    if (devices.length === 0) {
+      items.push({ label: '$(info) No devices detected', description: 'Only system default is available', deviceId: '' });
+    }
+
+    const pick = await vscode.window.showQuickPick(items, {
+      placeHolder: 'Select audio input device',
+    });
+
+    if (pick) {
+      await vscode.workspace.getConfiguration('voxpilot').update('audioDevice', pick.deviceId, true);
+      this.audio.setDevice(pick.deviceId);
+      const label = pick.deviceId ? pick.label : 'System Default';
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Audio device set: ${label} (${pick.deviceId || 'default'})`);
+      vscode.window.showInformationMessage(`VoxPilot: Audio input set to ${label}`);
     }
   }
 

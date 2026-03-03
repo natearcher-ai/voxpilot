@@ -2,7 +2,7 @@
   "name": "voxpilot",
   "displayName": "VoxPilot — Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "publisher": "natearcher-ai",
   "license": "MIT",
   "repository": {
@@ -45,6 +45,10 @@
       {
         "command": "voxpilot.selectModel",
         "title": "VoxPilot: Select ASR Model"
+      },
+      {
+        "command": "voxpilot.selectAudioDevice",
+        "title": "VoxPilot: Select Audio Input Device"
       },
       {
         "command": "voxpilot.sendToChat",
@@ -95,6 +99,11 @@
           "type": "number",
           "default": 1500,
           "description": "Milliseconds of silence before finalizing a transcript segment."
+        },
+        "voxpilot.audioDevice": {
+          "type": "string",
+          "default": "",
+          "description": "Audio input device ID. Leave empty for system default. Use 'VoxPilot: Select Audio Input Device' to pick one."
         }
       }
     }
