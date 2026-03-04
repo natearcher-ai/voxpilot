@@ -2,6 +2,13 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.3.7] - 2026-03-04
+
+### Added
+- Transcript history — browse and re-send your last 10 transcripts via quick pick (`VoxPilot: Transcript History`)
+- History persists across sessions using VS Code global state
+- Each entry shows truncated text with date and time
+
 ## [0.3.6] - 2026-03-03
 
 ### Added

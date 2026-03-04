@@ -5,6 +5,7 @@ import { VoiceActivityDetector } from './vad';
 import { Transcriber } from './transcriber';
 import { ModelManager } from './modelManager';
 import { StatusBarManager } from './statusBar';
+import { TranscriptHistory } from './transcriptHistory';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -23,12 +24,14 @@ export class VoxPilotEngine {
   private readonly FRAME_SIZE = 960 * 2; // 30ms at 16kHz mono 16-bit = 960 samples * 2 bytes
   private readonly MAX_SPEECH_BYTES = 15 * 16000 * 2; // 15 seconds max
   private outputChannel: vscode.OutputChannel;
+  private history: TranscriptHistory;
 
   constructor(private context: vscode.ExtensionContext, statusBar: StatusBarManager) {
     this.statusBar = statusBar;
     this.audio = new AudioCapture();
     this.modelManager = new ModelManager(context);
     this.outputChannel = vscode.window.createOutputChannel('VoxPilot');
+    this.history = new TranscriptHistory(context);
 
     const config = vscode.workspace.getConfiguration('voxpilot');
     const sensitivity = config.get<number>('vadSensitivity', 0.5);
@@ -125,6 +128,13 @@ export class VoxPilotEngine {
         this.transcriber = null;
       }
       vscode.window.showInformationMessage(`VoxPilot: Switched to ${pick.label}`);
+    }
+  }
+
+  async showTranscriptHistory(): Promise<void> {
+    const text = await this.history.showQuickPick();
+    if (text) {
+      await this.sendToChat(text);
     }
   }
 
@@ -248,6 +258,7 @@ export class VoxPilotEngine {
       this.outputChannel.appendLine(`[${new Date().toISOString()}] Raw transcript: "${text}"`);
       if (text.trim()) {
         this.lastTranscript = text.trim();
+        this.history.add(this.lastTranscript);
         this.outputChannel.appendLine(`[${new Date().toISOString()}] Transcript: ${this.lastTranscript}`);
 
         const config = vscode.workspace.getConfiguration('voxpilot');
