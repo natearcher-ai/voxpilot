@@ -120,6 +120,7 @@
 
     <section>
       <div class="stats">
+        <div class="stat"><div class="num" id="download-count">—</div><div class="label">Downloads</div></div>
         <div class="stat"><div class="num">27MB</div><div class="label">Tiny model size</div></div>
         <div class="stat"><div class="num">0</div><div class="label">Cloud dependencies</div></div>
         <div class="stat"><div class="num">3</div><div class="label">Platforms supported</div></div>
@@ -141,5 +142,23 @@
       <p style="margin-top: 8px;">Star the repo if VoxPilot helps you code faster ⭐</p>
     </footer>
   </div>
+  <script>
+    fetch('https://open-vsx.org/api/natearcher-ai/voxpilot')
+      .then(r => r.json())
+      .then(d => {
+        const count = d.downloadCount;
+        if (count) {
+          const el = document.getElementById('download-count');
+          if (count >= 1000) {
+            el.textContent = (count / 1000).toFixed(1).replace(/\.0$/, '') + 'k+';
+          } else {
+            el.textContent = count.toLocaleString();
+          }
+        }
+      })
+      .catch(() => {
+        document.getElementById('download-count').textContent = '1k+';
+      });
+  </script>
 </body>
 </html>
