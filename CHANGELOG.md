@@ -2,6 +2,14 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.3.8] - 2026-03-05
+
+### Added
+- Configurable max speech duration setting (`voxpilot.maxSpeechDuration`)
+- Range: 5–60 seconds (default: 15s) — increase for longer dictation, decrease for snappier responses
+- Setting updates live without restarting the extension
+- Previously hardcoded to 15 seconds
+
 ## [0.3.7] - 2026-03-04
 
 ### Added

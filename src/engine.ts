@@ -22,7 +22,7 @@ export class VoxPilotEngine {
   private audioChunkCount = 0;
   private pendingAudio = Buffer.alloc(0);
   private readonly FRAME_SIZE = 960 * 2; // 30ms at 16kHz mono 16-bit = 960 samples * 2 bytes
-  private readonly MAX_SPEECH_BYTES = 15 * 16000 * 2; // 15 seconds max
+  private maxSpeechBytes: number;
   private outputChannel: vscode.OutputChannel;
   private history: TranscriptHistory;
 
@@ -36,6 +36,8 @@ export class VoxPilotEngine {
     const config = vscode.workspace.getConfiguration('voxpilot');
     const sensitivity = config.get<number>('vadSensitivity', 0.5);
     const silenceTimeout = config.get<number>('silenceTimeout', 1500);
+    const maxSpeechSec = config.get<number>('maxSpeechDuration', 15);
+    this.maxSpeechBytes = maxSpeechSec * 16000 * 2;
     this.vad = new VoiceActivityDetector(sensitivity, silenceTimeout);
 
     // Restore saved audio device preference
@@ -56,6 +58,8 @@ export class VoxPilotEngine {
         const cfg = vscode.workspace.getConfiguration('voxpilot');
         const sens = cfg.get<number>('vadSensitivity', 0.5);
         const silence = cfg.get<number>('silenceTimeout', 1500);
+        const maxSec = cfg.get<number>('maxSpeechDuration', 15);
+        this.maxSpeechBytes = maxSec * 16000 * 2;
         this.vad = new VoiceActivityDetector(sens, silence);
       }
     });
@@ -216,7 +220,7 @@ export class VoxPilotEngine {
 
     // Auto-transcribe if buffer exceeds max duration (model can't handle long audio)
     const totalBytes = this.speechBuffer.reduce((sum, b) => sum + b.length, 0);
-    if (result.isSpeech && totalBytes >= this.MAX_SPEECH_BYTES) {
+    if (result.isSpeech && totalBytes >= this.maxSpeechBytes) {
       this.outputChannel.appendLine(`[${new Date().toISOString()}] Max speech duration reached, transcribing segment...`);
       this.finalizeSpeech();
       return;

@@ -2,7 +2,7 @@
   "name": "voxpilot",
   "displayName": "VoxPilot — Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "publisher": "natearcher-ai",
   "license": "MIT",
   "repository": {
@@ -103,6 +103,13 @@
           "type": "number",
           "default": 1500,
           "description": "Milliseconds of silence before finalizing a transcript segment."
+        },
+        "voxpilot.maxSpeechDuration": {
+          "type": "number",
+          "default": 15,
+          "minimum": 5,
+          "maximum": 60,
+          "description": "Maximum speech duration in seconds before auto-transcribing. Moonshine works best under 15s; increase for longer dictation at the cost of accuracy."
         },
         "voxpilot.audioDevice": {
           "type": "string",
