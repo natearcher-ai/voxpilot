@@ -2,6 +2,14 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.3.9] - 2026-03-06
+
+### Added
+- Sound feedback — subtle beep on start/stop listening for clear audio cues
+- New `voxpilot.soundFeedback` setting (default: on) to toggle beeps
+- Cross-platform playback: afplay (macOS), aplay/paplay (Linux), PowerShell (Windows)
+- Sounds auto-generated as lightweight WAV files with fade in/out to avoid clicks
+
 ## [0.3.8] - 2026-03-05
 
 ### Added

@@ -6,6 +6,7 @@ import { Transcriber } from './transcriber';
 import { ModelManager } from './modelManager';
 import { StatusBarManager } from './statusBar';
 import { TranscriptHistory } from './transcriptHistory';
+import { SoundFeedback } from './soundFeedback';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -25,6 +26,8 @@ export class VoxPilotEngine {
   private maxSpeechBytes: number;
   private outputChannel: vscode.OutputChannel;
   private history: TranscriptHistory;
+  private sound: SoundFeedback;
+  private soundEnabled: boolean;
 
   constructor(private context: vscode.ExtensionContext, statusBar: StatusBarManager) {
     this.statusBar = statusBar;
@@ -32,12 +35,14 @@ export class VoxPilotEngine {
     this.modelManager = new ModelManager(context);
     this.outputChannel = vscode.window.createOutputChannel('VoxPilot');
     this.history = new TranscriptHistory(context);
+    this.sound = new SoundFeedback();
 
     const config = vscode.workspace.getConfiguration('voxpilot');
     const sensitivity = config.get<number>('vadSensitivity', 0.5);
     const silenceTimeout = config.get<number>('silenceTimeout', 1500);
     const maxSpeechSec = config.get<number>('maxSpeechDuration', 15);
     this.maxSpeechBytes = maxSpeechSec * 16000 * 2;
+    this.soundEnabled = config.get<boolean>('soundFeedback', true);
     this.vad = new VoiceActivityDetector(sensitivity, silenceTimeout);
 
     // Restore saved audio device preference
@@ -60,6 +65,7 @@ export class VoxPilotEngine {
         const silence = cfg.get<number>('silenceTimeout', 1500);
         const maxSec = cfg.get<number>('maxSpeechDuration', 15);
         this.maxSpeechBytes = maxSec * 16000 * 2;
+        this.soundEnabled = cfg.get<boolean>('soundFeedback', true);
         this.vad = new VoiceActivityDetector(sens, silence);
       }
     });
@@ -166,6 +172,7 @@ export class VoxPilotEngine {
     this.audio.start();
     this.isListening = true;
     this.statusBar.setCalibrating();
+    if (this.soundEnabled) { this.sound.playStart(); }
     this.outputChannel.appendLine(`[${new Date().toISOString()}] Listening started`);
   }
 
@@ -179,6 +186,7 @@ export class VoxPilotEngine {
     this.isListening = false;
     this.isQuickCapture = false;
     this.audioChunkCount = 0;
+    if (this.soundEnabled) { this.sound.playStop(); }
     this.statusBar.setIdle();
     this.outputChannel.appendLine(`[${new Date().toISOString()}] Listening stopped`);
   }
@@ -372,6 +380,7 @@ export class VoxPilotEngine {
   dispose(): void {
     this.stopListening();
     this.audio.dispose();
+    this.sound.dispose();
     this.disposables.forEach(d => d.dispose());
     this.disposables = [];
     // Fire-and-forget async cleanup
