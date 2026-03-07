@@ -7,6 +7,7 @@ import { ModelManager } from './modelManager';
 import { StatusBarManager } from './statusBar';
 import { TranscriptHistory } from './transcriptHistory';
 import { SoundFeedback } from './soundFeedback';
+import { processVoiceCommands } from './voiceCommands';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -266,8 +267,13 @@ export class VoxPilotEngine {
     this.outputChannel.appendLine(`[${new Date().toISOString()}] Transcribing ${chunkCount} chunks (${audioData.length} bytes, ~${(audioData.length / 32000).toFixed(1)}s audio)`);
 
     try {
-      const text = await this.transcriber!.transcribe(audioData);
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Raw transcript: "${text}"`);
+      const rawText = await this.transcriber!.transcribe(audioData);
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Raw transcript: "${rawText}"`);
+      const { text: processed, commandsApplied } = processVoiceCommands(rawText);
+      if (commandsApplied > 0) {
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Voice commands applied: ${commandsApplied}, result: "${processed}"`);
+      }
+      const text = processed;
       if (text.trim()) {
         this.lastTranscript = text.trim();
         this.history.add(this.lastTranscript);

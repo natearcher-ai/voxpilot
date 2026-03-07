@@ -2,6 +2,15 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.4.0] - 2026-03-07
+
+### Added
+- Voice commands — say "new line", "period", "comma", "question mark", "exclamation mark", "colon", "semicolon", or "open/close paren" to insert punctuation hands-free
+- "Delete that" / "undo that" voice command removes the last word before the command
+- Also supports "full stop", "exclamation point", "semi colon" as natural aliases
+- Commands are processed as a post-transcription step — works with any ASR model
+- Voice command count logged in output channel for debugging
+
 ## [0.3.9] - 2026-03-06
 
 ### Added
