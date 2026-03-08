@@ -2,7 +2,7 @@
   "name": "voxpilot",
   "displayName": "VoxPilot — Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "publisher": "natearcher-ai",
   "license": "MIT",
   "repository": {
@@ -55,6 +55,10 @@
         "title": "VoxPilot: Transcript History"
       },
       {
+        "command": "voxpilot.inlineVoiceInput",
+        "title": "VoxPilot: Inline Voice Input (Insert at Cursor)"
+      },
+      {
         "command": "voxpilot.sendToChat",
         "title": "VoxPilot: Send Last Transcript to Chat"
       },
@@ -68,6 +72,12 @@
         "command": "voxpilot.toggleListening",
         "key": "ctrl+alt+v",
         "mac": "cmd+alt+v"
+      },
+      {
+        "command": "voxpilot.inlineVoiceInput",
+        "key": "ctrl+alt+i",
+        "mac": "cmd+alt+i",
+        "when": "editorTextFocus"
       }
     ],
     "configuration": {
@@ -120,6 +130,11 @@
           "type": "boolean",
           "default": true,
           "description": "Play subtle beep sounds when voice input starts and stops."
+        },
+        "voxpilot.inlineMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "When enabled, transcripts are inserted directly at the cursor position instead of being sent to chat. Toggle per-session with 'VoxPilot: Inline Voice Input'."
         }
       }
     }

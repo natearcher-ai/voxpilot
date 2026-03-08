@@ -2,6 +2,15 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.4.1] - 2026-03-08
+
+### Added
+- Inline mode — insert transcripts directly at the cursor position without going through chat
+- New `voxpilot.inlineMode` setting (default: off) to make inline the default transcript destination
+- New `VoxPilot: Inline Voice Input` command for one-shot inline capture (auto-stops after speech)
+- Keybinding: `Ctrl+Alt+I` / `Cmd+Alt+I` (when editor is focused)
+- Guards against no active editor — shows warning if no file is open
+
 ## [0.4.0] - 2026-03-07
 
 ### Added

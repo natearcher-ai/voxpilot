@@ -29,6 +29,7 @@ export class VoxPilotEngine {
   private history: TranscriptHistory;
   private sound: SoundFeedback;
   private soundEnabled: boolean;
+  private inlineMode: boolean;
 
   constructor(private context: vscode.ExtensionContext, statusBar: StatusBarManager) {
     this.statusBar = statusBar;
@@ -44,6 +45,7 @@ export class VoxPilotEngine {
     const maxSpeechSec = config.get<number>('maxSpeechDuration', 15);
     this.maxSpeechBytes = maxSpeechSec * 16000 * 2;
     this.soundEnabled = config.get<boolean>('soundFeedback', true);
+    this.inlineMode = config.get<boolean>('inlineMode', false);
     this.vad = new VoiceActivityDetector(sensitivity, silenceTimeout);
 
     // Restore saved audio device preference
@@ -67,6 +69,7 @@ export class VoxPilotEngine {
         const maxSec = cfg.get<number>('maxSpeechDuration', 15);
         this.maxSpeechBytes = maxSec * 16000 * 2;
         this.soundEnabled = cfg.get<boolean>('soundFeedback', true);
+        this.inlineMode = cfg.get<boolean>('inlineMode', false);
         this.vad = new VoiceActivityDetector(sens, silence);
       }
     });
@@ -91,6 +94,30 @@ export class VoxPilotEngine {
       await this.finalizeSpeech();
       this.stopListening();
     } else {
+      this.isQuickCapture = true;
+      await this.startListening();
+    }
+  }
+
+  /**
+   * Inline voice input: start listening, insert transcript at cursor on silence.
+   * Forces inline mode for this capture session regardless of setting.
+   * Second press while active cancels.
+   */
+  async inlineVoiceInput(): Promise<void> {
+    if (this.isListening) {
+      this.inlineMode = false;
+      await this.finalizeSpeech();
+      this.stopListening();
+      // Restore setting value
+      const config = vscode.workspace.getConfiguration('voxpilot');
+      this.inlineMode = config.get<boolean>('inlineMode', false);
+    } else {
+      if (!vscode.window.activeTextEditor) {
+        vscode.window.showWarningMessage('VoxPilot: No active editor — open a file first to use inline mode.');
+        return;
+      }
+      this.inlineMode = true;
       this.isQuickCapture = true;
       await this.startListening();
     }
@@ -280,7 +307,11 @@ export class VoxPilotEngine {
         this.outputChannel.appendLine(`[${new Date().toISOString()}] Transcript: ${this.lastTranscript}`);
 
         const config = vscode.workspace.getConfiguration('voxpilot');
-        if (config.get<boolean>('autoSendToChat', false)) {
+        if (this.inlineMode) {
+          this.insertAtCursor(this.lastTranscript);
+          this.statusBar.setSent(this.lastTranscript);
+          this.outputChannel.appendLine(`[${new Date().toISOString()}] Inserted at cursor (inline mode)`);
+        } else if (config.get<boolean>('autoSendToChat', false)) {
           await this.sendToChat(this.lastTranscript);
           this.statusBar.setSent(this.lastTranscript);
         } else {
