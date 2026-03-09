@@ -2,6 +2,14 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.4.2] - 2026-03-09
+
+### Added
+- Multi-segment transcription — long dictation is automatically split into segments at the max speech duration boundary, transcribed individually, and stitched back together when speech ends
+- Seamless experience: status bar shows "Speaking" during segments, delivers one combined transcript at the end
+- Works with all output modes (chat, inline, clipboard) and voice commands
+- No config needed — works automatically with existing `maxSpeechDuration` setting
+
 ## [0.4.1] - 2026-03-08
 
 ### Added

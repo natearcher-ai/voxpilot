@@ -25,6 +25,7 @@ export class VoxPilotEngine {
   private pendingAudio = Buffer.alloc(0);
   private readonly FRAME_SIZE = 960 * 2; // 30ms at 16kHz mono 16-bit = 960 samples * 2 bytes
   private maxSpeechBytes: number;
+  private segmentTranscripts: string[] = [];
   private outputChannel: vscode.OutputChannel;
   private history: TranscriptHistory;
   private sound: SoundFeedback;
@@ -194,6 +195,7 @@ export class VoxPilotEngine {
     }
 
     this.speechBuffer = [];
+    this.segmentTranscripts = [];
     this.pendingAudio = Buffer.alloc(0);
     this.audioChunkCount = 0;
     this.vad.reset();
@@ -214,6 +216,7 @@ export class VoxPilotEngine {
     this.isListening = false;
     this.isQuickCapture = false;
     this.audioChunkCount = 0;
+    this.segmentTranscripts = [];
     if (this.soundEnabled) { this.sound.playStop(); }
     this.statusBar.setIdle();
     this.outputChannel.appendLine(`[${new Date().toISOString()}] Listening stopped`);
@@ -255,15 +258,16 @@ export class VoxPilotEngine {
     }
 
     // Auto-transcribe if buffer exceeds max duration (model can't handle long audio)
+    // Stash the segment transcript and keep listening for more speech
     const totalBytes = this.speechBuffer.reduce((sum, b) => sum + b.length, 0);
     if (result.isSpeech && totalBytes >= this.maxSpeechBytes) {
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Max speech duration reached, transcribing segment...`);
-      this.finalizeSpeech();
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Max speech duration reached, transcribing segment ${this.segmentTranscripts.length + 1}...`);
+      this.transcribeSegment();
       return;
     }
 
     if (result.speechEnded) {
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Speech ended, transcribing...`);
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Speech ended, transcribing and delivering...`);
       this.finalizeSpeech().then(() => {
         if (this.isQuickCapture) {
           this.stopListening();
@@ -283,7 +287,11 @@ export class VoxPilotEngine {
     return Math.sqrt(sumSq / samples);
   }
 
-  private async finalizeSpeech(): Promise<void> {
+  /**
+   * Transcribe the current speech buffer as a segment without delivering.
+   * Used when max speech duration is hit mid-speech.
+   */
+  private async transcribeSegment(): Promise<void> {
     if (this.speechBuffer.length === 0) { return; }
 
     const audioData = Buffer.concat(this.speechBuffer);
@@ -291,39 +299,85 @@ export class VoxPilotEngine {
     this.speechBuffer = [];
     this.statusBar.setProcessing();
 
-    this.outputChannel.appendLine(`[${new Date().toISOString()}] Transcribing ${chunkCount} chunks (${audioData.length} bytes, ~${(audioData.length / 32000).toFixed(1)}s audio)`);
+    this.outputChannel.appendLine(`[${new Date().toISOString()}] Segment transcribe: ${chunkCount} chunks (${audioData.length} bytes, ~${(audioData.length / 32000).toFixed(1)}s audio)`);
 
     try {
       const rawText = await this.transcriber!.transcribe(audioData);
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Raw transcript: "${rawText}"`);
-      const { text: processed, commandsApplied } = processVoiceCommands(rawText);
-      if (commandsApplied > 0) {
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Voice commands applied: ${commandsApplied}, result: "${processed}"`);
-      }
-      const text = processed;
-      if (text.trim()) {
-        this.lastTranscript = text.trim();
-        this.history.add(this.lastTranscript);
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Transcript: ${this.lastTranscript}`);
-
-        const config = vscode.workspace.getConfiguration('voxpilot');
-        if (this.inlineMode) {
-          this.insertAtCursor(this.lastTranscript);
-          this.statusBar.setSent(this.lastTranscript);
-          this.outputChannel.appendLine(`[${new Date().toISOString()}] Inserted at cursor (inline mode)`);
-        } else if (config.get<boolean>('autoSendToChat', false)) {
-          await this.sendToChat(this.lastTranscript);
-          this.statusBar.setSent(this.lastTranscript);
-        } else {
-          this.showTranscriptNotification(this.lastTranscript);
-          this.statusBar.setSent(this.lastTranscript);
-        }
-      } else {
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Transcript was empty`);
+      const { text: processed } = processVoiceCommands(rawText);
+      if (processed.trim()) {
+        this.segmentTranscripts.push(processed.trim());
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Segment ${this.segmentTranscripts.length} stored: "${processed.trim()}"`);
       }
     } catch (err: any) {
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Transcription error: ${err.message}`);
-      vscode.window.showErrorMessage(`VoxPilot transcription error: ${err.message}`);
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Segment transcription error: ${err.message}`);
+    }
+
+    if (this.isListening) {
+      this.statusBar.setSpeechDetected();
+    }
+  }
+
+  private async finalizeSpeech(): Promise<void> {
+    if (this.speechBuffer.length === 0 && this.segmentTranscripts.length === 0) { return; }
+
+    // Transcribe any remaining audio in the buffer
+    let finalSegment = '';
+    if (this.speechBuffer.length > 0) {
+      const audioData = Buffer.concat(this.speechBuffer);
+      const chunkCount = this.speechBuffer.length;
+      this.speechBuffer = [];
+      this.statusBar.setProcessing();
+
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Final segment: ${chunkCount} chunks (${audioData.length} bytes, ~${(audioData.length / 32000).toFixed(1)}s audio)`);
+
+      try {
+        const rawText = await this.transcriber!.transcribe(audioData);
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Raw transcript: "${rawText}"`);
+        const { text: processed, commandsApplied } = processVoiceCommands(rawText);
+        if (commandsApplied > 0) {
+          this.outputChannel.appendLine(`[${new Date().toISOString()}] Voice commands applied: ${commandsApplied}, result: "${processed}"`);
+        }
+        finalSegment = processed.trim();
+      } catch (err: any) {
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Transcription error: ${err.message}`);
+        vscode.window.showErrorMessage(`VoxPilot transcription error: ${err.message}`);
+      }
+    } else {
+      this.statusBar.setProcessing();
+    }
+
+    // Stitch all segments together
+    if (finalSegment) {
+      this.segmentTranscripts.push(finalSegment);
+    }
+    const stitched = this.segmentTranscripts.join(' ');
+    const segmentCount = this.segmentTranscripts.length;
+    this.segmentTranscripts = [];
+
+    if (segmentCount > 1) {
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Stitched ${segmentCount} segments: "${stitched}"`);
+    }
+
+    if (stitched.trim()) {
+      const text = stitched.trim();
+      this.lastTranscript = text;
+      this.history.add(this.lastTranscript);
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Transcript: ${this.lastTranscript}`);
+
+      const config = vscode.workspace.getConfiguration('voxpilot');
+      if (this.inlineMode) {
+        this.insertAtCursor(this.lastTranscript);
+        this.statusBar.setSent(this.lastTranscript);
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Inserted at cursor (inline mode)`);
+      } else if (config.get<boolean>('autoSendToChat', false)) {
+        await this.sendToChat(this.lastTranscript);
+        this.statusBar.setSent(this.lastTranscript);
+      } else {
+        this.showTranscriptNotification(this.lastTranscript);
+        this.statusBar.setSent(this.lastTranscript);
+      }
+    } else {
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Transcript was empty`);
     }
 
     if (this.isListening) {
