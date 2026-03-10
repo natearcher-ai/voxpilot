@@ -2,6 +2,15 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.4.3] - 2026-03-10
+
+### Added
+- Noise gate filter — silences audio frames below a configurable RMS threshold before they reach VAD, preventing background noise (fans, hum, hiss) from triggering false speech detection
+- New `voxpilot.noiseGateThreshold` setting (0–0.1, default: 0 = disabled) — try 0.005–0.02 to filter persistent low-level noise
+- Smooth attack/release timing to avoid clipping speech onsets
+- Gate resets automatically when listening starts
+- Setting updates live without restarting the extension
+
 ## [0.4.2] - 2026-03-09
 
 ### Added

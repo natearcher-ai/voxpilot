@@ -8,6 +8,7 @@ import { StatusBarManager } from './statusBar';
 import { TranscriptHistory } from './transcriptHistory';
 import { SoundFeedback } from './soundFeedback';
 import { processVoiceCommands } from './voiceCommands';
+import { NoiseGate } from './noiseGate';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -31,6 +32,7 @@ export class VoxPilotEngine {
   private sound: SoundFeedback;
   private soundEnabled: boolean;
   private inlineMode: boolean;
+  private noiseGate: NoiseGate;
 
   constructor(private context: vscode.ExtensionContext, statusBar: StatusBarManager) {
     this.statusBar = statusBar;
@@ -47,6 +49,8 @@ export class VoxPilotEngine {
     this.maxSpeechBytes = maxSpeechSec * 16000 * 2;
     this.soundEnabled = config.get<boolean>('soundFeedback', true);
     this.inlineMode = config.get<boolean>('inlineMode', false);
+    const noiseGateThreshold = config.get<number>('noiseGateThreshold', 0);
+    this.noiseGate = new NoiseGate(noiseGateThreshold);
     this.vad = new VoiceActivityDetector(sensitivity, silenceTimeout);
 
     // Restore saved audio device preference
@@ -71,6 +75,8 @@ export class VoxPilotEngine {
         this.maxSpeechBytes = maxSec * 16000 * 2;
         this.soundEnabled = cfg.get<boolean>('soundFeedback', true);
         this.inlineMode = cfg.get<boolean>('inlineMode', false);
+        const noiseGateVal = cfg.get<number>('noiseGateThreshold', 0);
+        this.noiseGate.setThreshold(noiseGateVal);
         this.vad = new VoiceActivityDetector(sens, silence);
       }
     });
@@ -199,6 +205,7 @@ export class VoxPilotEngine {
     this.pendingAudio = Buffer.alloc(0);
     this.audioChunkCount = 0;
     this.vad.reset();
+    this.noiseGate.reset();
     this.audio.start();
     this.isListening = true;
     this.statusBar.setCalibrating();
@@ -234,7 +241,9 @@ export class VoxPilotEngine {
   }
 
   private processFrame(frame: Buffer): void {
-    const result = this.vad.process(frame);
+    // Apply noise gate before VAD — zero out frames below threshold
+    const gatedFrame = this.noiseGate.process(frame);
+    const result = this.vad.process(gatedFrame);
 
     this.audioChunkCount++;
     if (this.audioChunkCount % 100 === 1) {
