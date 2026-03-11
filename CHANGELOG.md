@@ -2,6 +2,13 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.4.4] - 2026-03-11
+
+### Added
+- Default keybinding for Quick Voice Capture: `Ctrl+Alt+Q` / `Cmd+Alt+Q` (Mac)
+- Quick Capture now has the same first-class keybinding treatment as Toggle Voice Input and Inline Voice Input
+- All three voice input modes now have dedicated shortcuts: Toggle (`Ctrl+Alt+V`), Quick Capture (`Ctrl+Alt+Q`), Inline (`Ctrl+Alt+I`)
+
 ## [0.4.3] - 2026-03-10
 
 ### Added
