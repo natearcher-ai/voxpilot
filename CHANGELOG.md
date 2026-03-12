@@ -2,6 +2,13 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.4.5] - 2026-03-12
+
+### Added
+- Output action setting — choose default behavior for transcripts: `ask` (notification), `chat`, `cursor`, or `clipboard`
+- Replaces the separate `autoSendToChat` and `inlineMode` toggles with a single unified setting
+- Inline mode keybinding still works as a per-session override
+
 ## [0.4.4] - 2026-03-11
 
 ### Added

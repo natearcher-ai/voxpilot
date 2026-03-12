@@ -374,13 +374,20 @@ export class VoxPilotEngine {
       this.outputChannel.appendLine(`[${new Date().toISOString()}] Transcript: ${this.lastTranscript}`);
 
       const config = vscode.workspace.getConfiguration('voxpilot');
-      if (this.inlineMode) {
+      const outputAction = config.get<string>('outputAction', 'ask');
+
+      if (this.inlineMode || outputAction === 'cursor') {
         this.insertAtCursor(this.lastTranscript);
         this.statusBar.setSent(this.lastTranscript);
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Inserted at cursor (inline mode)`);
-      } else if (config.get<boolean>('autoSendToChat', false)) {
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Inserted at cursor`);
+      } else if (outputAction === 'chat' || config.get<boolean>('autoSendToChat', false)) {
         await this.sendToChat(this.lastTranscript);
         this.statusBar.setSent(this.lastTranscript);
+      } else if (outputAction === 'clipboard') {
+        await vscode.env.clipboard.writeText(this.lastTranscript);
+        this.statusBar.setSent(this.lastTranscript);
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Copied to clipboard`);
+        vscode.window.showInformationMessage(`VoxPilot: Transcript copied to clipboard.`);
       } else {
         this.showTranscriptNotification(this.lastTranscript);
         this.statusBar.setSent(this.lastTranscript);
