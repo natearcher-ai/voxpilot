@@ -150,8 +150,9 @@ export class AudioCapture extends EventEmitter implements vscode.Disposable {
     const { execSync } = require('child_process');
     const devices: AudioDevice[] = [];
     try {
+      // ffmpeg writes device list to stderr, even with -list_devices
       const output: string = execSync(
-        'ffmpeg -list_devices true -f dshow -i dummy 2>&1',
+        'ffmpeg -hide_banner -list_devices true -f dshow -i dummy 2>&1',
         { encoding: 'utf-8', timeout: 10000 },
       );
       let inAudio = false;
@@ -166,6 +167,21 @@ export class AudioCapture extends EventEmitter implements vscode.Disposable {
         }
       }
     } catch {}
+    // Fallback: try PowerShell to enumerate audio input devices
+    if (devices.length === 0) {
+      try {
+        const psOutput: string = execSync(
+          'powershell -NoProfile -Command "Get-CimInstance Win32_SoundDevice | Where-Object { $_.StatusInfo -eq 3 } | Select-Object -ExpandProperty Name"',
+          { encoding: 'utf-8', timeout: 10000 },
+        );
+        for (const line of psOutput.split('\n')) {
+          const name = line.trim();
+          if (name) {
+            devices.push({ id: name, name });
+          }
+        }
+      } catch {}
+    }
     return devices;
   }
 
@@ -200,10 +216,24 @@ export class AudioCapture extends EventEmitter implements vscode.Disposable {
     }
 
     if (platform === 'win32') {
-      const device = this.deviceId || 'default';
+      // dshow doesn't support "default" — must use an actual device name.
+      // If no device is configured, try to detect the first available one.
+      let device = this.deviceId;
+      if (!device) {
+        const detected = AudioCapture.listWindowsDevices();
+        if (detected.length > 0) {
+          device = detected[0].id;
+        }
+      }
+      if (!device) {
+        // No device found — caller will get an error from ffmpeg, but at least
+        // we try the Windows virtual audio device name as a last resort.
+        device = 'Microphone';
+      }
       return {
         bin: 'ffmpeg',
         args: [
+          '-hide_banner', '-loglevel', 'error',
           '-f', 'dshow', '-i', `audio=${device}`,
           '-ar', '16000', '-ac', '1', '-f', 's16le', '-acodec', 'pcm_s16le',
           'pipe:1',

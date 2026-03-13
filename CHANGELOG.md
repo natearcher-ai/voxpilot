@@ -2,6 +2,14 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.4.6] - 2026-03-13
+
+### Fixed
+- Windows audio capture — `audio=default` is not valid for ffmpeg's dshow input; now auto-detects the first available microphone device when no device is configured
+- Added `-hide_banner -loglevel error` flags to ffmpeg for cleaner output on Windows
+- Fixed `which` command on Windows — use `where` for binary detection so ffmpeg is found correctly
+- Added PowerShell fallback for Windows device enumeration when ffmpeg device listing fails
+
 ## [0.4.5] - 2026-03-12
 
 ### Added

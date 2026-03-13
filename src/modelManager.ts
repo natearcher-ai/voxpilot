@@ -197,9 +197,10 @@ export class ModelManager {
       checks.push({ bin: 'ffmpeg', hint: 'Download from ffmpeg.org and add to PATH' });
     }
 
+    const whichCmd = process.platform === 'win32' ? 'where' : 'which';
     for (const { bin, hint } of checks) {
       try {
-        execSync(`which ${bin}`, { stdio: 'ignore' });
+        execSync(`${whichCmd} ${bin}`, { stdio: 'ignore' });
         return { available: true, tool: bin, installHint: '' };
       } catch {}
     }
