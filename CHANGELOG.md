@@ -2,6 +2,18 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.5.0] - 2026-03-14
+
+### Added
+- Automated test suite — 46 unit tests covering VAD, voice commands, noise gate, transcriber, and engine modules
+- Uses Vitest as the test framework with VS Code API mocking
+- VAD tests: calibration, speech detection, silence timeout, sensitivity levels, adaptive noise floor, reset, edge cases
+- Voice commands tests: all punctuation commands, delete/undo that, multiple commands, case insensitivity, edge cases
+- Noise gate tests: threshold gating, attack/release timing, reset, dynamic threshold, empty buffer handling
+- Transcriber tests: initialization, error handling for unloaded model, safe dispose
+- Engine/extension tests: module export verification (activate, deactivate, VoxPilotEngine)
+- New `npm test` script for running the full suite
+
 ## [0.4.6] - 2026-03-13
 
 ### Fixed
