@@ -2,6 +2,15 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.5.1] - 2026-03-15
+
+### Added
+- CI/CD pipeline — GitHub Actions workflows for automated lint, test, build, and publish
+- CI workflow: runs `tsc --noEmit` type checking, `npm test` unit tests, and `vsce package` on every push/PR to main
+- Release workflow: triggered by version tags (`v*`), runs full checks then auto-publishes to Open VSX and creates a GitHub Release with the `.vsix` artifact
+- Replaced the old single-job `build.yml` with separate `ci.yml` (3-stage pipeline) and `release.yml` (tag-triggered publish)
+- To release: `git tag v0.5.1 && git push --tags` — the pipeline handles the rest
+
 ## [0.5.0] - 2026-03-14
 
 ### Added
