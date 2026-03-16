@@ -2,6 +2,16 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.5.2] - 2026-03-16
+
+### Added
+- Whisper model support — OpenAI Whisper ONNX models via `@huggingface/transformers` pipeline
+- Five new model options: Whisper Tiny (~120MB), Base (~200MB), Small (~600MB), Medium (~1.5GB), Large v3 Turbo (~1.6GB)
+- 90+ language support with Whisper models (Moonshine remains English-only)
+- Model picker (`VoxPilot: Select ASR Model`) now shows all 7 models with download status
+- Settings enum updated with descriptions showing size and language support for each model
+- Seamless switching: select any model in settings or via command, it downloads on first use
+
 ## [0.5.1] - 2026-03-15
 
 ### Added

@@ -30,9 +30,16 @@ export class Transcriber {
       transformers.env.cacheDir = this.cacheDir;
       transformers.env.allowLocalModels = true;
 
-      const repo = this.modelId === 'moonshine-base'
-        ? 'onnx-community/moonshine-base-ONNX'
-        : 'onnx-community/moonshine-tiny-ONNX';
+      const MODEL_REPOS: Record<string, string> = {
+        'moonshine-tiny': 'onnx-community/moonshine-tiny-ONNX',
+        'moonshine-base': 'onnx-community/moonshine-base-ONNX',
+        'whisper-tiny': 'onnx-community/whisper-tiny',
+        'whisper-base': 'onnx-community/whisper-base',
+        'whisper-small': 'onnx-community/whisper-small',
+        'whisper-medium': 'onnx-community/whisper-medium',
+        'whisper-large-v3-turbo': 'onnx-community/whisper-large-v3-turbo',
+      };
+      const repo = MODEL_REPOS[this.modelId] || 'onnx-community/moonshine-base-ONNX';
 
       pipelineInstance = await transformers.pipeline('automatic-speech-recognition', repo, {
         dtype: 'fp32',

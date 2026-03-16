@@ -2,7 +2,7 @@
   "name": "voxpilot",
   "displayName": "VoxPilot — Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "publisher": "natearcher-ai",
   "license": "MIT",
   "repository": {
@@ -93,9 +93,23 @@
           "default": "moonshine-base",
           "enum": [
             "moonshine-tiny",
-            "moonshine-base"
+            "moonshine-base",
+            "whisper-tiny",
+            "whisper-base",
+            "whisper-small",
+            "whisper-medium",
+            "whisper-large-v3-turbo"
           ],
-          "description": "ASR model to use. Tiny (~26MB) is faster, Base (~60MB) is more accurate."
+          "enumDescriptions": [
+            "Moonshine Tiny (~27MB) — fast, English-only",
+            "Moonshine Base (~65MB) — accurate, English-only",
+            "Whisper Tiny (~120MB) — fast, 90+ languages",
+            "Whisper Base (~200MB) — balanced, 90+ languages",
+            "Whisper Small (~600MB) — accurate, 90+ languages",
+            "Whisper Medium (~1.5GB) — high accuracy, 90+ languages",
+            "Whisper Large v3 Turbo (~1.6GB) — best accuracy, 90+ languages"
+          ],
+          "description": "ASR model to use. Moonshine models are English-only and lightweight. Whisper models support 90+ languages with increasing accuracy and size."
         },
         "voxpilot.vadSensitivity": {
           "type": "number",
