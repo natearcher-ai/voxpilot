@@ -2,7 +2,7 @@
   "name": "voxpilot",
   "displayName": "VoxPilot — Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "publisher": "natearcher-ai",
   "license": "MIT",
   "repository": {
@@ -32,6 +32,51 @@
   "main": "./dist/extension.js",
   "icon": "media/icon.png",
   "contributes": {
+    "viewsContainers": {
+      "activityBar": [
+        {
+          "id": "voxpilot",
+          "title": "VoxPilot",
+          "icon": "$(mic)"
+        }
+      ]
+    },
+    "views": {
+      "voxpilot": [
+        {
+          "id": "voxpilot.modelManager",
+          "name": "Models",
+          "icon": "$(package)",
+          "contextualTitle": "VoxPilot Models"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "voxpilot.modelManager.refresh",
+          "when": "view == voxpilot.modelManager",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "voxpilot.modelManager.switch",
+          "when": "view == voxpilot.modelManager && viewItem != model-active",
+          "group": "inline@1"
+        },
+        {
+          "command": "voxpilot.modelManager.download",
+          "when": "view == voxpilot.modelManager && viewItem == model-available",
+          "group": "inline@2"
+        },
+        {
+          "command": "voxpilot.modelManager.delete",
+          "when": "view == voxpilot.modelManager && viewItem == model-downloaded",
+          "group": "context@1"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "voxpilot.toggleListening",
@@ -65,6 +110,26 @@
       {
         "command": "voxpilot.clearCache",
         "title": "VoxPilot: Clear Cache"
+      },
+      {
+        "command": "voxpilot.modelManager.download",
+        "title": "Download",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "voxpilot.modelManager.switch",
+        "title": "Use This Model",
+        "icon": "$(check)"
+      },
+      {
+        "command": "voxpilot.modelManager.delete",
+        "title": "Delete Model",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "voxpilot.modelManager.refresh",
+        "title": "Refresh",
+        "icon": "$(refresh)"
       }
     ],
     "keybindings": [

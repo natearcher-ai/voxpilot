@@ -4,6 +4,7 @@ import * as path from 'path';
 import { VoxPilotEngine } from './engine';
 import { StatusBarManager } from './statusBar';
 import { ModelManager } from './modelManager';
+import { ModelManagerPanel } from './modelManagerPanel';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
@@ -22,6 +23,20 @@ export async function activate(context: vscode.ExtensionContext) {
 
   engine = new VoxPilotEngine(context, statusBar);
 
+  // Model manager sidebar panel
+  const modelPanel = new ModelManagerPanel(context);
+  const treeView = vscode.window.createTreeView('voxpilot.modelManager', {
+    treeDataProvider: modelPanel,
+    showCollapseAll: false,
+  });
+
+  // Refresh panel when model setting changes
+  const configWatcher = vscode.workspace.onDidChangeConfiguration(e => {
+    if (e.affectsConfiguration('voxpilot.model')) {
+      modelPanel.refresh();
+    }
+  });
+
   context.subscriptions.push(
     vscode.commands.registerCommand('voxpilot.toggleListening', () => engine?.toggle()),
     vscode.commands.registerCommand('voxpilot.pushToTalk', () => engine?.quickCapture()),
@@ -31,8 +46,14 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('voxpilot.transcriptHistory', () => engine?.showTranscriptHistory()),
     vscode.commands.registerCommand('voxpilot.sendToChat', () => engine?.sendLastToChat()),
     vscode.commands.registerCommand('voxpilot.clearCache', () => clearCache(context)),
+    vscode.commands.registerCommand('voxpilot.modelManager.download', (item) => modelPanel.downloadModel(item)),
+    vscode.commands.registerCommand('voxpilot.modelManager.switch', (item) => modelPanel.switchModel(item)),
+    vscode.commands.registerCommand('voxpilot.modelManager.delete', (item) => modelPanel.deleteModel(item)),
+    vscode.commands.registerCommand('voxpilot.modelManager.refresh', () => modelPanel.refresh()),
+    treeView,
+    configWatcher,
     statusBar,
-    { dispose: () => engine?.dispose() },
+    { dispose: () => { engine?.dispose(); modelPanel.dispose(); } },
   );
 
   if (audioCheck.available) {

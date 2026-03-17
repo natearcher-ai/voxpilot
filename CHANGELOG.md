@@ -2,6 +2,17 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.5.3] - 2026-03-17
+
+### Added
+- Model manager panel — sidebar UI in the activity bar to browse, download, switch, and delete ASR models
+- TreeView shows all 7 models with download status, size info, and active indicator
+- Inline actions: click to switch model, download button for undownloaded models
+- Right-click context menu to delete downloaded (non-active) models and free disk space
+- Refresh button in panel title bar; auto-refreshes when active model setting changes
+- Download progress shown via VS Code notification with cancel support
+- Guards against deleting the currently active model
+
 ## [0.5.2] - 2026-03-16
 
 ### Added
