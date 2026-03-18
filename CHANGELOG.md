@@ -2,6 +2,17 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.5.4] - 2026-03-18
+
+### Added
+- Parakeet TDT 0.6B ONNX integration — streaming low-latency transcription engine (~150MB, English-only)
+- New model option in settings and model manager panel: `parakeet-tdt-0.6b`
+- Streaming transcription: Parakeet processes audio in 5-second chunks, emitting partial transcripts as each chunk decodes
+- Live partial transcript shown in status bar during streaming inference (pulse icon with rolling text)
+- Seamless fallback: non-streaming models (Moonshine, Whisper) continue to work exactly as before
+- `transcribeStreaming()` API on Transcriber with `onPartial` / `onFinal` callbacks
+- Model registry marks Parakeet as `streaming: true`; `isStreamingModel()` helper on ModelManager
+
 ## [0.5.3] - 2026-03-17
 
 ### Added

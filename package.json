@@ -2,7 +2,7 @@
   "name": "voxpilot",
   "displayName": "VoxPilot — Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "publisher": "natearcher-ai",
   "license": "MIT",
   "repository": {
@@ -163,7 +163,8 @@
             "whisper-base",
             "whisper-small",
             "whisper-medium",
-            "whisper-large-v3-turbo"
+            "whisper-large-v3-turbo",
+            "parakeet-tdt-0.6b"
           ],
           "enumDescriptions": [
             "Moonshine Tiny (~27MB) — fast, English-only",
@@ -172,9 +173,10 @@
             "Whisper Base (~200MB) — balanced, 90+ languages",
             "Whisper Small (~600MB) — accurate, 90+ languages",
             "Whisper Medium (~1.5GB) — high accuracy, 90+ languages",
-            "Whisper Large v3 Turbo (~1.6GB) — best accuracy, 90+ languages"
+            "Whisper Large v3 Turbo (~1.6GB) — best accuracy, 90+ languages",
+            "Parakeet TDT 0.6B (~150MB) — streaming, low-latency, English-only"
           ],
-          "description": "ASR model to use. Moonshine models are English-only and lightweight. Whisper models support 90+ languages with increasing accuracy and size."
+          "description": "ASR model to use. Moonshine models are English-only and lightweight. Whisper models support 90+ languages with increasing accuracy and size. Parakeet TDT offers streaming low-latency transcription for English."
         },
         "voxpilot.vadSensitivity": {
           "type": "number",

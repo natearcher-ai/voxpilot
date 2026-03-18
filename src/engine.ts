@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { AudioCapture, AudioDevice } from './audioCapture';
 import { VoiceActivityDetector } from './vad';
-import { Transcriber } from './transcriber';
+import { Transcriber, StreamingCallbacks } from './transcriber';
 import { ModelManager } from './modelManager';
 import { StatusBarManager } from './statusBar';
 import { TranscriptHistory } from './transcriptHistory';
@@ -311,7 +311,13 @@ export class VoxPilotEngine {
     this.outputChannel.appendLine(`[${new Date().toISOString()}] Segment transcribe: ${chunkCount} chunks (${audioData.length} bytes, ~${(audioData.length / 32000).toFixed(1)}s audio)`);
 
     try {
-      const rawText = await this.transcriber!.transcribe(audioData);
+      const callbacks: StreamingCallbacks = {
+        onPartial: (text: string) => {
+          this.statusBar.setStreamingPartial(text);
+          this.outputChannel.appendLine(`[${new Date().toISOString()}] Streaming partial: "${text}"`);
+        },
+      };
+      const rawText = await this.transcriber!.transcribeStreaming(audioData, callbacks);
       const { text: processed } = processVoiceCommands(rawText);
       if (processed.trim()) {
         this.segmentTranscripts.push(processed.trim());
@@ -340,7 +346,13 @@ export class VoxPilotEngine {
       this.outputChannel.appendLine(`[${new Date().toISOString()}] Final segment: ${chunkCount} chunks (${audioData.length} bytes, ~${(audioData.length / 32000).toFixed(1)}s audio)`);
 
       try {
-        const rawText = await this.transcriber!.transcribe(audioData);
+        const callbacks: StreamingCallbacks = {
+          onPartial: (text: string) => {
+            this.statusBar.setStreamingPartial(text);
+            this.outputChannel.appendLine(`[${new Date().toISOString()}] Streaming partial: "${text}"`);
+          },
+        };
+        const rawText = await this.transcriber!.transcribeStreaming(audioData, callbacks);
         this.outputChannel.appendLine(`[${new Date().toISOString()}] Raw transcript: "${rawText}"`);
         const { text: processed, commandsApplied } = processVoiceCommands(rawText);
         if (commandsApplied > 0) {

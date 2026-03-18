@@ -102,6 +102,18 @@ const MODEL_REGISTRY: Record<string, ModelInfo> = {
     ],
     repo: 'onnx-community/whisper-large-v3-turbo',
   },
+  'parakeet-tdt-0.6b': {
+    name: 'Parakeet TDT 0.6B (streaming, English)',
+    size: '~150MB',
+    files: [
+      'onnx/model.onnx',
+      'config.json',
+      'tokenizer.json',
+      'preprocessor_config.json',
+    ],
+    repo: 'onnx-community/parakeet-tdt-0.6b',
+    streaming: true,
+  },
 };
 
 interface ModelInfo {
@@ -109,6 +121,7 @@ interface ModelInfo {
   size: string;
   files: string[];
   repo: string;
+  streaming?: boolean;
 }
 
 export class ModelManager {
@@ -240,6 +253,10 @@ export class ModelManager {
         reject(err);
       });
     });
+  }
+
+  isStreamingModel(modelId: string): boolean {
+    return MODEL_REGISTRY[modelId]?.streaming === true;
   }
 
   getAvailableModels(): Array<{ id: string; info: ModelInfo; downloaded: boolean }> {

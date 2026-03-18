@@ -2,14 +2,27 @@ import * as path from 'path';
 
 let pipelineInstance: any;
 
+export interface StreamingCallbacks {
+  onPartial?: (text: string) => void;
+  onFinal?: (text: string) => void;
+}
+
 /**
- * Moonshine ASR transcriber using @huggingface/transformers pipeline.
- * Handles model loading, tokenization, and inference automatically.
+ * ASR transcriber using @huggingface/transformers pipeline.
+ * Supports Moonshine, Whisper, and Parakeet models.
+ * Parakeet TDT enables streaming partial transcripts via chunked inference.
  */
 export class Transcriber {
   private loaded = false;
+  private isStreaming = false;
 
-  constructor(private modelId: string, private runtimeDir: string, private cacheDir: string) {}
+  constructor(private modelId: string, private runtimeDir: string, private cacheDir: string) {
+    this.isStreaming = modelId === 'parakeet-tdt-0.6b';
+  }
+
+  get streaming(): boolean {
+    return this.isStreaming;
+  }
 
   async load(): Promise<void> {
     if (this.loaded) { return; }
@@ -38,6 +51,7 @@ export class Transcriber {
         'whisper-small': 'onnx-community/whisper-small',
         'whisper-medium': 'onnx-community/whisper-medium',
         'whisper-large-v3-turbo': 'onnx-community/whisper-large-v3-turbo',
+        'parakeet-tdt-0.6b': 'onnx-community/parakeet-tdt-0.6b',
       };
       const repo = MODEL_REPOS[this.modelId] || 'onnx-community/moonshine-base-ONNX';
 
@@ -68,6 +82,63 @@ export class Transcriber {
     });
 
     return result?.text ?? '';
+  }
+
+  /**
+   * Streaming transcription for Parakeet — processes audio in chunks and
+   * emits partial transcripts as each chunk is decoded.
+   * Falls back to standard transcribe() for non-streaming models.
+   */
+  async transcribeStreaming(pcmBuffer: Buffer, callbacks: StreamingCallbacks): Promise<string> {
+    if (!this.isStreaming) {
+      const text = await this.transcribe(pcmBuffer);
+      callbacks.onFinal?.(text);
+      return text;
+    }
+
+    if (!this.loaded || !pipelineInstance) {
+      throw new Error('Model not loaded');
+    }
+
+    const float32 = this.pcm16ToFloat32(pcmBuffer);
+
+    // Parakeet supports chunked inference via chunk_length_s.
+    // Process in 5-second chunks for low-latency partial results.
+    const CHUNK_SECONDS = 5;
+    const SAMPLES_PER_CHUNK = 16000 * CHUNK_SECONDS;
+    const totalSamples = float32.length;
+
+    if (totalSamples <= SAMPLES_PER_CHUNK) {
+      // Short audio — single pass, no chunking needed
+      const result = await pipelineInstance(float32, { sampling_rate: 16000 });
+      const text = result?.text ?? '';
+      callbacks.onPartial?.(text);
+      callbacks.onFinal?.(text);
+      return text;
+    }
+
+    // Chunked streaming: process incrementally and emit partials
+    let accumulated = '';
+    const numChunks = Math.ceil(totalSamples / SAMPLES_PER_CHUNK);
+
+    for (let i = 0; i < numChunks; i++) {
+      const start = 0; // Always transcribe from the beginning for context
+      const end = Math.min((i + 1) * SAMPLES_PER_CHUNK, totalSamples);
+      const chunk = float32.slice(start, end);
+
+      const result = await pipelineInstance(chunk, {
+        sampling_rate: 16000,
+      });
+
+      accumulated = result?.text ?? '';
+
+      if (i < numChunks - 1) {
+        callbacks.onPartial?.(accumulated);
+      }
+    }
+
+    callbacks.onFinal?.(accumulated);
+    return accumulated;
   }
 
   private pcm16ToFloat32(pcm: Buffer): Float32Array {

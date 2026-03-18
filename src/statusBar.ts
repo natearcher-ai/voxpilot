@@ -41,6 +41,13 @@ export class StatusBarManager implements vscode.Disposable {
     this.item.backgroundColor = undefined;
   }
 
+  setStreamingPartial(text: string) {
+    const truncated = text.length > 40 ? '…' + text.slice(-40) : text;
+    this.item.text = `$(pulse) ${truncated}`;
+    this.item.tooltip = `Streaming: ${text}`;
+    this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+  }
+
   setSent(text: string) {
     this.clearSentTimeout();
     const truncated = text.length > 30 ? text.slice(0, 30) + '…' : text;
