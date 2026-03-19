@@ -9,6 +9,7 @@ import { TranscriptHistory } from './transcriptHistory';
 import { SoundFeedback } from './soundFeedback';
 import { processVoiceCommands } from './voiceCommands';
 import { NoiseGate } from './noiseGate';
+import { PartialOverlay } from './partialOverlay';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -33,6 +34,7 @@ export class VoxPilotEngine {
   private soundEnabled: boolean;
   private inlineMode: boolean;
   private noiseGate: NoiseGate;
+  private partialOverlay: PartialOverlay;
 
   constructor(private context: vscode.ExtensionContext, statusBar: StatusBarManager) {
     this.statusBar = statusBar;
@@ -51,6 +53,7 @@ export class VoxPilotEngine {
     this.inlineMode = config.get<boolean>('inlineMode', false);
     const noiseGateThreshold = config.get<number>('noiseGateThreshold', 0);
     this.noiseGate = new NoiseGate(noiseGateThreshold);
+    this.partialOverlay = new PartialOverlay();
     this.vad = new VoiceActivityDetector(sensitivity, silenceTimeout);
 
     // Restore saved audio device preference
@@ -314,6 +317,7 @@ export class VoxPilotEngine {
       const callbacks: StreamingCallbacks = {
         onPartial: (text: string) => {
           this.statusBar.setStreamingPartial(text);
+          this.partialOverlay.show(text);
           this.outputChannel.appendLine(`[${new Date().toISOString()}] Streaming partial: "${text}"`);
         },
       };
@@ -327,6 +331,7 @@ export class VoxPilotEngine {
       this.outputChannel.appendLine(`[${new Date().toISOString()}] Segment transcription error: ${err.message}`);
     }
 
+    this.partialOverlay.hide();
     if (this.isListening) {
       this.statusBar.setSpeechDetected();
     }
@@ -349,6 +354,7 @@ export class VoxPilotEngine {
         const callbacks: StreamingCallbacks = {
           onPartial: (text: string) => {
             this.statusBar.setStreamingPartial(text);
+            this.partialOverlay.show(text);
             this.outputChannel.appendLine(`[${new Date().toISOString()}] Streaming partial: "${text}"`);
           },
         };
@@ -366,6 +372,9 @@ export class VoxPilotEngine {
     } else {
       this.statusBar.setProcessing();
     }
+
+    // Hide the partial overlay now that speech is finalized
+    this.partialOverlay.hide();
 
     // Stitch all segments together
     if (finalSegment) {
@@ -500,6 +509,7 @@ export class VoxPilotEngine {
     this.stopListening();
     this.audio.dispose();
     this.sound.dispose();
+    this.partialOverlay.dispose();
     this.disposables.forEach(d => d.dispose());
     this.disposables = [];
     // Fire-and-forget async cleanup

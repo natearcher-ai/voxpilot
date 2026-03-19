@@ -2,6 +2,16 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.5.5] - 2026-03-19
+
+### Added
+- Real-time partial transcript overlay — floating live-caption text appears in the active editor as you speak, like live captions
+- Overlay shows partial transcripts with a 🎙️ icon, styled with the editor's widget theme colors for a non-intrusive look
+- Text auto-truncates to the last 120 characters for long utterances, keeping the display clean
+- Overlay auto-hides when speech is finalized or listening stops
+- New `voxpilot.partialOverlay` setting (default: on) to toggle the overlay — disable if you prefer status bar only
+- Works with all models; streaming models (Parakeet) update in real time, batch models show the result briefly
+
 ## [0.5.4] - 2026-03-18
 
 ### Added
