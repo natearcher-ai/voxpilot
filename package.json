@@ -2,7 +2,7 @@
   "name": "voxpilot",
   "displayName": "VoxPilot — Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
-  "version": "0.5.5",
+  "version": "0.5.6",
   "publisher": "natearcher-ai",
   "license": "MIT",
   "repository": {
@@ -250,6 +250,11 @@
           "type": "boolean",
           "default": true,
           "description": "Show a floating live-caption overlay in the editor while speaking. Displays partial transcripts in real time, like live captions."
+        },
+        "voxpilot.autoCapitalize": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically capitalize the first letter of every transcript."
         }
       }
     }

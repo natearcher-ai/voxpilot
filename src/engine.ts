@@ -389,7 +389,14 @@ export class VoxPilotEngine {
     }
 
     if (stitched.trim()) {
-      const text = stitched.trim();
+      let text = stitched.trim();
+
+      // Auto-capitalize first letter of the transcript
+      const config2 = vscode.workspace.getConfiguration('voxpilot');
+      if (config2.get<boolean>('autoCapitalize', true) && text.length > 0) {
+        text = text[0].toUpperCase() + text.slice(1);
+      }
+
       this.lastTranscript = text;
       this.history.add(this.lastTranscript);
       this.outputChannel.appendLine(`[${new Date().toISOString()}] Transcript: ${this.lastTranscript}`);

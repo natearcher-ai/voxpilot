@@ -2,6 +2,13 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.5.6] - 2026-03-20
+
+### Added
+- Auto-capitalize first word of every transcript — the first letter is automatically uppercased after voice command processing and segment stitching
+- New `voxpilot.autoCapitalize` setting (default: on) to toggle auto-capitalization
+- Works with all output modes (chat, inline, clipboard) and all models
+
 ## [0.5.5] - 2026-03-19
 
 ### Added
