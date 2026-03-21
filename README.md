@@ -1,6 +1,8 @@
 # VoxPilot — Voice to Code
 
+[![CI](https://github.com/natearcher-ai/voxpilot/actions/workflows/ci.yml/badge.svg)](https://github.com/natearcher-ai/voxpilot/actions/workflows/ci.yml)
 [![Open VSX](https://img.shields.io/open-vsx/v/natearcher-ai/voxpilot?label=Open%20VSX&color=purple)](https://open-vsx.org/extension/natearcher-ai/voxpilot)
+[![Downloads](https://img.shields.io/open-vsx/dt/natearcher-ai/voxpilot?color=blue)](https://open-vsx.org/extension/natearcher-ai/voxpilot)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![GitHub](https://img.shields.io/github/stars/natearcher-ai/voxpilot?style=social)](https://github.com/natearcher-ai/voxpilot)
 

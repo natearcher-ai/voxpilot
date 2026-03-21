@@ -48,3 +48,31 @@ export class EventEmitter {
   fire() {}
   dispose() {}
 }
+
+export class TreeItem {
+  label?: string;
+  collapsibleState?: number;
+  description?: string;
+  tooltip?: string;
+  iconPath?: any;
+  contextValue?: string;
+  command?: any;
+  constructor(label?: string, collapsibleState?: number) {
+    this.label = label;
+    this.collapsibleState = collapsibleState;
+  }
+}
+
+export enum TreeItemCollapsibleState {
+  None = 0,
+  Collapsed = 1,
+  Expanded = 2,
+}
+
+export class ThemeIcon {
+  constructor(public id: string, public color?: any) {}
+}
+
+export class ThemeColor {
+  constructor(public id: string) {}
+}
