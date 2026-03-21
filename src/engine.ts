@@ -10,6 +10,7 @@ import { SoundFeedback } from './soundFeedback';
 import { processVoiceCommands } from './voiceCommands';
 import { NoiseGate } from './noiseGate';
 import { PartialOverlay } from './partialOverlay';
+import { applyAutoPunctuation } from './autoPunctuation';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -391,8 +392,17 @@ export class VoxPilotEngine {
     if (stitched.trim()) {
       let text = stitched.trim();
 
-      // Auto-capitalize first letter of the transcript
+      // Auto-punctuation: append period if transcript doesn't end with punctuation
       const config2 = vscode.workspace.getConfiguration('voxpilot');
+      if (config2.get<boolean>('autoPunctuation', true)) {
+        const before = text;
+        text = applyAutoPunctuation(text);
+        if (text !== before) {
+          this.outputChannel.appendLine(`[${new Date().toISOString()}] Auto-punctuation: added period`);
+        }
+      }
+
+      // Auto-capitalize first letter of the transcript
       if (config2.get<boolean>('autoCapitalize', true) && text.length > 0) {
         text = text[0].toUpperCase() + text.slice(1);
       }

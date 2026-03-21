@@ -2,6 +2,16 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.5.7] - 2026-03-21
+
+### Added
+- Smart sentence-end punctuation — automatically adds a period at the end of transcripts when speech ends after a natural pause, using the silence timeout as a sentence boundary signal
+- Detects existing punctuation (`.` `!` `?` `:` `;` `…`) and skips adding a period if already present
+- Handles edge cases: open parens/brackets/commas are left alone, closing parens/brackets get a period after them
+- New `voxpilot.autoPunctuation` setting (default: on) to toggle auto-punctuation
+- Runs after voice commands and segment stitching, before auto-capitalization — works with all models and output modes
+- 17 new unit tests covering all punctuation scenarios
+
 ## [0.5.6] - 2026-03-20
 
 ### Added
