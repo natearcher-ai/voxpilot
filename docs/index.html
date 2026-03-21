@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VoxPilot — Voice to Code</title>
-  <meta name="description" content="Talk to your IDE coding assistant with your voice. On-device speech recognition. No API keys. No cloud.">
+  <meta name="description" content="Talk to your IDE coding assistant with your voice. On-device speech recognition with Moonshine, Whisper, and Parakeet models. No API keys. No cloud.">
   <meta property="og:title" content="VoxPilot — Voice to Code">
-  <meta property="og:description" content="Talk to your IDE coding assistant with your voice. 100% on-device ASR. No API keys. No cloud. MIT licensed.">
+  <meta property="og:description" content="Talk to your IDE coding assistant with your voice. 3 model families, 90+ languages, streaming transcription. 100% on-device. MIT licensed.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://natearcher-ai.github.io/voxpilot/">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="VoxPilot — Voice to Code">
-  <meta name="twitter:description" content="Talk to your IDE coding assistant with your voice. 100% on-device ASR. No cloud.">
+  <meta name="twitter:description" content="Talk to your IDE coding assistant with your voice. 3 model families, streaming transcription. 100% on-device.">
   <meta name="twitter:creator" content="@natearcher_ai">
   <link rel="canonical" href="https://natearcher-ai.github.io/voxpilot/">
   <style>
@@ -44,6 +44,12 @@
     .feature .icon { font-size: 1.5rem; margin-bottom: 8px; }
     .how-it-works { background: #1a1a2e; border-radius: 12px; padding: 32px; border: 1px solid #2a2a4a; text-align: center; font-family: monospace; font-size: 1rem; letter-spacing: 0.5px; }
     .how-it-works .arrow { color: var(--purple); }
+    .models-table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+    .models-table th, .models-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #2a2a4a; }
+    .models-table th { color: var(--purple); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; }
+    .models-table td { color: var(--gray); font-size: 0.95rem; }
+    .models-table tr:hover td { color: var(--white); }
+    .model-family { color: var(--white); font-weight: 600; }
     .stats { display: flex; gap: 40px; justify-content: center; margin: 40px 0; flex-wrap: wrap; }
     .stat { text-align: center; }
     .stat .num { font-size: 2rem; font-weight: 700; color: var(--purple); }
@@ -56,9 +62,11 @@
   <div class="container">
     <header>
       <h1>🎙️ VoxPilot</h1>
-      <p>Talk to your IDE coding assistant. On-device speech recognition. No API keys. No cloud. Just your voice.</p>
+      <p>Talk to your IDE coding assistant. 3 model families, 90+ languages, streaming transcription. 100% on-device.</p>
       <div class="badges">
+        <a href="https://github.com/natearcher-ai/voxpilot/actions/workflows/ci.yml"><img src="https://github.com/natearcher-ai/voxpilot/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
         <a href="https://open-vsx.org/extension/natearcher-ai/voxpilot"><img src="https://img.shields.io/open-vsx/v/natearcher-ai/voxpilot?label=Open%20VSX&color=purple" alt="Open VSX"></a>
+        <a href="https://open-vsx.org/extension/natearcher-ai/voxpilot"><img src="https://img.shields.io/open-vsx/dt/natearcher-ai/voxpilot?color=blue" alt="Downloads"></a>
         <a href="https://github.com/natearcher-ai/voxpilot"><img src="https://img.shields.io/github/stars/natearcher-ai/voxpilot?style=social" alt="GitHub Stars"></a>
         <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License">
       </div>
@@ -71,7 +79,7 @@
     <div class="demo">
       <div class="step"><span class="key">Ctrl+Alt+V</span></div>
       <div class="step"><span class="mic">🎙️</span> "Create a REST API endpoint for user authentication using JWT"</div>
-      <div class="step"><span class="text">📝</span> Transcribed locally in ~200ms</div>
+      <div class="step"><span class="text">📝</span> Transcribed locally — auto-capitalized, auto-punctuated</div>
       <div class="step"><span class="code">💻</span> Sent to Copilot Chat → code generated</div>
     </div>
 
@@ -84,14 +92,29 @@
           <p>Your audio never leaves your machine. No API keys, no cloud calls, no telemetry. Privacy by design.</p>
         </div>
         <div class="feature">
+          <div class="icon">🧠</div>
+          <h3>3 Model Families</h3>
+          <p>Moonshine (fast), Whisper (90+ languages), Parakeet (real-time streaming). Pick the right tool for the job.</p>
+        </div>
+        <div class="feature">
           <div class="icon">🤖</div>
           <h3>Works With Any Assistant</h3>
           <p>GitHub Copilot, Continue, Kiro, Cody — any VS Code chat participant. Just configure and talk.</p>
         </div>
         <div class="feature">
           <div class="icon">⚡</div>
-          <h3>Tiny and Fast</h3>
-          <p>27MB model downloads once, runs forever. No waiting for cloud responses. Transcription in milliseconds.</p>
+          <h3>Real-Time Streaming</h3>
+          <p>See partial transcripts appear as you speak with Parakeet. Like live captions for your voice.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">✨</div>
+          <h3>Smart Text Processing</h3>
+          <p>Auto-capitalize, auto-punctuate, voice commands, noise gate. Your transcripts arrive clean and ready.</p>
+        </div>
+        <div class="feature">
+          <div class="icon">🎯</div>
+          <h3>Flexible Output</h3>
+          <p>Send to chat, insert at cursor, copy to clipboard, or choose each time. You control where text goes.</p>
         </div>
         <div class="feature">
           <div class="icon">♿</div>
@@ -101,29 +124,43 @@
         <div class="feature">
           <div class="icon">🌍</div>
           <h3>Cross-Platform</h3>
-          <p>Linux, macOS, Windows. Uses native audio tools already on your system.</p>
-        </div>
-        <div class="feature">
-          <div class="icon">📖</div>
-          <h3>Open Source</h3>
-          <p>MIT licensed. Fork it, extend it, contribute. The codebase is small and clean.</p>
+          <p>Linux, macOS, Windows. VS Code and Kiro. Uses native audio tools already on your system.</p>
         </div>
       </div>
     </section>
 
     <section>
+      <h2>Models</h2>
+      <p style="color: var(--gray); margin-bottom: 16px;">Browse, download, and switch models from the built-in Model Manager panel.</p>
+      <table class="models-table">
+        <thead>
+          <tr><th>Model</th><th>Size</th><th>Strength</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="model-family">Moonshine Tiny</td><td>~27MB</td><td>Fastest, quick commands</td></tr>
+          <tr><td class="model-family">Moonshine Base</td><td>~65MB</td><td>Fast, better accuracy</td></tr>
+          <tr><td class="model-family">Whisper Tiny</td><td>~75MB</td><td>90+ languages, fast</td></tr>
+          <tr><td class="model-family">Whisper Base</td><td>~150MB</td><td>90+ languages, balanced</td></tr>
+          <tr><td class="model-family">Whisper Small</td><td>~500MB</td><td>90+ languages, high accuracy</td></tr>
+          <tr><td class="model-family">Whisper Large v3 Turbo</td><td>~3GB</td><td>90+ languages, best accuracy</td></tr>
+          <tr><td class="model-family">Parakeet TDT 0.6B</td><td>~150MB</td><td>Real-time streaming, live captions</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
       <h2>How It Works</h2>
       <div class="how-it-works">
-        Microphone <span class="arrow">→</span> PCM Audio <span class="arrow">→</span> Voice Activity Detection <span class="arrow">→</span> Moonshine ASR <span class="arrow">→</span> Text <span class="arrow">→</span> VS Code Chat
+        Microphone <span class="arrow">→</span> Noise Gate <span class="arrow">→</span> Adaptive VAD <span class="arrow">→</span> ASR Model <span class="arrow">→</span> Post-Processing <span class="arrow">→</span> Delivery
       </div>
     </section>
 
     <section>
       <div class="stats">
         <div class="stat"><div class="num" id="download-count">—</div><div class="label">Downloads</div></div>
-        <div class="stat"><div class="num">27MB</div><div class="label">Tiny model size</div></div>
+        <div class="stat"><div class="num">7</div><div class="label">ASR models</div></div>
+        <div class="stat"><div class="num">90+</div><div class="label">Languages</div></div>
         <div class="stat"><div class="num">0</div><div class="label">Cloud dependencies</div></div>
-        <div class="stat"><div class="num">3</div><div class="label">Platforms supported</div></div>
         <div class="stat"><div class="num">MIT</div><div class="label">Licensed</div></div>
       </div>
     </section>
@@ -138,7 +175,7 @@
     </section>
 
     <footer>
-      <p>Built by <a href="https://github.com/natearcher-ai">natearcher-ai</a> · Powered by <a href="https://github.com/moonshine-ai/moonshine">Moonshine ASR</a></p>
+      <p>Built by <a href="https://github.com/natearcher-ai">natearcher-ai</a> · Powered by <a href="https://github.com/moonshine-ai/moonshine">Moonshine</a>, <a href="https://github.com/openai/whisper">Whisper</a>, <a href="https://github.com/NVIDIA/NeMo">Parakeet</a></p>
       <p style="margin-top: 8px;">Star the repo if VoxPilot helps you code faster ⭐</p>
     </footer>
   </div>
