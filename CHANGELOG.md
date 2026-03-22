@@ -2,6 +2,15 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.5.8] - 2026-03-22
+
+### Added
+- Smart spacing between multi-segment transcripts — eliminates double spaces and missing gaps when long dictation is split into multiple segments
+- New `stitchSegments()` utility replaces naive `.join(' ')` with intelligent spacing: trims segments, collapses internal whitespace runs, and attaches punctuation (`.` `,` `!` `?` `;` `:` `…` `)` `]` `}`) without a leading space
+- `normalizeSpaces()` helper collapses any run of whitespace (spaces, tabs, etc.) into a single space within each segment before joining
+- Handles edge cases: empty segments, whitespace-only segments, segments with leading/trailing spaces
+- 20 new unit tests covering all spacing and stitching scenarios
+
 ## [0.5.7] - 2026-03-21
 
 ### Added

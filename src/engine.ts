@@ -11,6 +11,7 @@ import { processVoiceCommands } from './voiceCommands';
 import { NoiseGate } from './noiseGate';
 import { PartialOverlay } from './partialOverlay';
 import { applyAutoPunctuation } from './autoPunctuation';
+import { stitchSegments } from './smartSpacing';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -381,7 +382,7 @@ export class VoxPilotEngine {
     if (finalSegment) {
       this.segmentTranscripts.push(finalSegment);
     }
-    const stitched = this.segmentTranscripts.join(' ');
+    const stitched = stitchSegments(this.segmentTranscripts);
     const segmentCount = this.segmentTranscripts.length;
     this.segmentTranscripts = [];
 
