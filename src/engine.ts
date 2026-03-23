@@ -459,13 +459,14 @@ export class VoxPilotEngine {
   private async sendToChat(text: string): Promise<void> {
     const config = vscode.workspace.getConfiguration('voxpilot');
     const participant = config.get<string>('targetChatParticipant', '');
+    const autoSubmit = config.get<boolean>('autoSubmitChat', true);
     const isKiro = vscode.env.appName.toLowerCase().includes('kiro');
     const query = (!isKiro && participant) ? `@${participant} ${text}` : text;
 
-    this.outputChannel.appendLine(`[${new Date().toISOString()}] sendToChat: "${query.slice(0, 50)}..." isKiro=${isKiro}`);
+    this.outputChannel.appendLine(`[${new Date().toISOString()}] sendToChat: "${query.slice(0, 50)}..." isKiro=${isKiro} autoSubmit=${autoSubmit}`);
 
     if (isKiro) {
-      // Kiro-specific: focus chat panel, paste transcript, submit
+      // Kiro-specific: focus chat panel, paste transcript, optionally submit
       try {
         await vscode.commands.executeCommand('kiroAgent.acpChatView.focus');
         await new Promise(r => setTimeout(r, 400));
@@ -474,9 +475,11 @@ export class VoxPilotEngine {
         await vscode.env.clipboard.writeText(query);
         await vscode.commands.executeCommand('editor.action.clipboardPasteAction');
         await new Promise(r => setTimeout(r, 150));
-        await vscode.commands.executeCommand('workbench.action.chat.submit');
+        if (autoSubmit) {
+          await vscode.commands.executeCommand('workbench.action.chat.submit');
+        }
         await vscode.env.clipboard.writeText(original);
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Sent to Kiro chat`);
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] ${autoSubmit ? 'Sent to' : 'Typed into'} Kiro chat`);
         return;
       } catch (e: any) {
         this.outputChannel.appendLine(`[${new Date().toISOString()}] Kiro chat delivery failed: ${e.message}`);
@@ -486,9 +489,9 @@ export class VoxPilotEngine {
       try {
         await vscode.commands.executeCommand('workbench.action.chat.open', {
           query,
-          isPartialQuery: false,
+          isPartialQuery: !autoSubmit,
         });
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Sent via chat.open query arg`);
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] ${autoSubmit ? 'Sent' : 'Typed'} via chat.open query arg`);
         return;
       } catch (e: any) {
         this.outputChannel.appendLine(`[${new Date().toISOString()}] chat.open query failed: ${e.message}`);

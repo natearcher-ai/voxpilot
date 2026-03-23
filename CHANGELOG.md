@@ -2,6 +2,14 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.5.9] - 2026-03-23
+
+### Added
+- Auto-submit in chat panels — transcripts sent to chat are now automatically submitted (Enter pressed) by default, so your voice goes straight to the AI without an extra step
+- New `voxpilot.autoSubmitChat` setting (default: on) — disable to type the transcript into the chat input without submitting, giving you a chance to review or edit before sending
+- Works with both VS Code native chat (`isPartialQuery` flag) and Kiro chat (skips `chat.submit` command when disabled)
+- Applies to all chat delivery paths: output action set to `chat`, `autoSendToChat`, transcript history re-send, and `Send Last Transcript to Chat` command
+
 ## [0.5.8] - 2026-03-22
 
 ### Added
