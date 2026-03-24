@@ -2,6 +2,16 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.6.0] - 2026-03-24
+
+### Added
+- Auto-submit target rules — per-target configuration for whether VoxPilot auto-presses Enter after delivering a transcript
+- New `voxpilot.autoSubmitRules` setting: an object with `chat` (default: on), `cursor` (default: off), and `clipboard` (default: off) keys
+- Chat targets auto-submit by default (same as before), editor/cursor inserts just insert text without pressing Enter, clipboard just copies
+- When `cursor` auto-submit is enabled, a newline is inserted after the transcript at the cursor position
+- Backward compatible: the legacy `autoSubmitChat` setting is still respected as a fallback for the `chat` target if `autoSubmitRules` is not explicitly configured
+- `autoSubmitChat` is now marked as deprecated in favor of `autoSubmitRules`
+
 ## [0.5.9] - 2026-03-23
 
 ### Added

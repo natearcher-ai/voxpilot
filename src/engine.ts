@@ -12,6 +12,7 @@ import { NoiseGate } from './noiseGate';
 import { PartialOverlay } from './partialOverlay';
 import { applyAutoPunctuation } from './autoPunctuation';
 import { stitchSegments } from './smartSpacing';
+import { shouldAutoSubmit } from './autoSubmitRules';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -417,8 +418,11 @@ export class VoxPilotEngine {
 
       if (this.inlineMode || outputAction === 'cursor') {
         this.insertAtCursor(this.lastTranscript);
+        if (shouldAutoSubmit('cursor')) {
+          this.insertAtCursor('\n');
+        }
         this.statusBar.setSent(this.lastTranscript);
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Inserted at cursor`);
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Inserted at cursor (autoSubmit=${shouldAutoSubmit('cursor')})`);
       } else if (outputAction === 'chat' || config.get<boolean>('autoSendToChat', false)) {
         await this.sendToChat(this.lastTranscript);
         this.statusBar.setSent(this.lastTranscript);
@@ -459,7 +463,7 @@ export class VoxPilotEngine {
   private async sendToChat(text: string): Promise<void> {
     const config = vscode.workspace.getConfiguration('voxpilot');
     const participant = config.get<string>('targetChatParticipant', '');
-    const autoSubmit = config.get<boolean>('autoSubmitChat', true);
+    const autoSubmit = shouldAutoSubmit('chat');
     const isKiro = vscode.env.appName.toLowerCase().includes('kiro');
     const query = (!isKiro && participant) ? `@${participant} ${text}` : text;
 
