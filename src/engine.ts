@@ -7,12 +7,10 @@ import { ModelManager } from './modelManager';
 import { StatusBarManager } from './statusBar';
 import { TranscriptHistory } from './transcriptHistory';
 import { SoundFeedback } from './soundFeedback';
-import { processVoiceCommands } from './voiceCommands';
 import { NoiseGate } from './noiseGate';
 import { PartialOverlay } from './partialOverlay';
-import { applyAutoPunctuation } from './autoPunctuation';
-import { stitchSegments } from './smartSpacing';
 import { shouldAutoSubmit } from './autoSubmitRules';
+import { PostProcessingPipeline } from './postProcessingPipeline';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -38,6 +36,7 @@ export class VoxPilotEngine {
   private inlineMode: boolean;
   private noiseGate: NoiseGate;
   private partialOverlay: PartialOverlay;
+  private pipeline: PostProcessingPipeline;
 
   constructor(private context: vscode.ExtensionContext, statusBar: StatusBarManager) {
     this.statusBar = statusBar;
@@ -57,6 +56,7 @@ export class VoxPilotEngine {
     const noiseGateThreshold = config.get<number>('noiseGateThreshold', 0);
     this.noiseGate = new NoiseGate(noiseGateThreshold);
     this.partialOverlay = new PartialOverlay();
+    this.pipeline = new PostProcessingPipeline();
     this.vad = new VoiceActivityDetector(sensitivity, silenceTimeout);
 
     // Restore saved audio device preference
@@ -84,6 +84,7 @@ export class VoxPilotEngine {
         const noiseGateVal = cfg.get<number>('noiseGateThreshold', 0);
         this.noiseGate.setThreshold(noiseGateVal);
         this.vad = new VoiceActivityDetector(sens, silence);
+        this.pipeline.reloadConfig();
       }
     });
     this.disposables.push(configWatcher);
@@ -325,10 +326,9 @@ export class VoxPilotEngine {
         },
       };
       const rawText = await this.transcriber!.transcribeStreaming(audioData, callbacks);
-      const { text: processed } = processVoiceCommands(rawText);
-      if (processed.trim()) {
-        this.segmentTranscripts.push(processed.trim());
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Segment ${this.segmentTranscripts.length} stored: "${processed.trim()}"`);
+      if (rawText.trim()) {
+        this.segmentTranscripts.push(rawText.trim());
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Segment ${this.segmentTranscripts.length} stored: "${rawText.trim()}"`);
       }
     } catch (err: any) {
       this.outputChannel.appendLine(`[${new Date().toISOString()}] Segment transcription error: ${err.message}`);
@@ -363,11 +363,7 @@ export class VoxPilotEngine {
         };
         const rawText = await this.transcriber!.transcribeStreaming(audioData, callbacks);
         this.outputChannel.appendLine(`[${new Date().toISOString()}] Raw transcript: "${rawText}"`);
-        const { text: processed, commandsApplied } = processVoiceCommands(rawText);
-        if (commandsApplied > 0) {
-          this.outputChannel.appendLine(`[${new Date().toISOString()}] Voice commands applied: ${commandsApplied}, result: "${processed}"`);
-        }
-        finalSegment = processed.trim();
+        finalSegment = rawText.trim();
       } catch (err: any) {
         this.outputChannel.appendLine(`[${new Date().toISOString()}] Transcription error: ${err.message}`);
         vscode.window.showErrorMessage(`VoxPilot transcription error: ${err.message}`);
@@ -383,32 +379,27 @@ export class VoxPilotEngine {
     if (finalSegment) {
       this.segmentTranscripts.push(finalSegment);
     }
-    const stitched = stitchSegments(this.segmentTranscripts);
     const segmentCount = this.segmentTranscripts.length;
-    this.segmentTranscripts = [];
 
     if (segmentCount > 1) {
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Stitched ${segmentCount} segments: "${stitched}"`);
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Processing ${segmentCount} segments through pipeline`);
     }
 
-    if (stitched.trim()) {
-      let text = stitched.trim();
+    // Run the post-processing pipeline
+    const { text, context: pipelineCtx } = this.pipeline.run(this.segmentTranscripts);
+    this.segmentTranscripts = [];
 
-      // Auto-punctuation: append period if transcript doesn't end with punctuation
-      const config2 = vscode.workspace.getConfiguration('voxpilot');
-      if (config2.get<boolean>('autoPunctuation', true)) {
-        const before = text;
-        text = applyAutoPunctuation(text);
-        if (text !== before) {
-          this.outputChannel.appendLine(`[${new Date().toISOString()}] Auto-punctuation: added period`);
-        }
-      }
+    if (pipelineCtx.voiceCommandsApplied > 0) {
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Voice commands applied: ${pipelineCtx.voiceCommandsApplied}`);
+    }
+    if (pipelineCtx.punctuationAdded) {
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Auto-punctuation: added period`);
+    }
+    if (pipelineCtx.capitalized) {
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Auto-capitalize: capitalized first letter`);
+    }
 
-      // Auto-capitalize first letter of the transcript
-      if (config2.get<boolean>('autoCapitalize', true) && text.length > 0) {
-        text = text[0].toUpperCase() + text.slice(1);
-      }
-
+    if (text) {
       this.lastTranscript = text;
       this.history.add(this.lastTranscript);
       this.outputChannel.appendLine(`[${new Date().toISOString()}] Transcript: ${this.lastTranscript}`);

@@ -2,6 +2,19 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.6.1] - 2026-03-25
+
+### Added
+- Transcript post-processing framework — pluggable pipeline architecture for text transforms
+- New `PostProcessingPipeline` class runs an ordered chain of `PostProcessor` steps on every transcript
+- Four built-in processors: `voiceCommands` (spoken command expansion), `stitchSegments` (multi-segment smart spacing), `autoPunctuation` (auto-period), `autoCapitalize` (first-letter uppercase)
+- New `voxpilot.postProcessors` setting with `order` (array of processor IDs) and `disabled` (array of IDs to skip) — reorder or disable any step without touching code
+- Custom processors can be registered via the `pipeline.register()` API for extension-to-extension integration
+- Pipeline context tracks metadata (`voiceCommandsApplied`, `punctuationAdded`, `capitalized`) for downstream logging
+- Backward compatible: existing `autoPunctuation` and `autoCapitalize` boolean settings are respected as legacy toggles — disabling them also disables the corresponding pipeline processor
+- `getProcessorInfo()` API returns the full ordered processor list with enabled/disabled status for future settings UI
+- 24 new unit tests covering pipeline ordering, disabling, custom registration, fallback behavior, and all individual processors
+
 ## [0.6.0] - 2026-03-24
 
 ### Added

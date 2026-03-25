@@ -1,11 +1,28 @@
 // Minimal vscode mock for unit tests
+
+const _configValues: Record<string, any> = {};
+
 export const workspace = {
   getConfiguration: () => ({
-    get: (key: string, defaultVal?: any) => defaultVal,
+    get: (key: string, defaultVal?: any) => {
+      return key in _configValues ? _configValues[key] : defaultVal;
+    },
     update: async () => {},
   }),
   onDidChangeConfiguration: () => ({ dispose: () => {} }),
 };
+
+/** Set a config value for testing */
+export function __setConfig(key: string, value: any): void {
+  _configValues[key] = value;
+}
+
+/** Clear all config overrides */
+export function __clearConfig(): void {
+  for (const k of Object.keys(_configValues)) {
+    delete _configValues[k];
+  }
+}
 
 export const window = {
   createOutputChannel: () => ({
