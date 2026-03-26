@@ -2,6 +2,17 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.6.2] - 2026-03-26
+
+### Added
+- Three new built-in post-processors: `trim`, `normalizeWhitespace`, and `fixTypos`
+- `trim` — removes leading and trailing whitespace from transcripts
+- `normalizeWhitespace` — collapses multiple spaces, tabs, and newlines into single spaces
+- `fixTypos` — fixes common transcription errors: capitalizes standalone "i", removes repeated words ("the the" → "the"), and restores missing apostrophes in 20+ contractions (dont → don't, im → I'm, cant → can't, ive → I've, thats → that's, etc.)
+- New processors run in the default pipeline order: stitch → trim → normalize → voice commands → fix typos → auto-punctuation → auto-capitalize
+- All three processors can be disabled or reordered via `voxpilot.postProcessors` settings, same as existing processors
+- 14 new unit tests covering trim, normalize whitespace, and typo correction scenarios (122 total)
+
 ## [0.6.1] - 2026-03-25
 
 ### Added

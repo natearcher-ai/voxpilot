@@ -5,6 +5,9 @@ import {
   PostProcessingPipeline,
   PostProcessor,
   ProcessorContext,
+  TrimProcessor,
+  NormalizeWhitespaceProcessor,
+  FixTyposProcessor,
   VoiceCommandsProcessor,
   StitchSegmentsProcessor,
   AutoPunctuationProcessor,
@@ -118,10 +121,13 @@ describe('PostProcessingPipeline', () => {
   it('getProcessorInfo returns all processors with status', () => {
     const pipeline = new PostProcessingPipeline();
     const info = pipeline.getProcessorInfo();
-    expect(info.length).toBe(4);
+    expect(info.length).toBe(7);
     expect(info.map(i => i.id)).toEqual([
       'stitchSegments',
+      'trim',
+      'normalizeWhitespace',
       'voiceCommands',
+      'fixTypos',
       'autoPunctuation',
       'autoCapitalize',
     ]);
@@ -228,5 +234,89 @@ describe('Individual processors', () => {
     const result = p.process('Hello', ctx);
     expect(result).toBe('Hello');
     expect(ctx.capitalized).toBe(false);
+  });
+
+  it('TrimProcessor removes leading and trailing whitespace', () => {
+    const p = new TrimProcessor();
+    const ctx = makeContext();
+    expect(p.process('  hello world  ', ctx)).toBe('hello world');
+  });
+
+  it('TrimProcessor handles already-trimmed text', () => {
+    const p = new TrimProcessor();
+    const ctx = makeContext();
+    expect(p.process('hello', ctx)).toBe('hello');
+  });
+
+  it('TrimProcessor handles empty string', () => {
+    const p = new TrimProcessor();
+    const ctx = makeContext();
+    expect(p.process('', ctx)).toBe('');
+  });
+
+  it('NormalizeWhitespaceProcessor collapses multiple spaces', () => {
+    const p = new NormalizeWhitespaceProcessor();
+    const ctx = makeContext();
+    expect(p.process('hello   world', ctx)).toBe('hello world');
+  });
+
+  it('NormalizeWhitespaceProcessor collapses tabs and newlines', () => {
+    const p = new NormalizeWhitespaceProcessor();
+    const ctx = makeContext();
+    expect(p.process('hello\t\tworld\n\nfoo', ctx)).toBe('hello world foo');
+  });
+
+  it('NormalizeWhitespaceProcessor handles single spaces (no-op)', () => {
+    const p = new NormalizeWhitespaceProcessor();
+    const ctx = makeContext();
+    expect(p.process('hello world', ctx)).toBe('hello world');
+  });
+
+  it('FixTyposProcessor capitalizes standalone i', () => {
+    const p = new FixTyposProcessor();
+    const ctx = makeContext();
+    expect(p.process('i think i can', ctx)).toBe('I think I can');
+  });
+
+  it('FixTyposProcessor does not capitalize i inside words', () => {
+    const p = new FixTyposProcessor();
+    const ctx = makeContext();
+    expect(p.process('this is interesting', ctx)).toBe('this is interesting');
+  });
+
+  it('FixTyposProcessor removes repeated words', () => {
+    const p = new FixTyposProcessor();
+    const ctx = makeContext();
+    expect(p.process('the the cat sat', ctx)).toBe('the cat sat');
+  });
+
+  it('FixTyposProcessor fixes missing apostrophes in contractions', () => {
+    const p = new FixTyposProcessor();
+    const ctx = makeContext();
+    expect(p.process('i dont think i cant do it', ctx)).toBe("I don't think I can't do it");
+  });
+
+  it('FixTyposProcessor fixes im to I\'m', () => {
+    const p = new FixTyposProcessor();
+    const ctx = makeContext();
+    expect(p.process('im going home', ctx)).toBe("I'm going home");
+  });
+
+  it('FixTyposProcessor fixes ive, Id, Ill', () => {
+    const p = new FixTyposProcessor();
+    const ctx = makeContext();
+    expect(p.process('ive seen it', ctx)).toBe("I've seen it");
+  });
+
+  it('FixTyposProcessor fixes thats, whats, heres, theres, lets', () => {
+    const p = new FixTyposProcessor();
+    const ctx = makeContext();
+    expect(p.process('thats whats up', ctx)).toBe("that's what's up");
+  });
+
+  it('FixTyposProcessor handles text with no typos', () => {
+    const p = new FixTyposProcessor();
+    const ctx = makeContext();
+    expect(p.process("I don't know", ctx)).toBe("I don't know");
   });
 });

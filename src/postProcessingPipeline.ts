@@ -42,6 +42,75 @@ export interface PostProcessor {
 
 // ── Built-in processors ──────────────────────────────────────────────
 
+export class TrimProcessor implements PostProcessor {
+  readonly id = 'trim';
+  readonly name = 'Trim';
+  readonly description = 'Remove leading and trailing whitespace from the transcript';
+
+  process(text: string, _context: ProcessorContext): string {
+    return text.trim();
+  }
+}
+
+export class NormalizeWhitespaceProcessor implements PostProcessor {
+  readonly id = 'normalizeWhitespace';
+  readonly name = 'Normalize Whitespace';
+  readonly description = 'Collapse multiple spaces, tabs, and newlines into single spaces';
+
+  process(text: string, _context: ProcessorContext): string {
+    return text.replace(/\s{2,}/g, ' ');
+  }
+}
+
+/**
+ * Common transcription typo corrections.
+ * Each entry: [pattern, replacement].
+ */
+const TYPO_FIXES: Array<[RegExp, string]> = [
+  // Standalone lowercase "i" → "I"
+  [/\bi\b/g, 'I'],
+  // Repeated words: "the the" → "the", "I I" → "I", etc.
+  [/\b(\w+)\s+\1\b/gi, '$1'],
+  // Common contractions ASR often misses
+  [/\bim\b/gi, "I'm"],
+  [/\bdont\b/gi, "don't"],
+  [/\bcant\b/gi, "can't"],
+  [/\bwont\b/gi, "won't"],
+  [/\bdidnt\b/gi, "didn't"],
+  [/\bdoesnt\b/gi, "doesn't"],
+  [/\bisnt\b/gi, "isn't"],
+  [/\barent\b/gi, "aren't"],
+  [/\bwasnt\b/gi, "wasn't"],
+  [/\bwerent\b/gi, "weren't"],
+  [/\bhavent\b/gi, "haven't"],
+  [/\bhasnt\b/gi, "hasn't"],
+  [/\bwouldnt\b/gi, "wouldn't"],
+  [/\bcouldnt\b/gi, "couldn't"],
+  [/\bshouldnt\b/gi, "shouldn't"],
+  [/\bive\b/gi, "I've"],
+  [/\bId\b/g, "I'd"],
+  [/\bIll\b/g, "I'll"],
+  [/\bthats\b/gi, "that's"],
+  [/\bwhats\b/gi, "what's"],
+  [/\bheres\b/gi, "here's"],
+  [/\btheres\b/gi, "there's"],
+  [/\blets\b/gi, "let's"],
+];
+
+export class FixTyposProcessor implements PostProcessor {
+  readonly id = 'fixTypos';
+  readonly name = 'Fix Typos';
+  readonly description = 'Fix common transcription errors: repeated words, missing apostrophes, lowercase I';
+
+  process(text: string, _context: ProcessorContext): string {
+    let result = text;
+    for (const [pattern, replacement] of TYPO_FIXES) {
+      result = result.replace(pattern, replacement);
+    }
+    return result;
+  }
+}
+
 export class VoiceCommandsProcessor implements PostProcessor {
   readonly id = 'voiceCommands';
   readonly name = 'Voice Commands';
@@ -105,15 +174,21 @@ export class AutoCapitalizeProcessor implements PostProcessor {
 /** Default processor order */
 const DEFAULT_ORDER: string[] = [
   'stitchSegments',
+  'trim',
+  'normalizeWhitespace',
   'voiceCommands',
+  'fixTypos',
   'autoPunctuation',
   'autoCapitalize',
 ];
 
 /** Registry of all built-in processors */
 const BUILTIN_PROCESSORS: PostProcessor[] = [
-  new VoiceCommandsProcessor(),
   new StitchSegmentsProcessor(),
+  new TrimProcessor(),
+  new NormalizeWhitespaceProcessor(),
+  new VoiceCommandsProcessor(),
+  new FixTyposProcessor(),
   new AutoPunctuationProcessor(),
   new AutoCapitalizeProcessor(),
 ];
