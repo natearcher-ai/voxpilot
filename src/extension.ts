@@ -5,6 +5,7 @@ import { VoxPilotEngine } from './engine';
 import { StatusBarManager } from './statusBar';
 import { ModelManager } from './modelManager';
 import { ModelManagerPanel } from './modelManagerPanel';
+import { showPipelineSettings } from './pipelineSettingsUI';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
@@ -46,6 +47,7 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('voxpilot.transcriptHistory', () => engine?.showTranscriptHistory()),
     vscode.commands.registerCommand('voxpilot.sendToChat', () => engine?.sendLastToChat()),
     vscode.commands.registerCommand('voxpilot.clearCache', () => clearCache(context)),
+    vscode.commands.registerCommand('voxpilot.pipelineSettings', () => engine ? showPipelineSettings(engine.pipeline) : undefined),
     vscode.commands.registerCommand('voxpilot.modelManager.download', (item) => modelPanel.downloadModel(item)),
     vscode.commands.registerCommand('voxpilot.modelManager.switch', (item) => modelPanel.switchModel(item)),
     vscode.commands.registerCommand('voxpilot.modelManager.delete', (item) => modelPanel.deleteModel(item)),

@@ -36,7 +36,10 @@ export class VoxPilotEngine {
   private inlineMode: boolean;
   private noiseGate: NoiseGate;
   private partialOverlay: PartialOverlay;
-  private pipeline: PostProcessingPipeline;
+  private _pipeline: PostProcessingPipeline;
+
+  /** Expose pipeline for settings UI */
+  get pipeline(): PostProcessingPipeline { return this._pipeline; }
 
   constructor(private context: vscode.ExtensionContext, statusBar: StatusBarManager) {
     this.statusBar = statusBar;
@@ -56,7 +59,7 @@ export class VoxPilotEngine {
     const noiseGateThreshold = config.get<number>('noiseGateThreshold', 0);
     this.noiseGate = new NoiseGate(noiseGateThreshold);
     this.partialOverlay = new PartialOverlay();
-    this.pipeline = new PostProcessingPipeline();
+    this._pipeline = new PostProcessingPipeline();
     this.vad = new VoiceActivityDetector(sensitivity, silenceTimeout);
 
     // Restore saved audio device preference
@@ -84,7 +87,7 @@ export class VoxPilotEngine {
         const noiseGateVal = cfg.get<number>('noiseGateThreshold', 0);
         this.noiseGate.setThreshold(noiseGateVal);
         this.vad = new VoiceActivityDetector(sens, silence);
-        this.pipeline.reloadConfig();
+        this._pipeline.reloadConfig();
       }
     });
     this.disposables.push(configWatcher);
@@ -386,7 +389,7 @@ export class VoxPilotEngine {
     }
 
     // Run the post-processing pipeline
-    const { text, context: pipelineCtx } = this.pipeline.run(this.segmentTranscripts);
+    const { text, context: pipelineCtx } = this._pipeline.run(this.segmentTranscripts);
     this.segmentTranscripts = [];
 
     if (pipelineCtx.voiceCommandsApplied > 0) {

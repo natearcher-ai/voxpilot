@@ -2,6 +2,15 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.6.3] - 2026-03-27
+
+### Added
+- New `VoxPilot: Post-Processing Pipeline Settings` command — interactive QuickPick UI to reorder and toggle post-processors without editing JSON
+- Select any processor to move it up/down in the pipeline order or enable/disable it
+- Changes persist to `voxpilot.postProcessors` settings immediately
+- Pipeline list shows current order with numbered positions, enabled/disabled status, and descriptions
+- Updated `voxpilot.postProcessors` setting description to reference all 7 built-in processors and the new command
+
 ## [0.6.2] - 2026-03-26
 
 ### Added

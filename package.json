@@ -2,7 +2,7 @@
   "name": "voxpilot",
   "displayName": "VoxPilot — Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "publisher": "natearcher-ai",
   "license": "MIT",
   "repository": {
@@ -130,6 +130,10 @@
         "command": "voxpilot.modelManager.refresh",
         "title": "Refresh",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "voxpilot.pipelineSettings",
+        "title": "VoxPilot: Post-Processing Pipeline Settings"
       }
     ],
     "keybindings": [
@@ -300,17 +304,21 @@
           "properties": {
             "order": {
               "type": "array",
-              "items": { "type": "string" },
+              "items": {
+                "type": "string"
+              },
               "description": "Ordered list of post-processor IDs. Default: [voiceCommands, stitchSegments, autoPunctuation, autoCapitalize]."
             },
             "disabled": {
               "type": "array",
-              "items": { "type": "string" },
+              "items": {
+                "type": "string"
+              },
               "description": "List of post-processor IDs to disable."
             }
           },
           "additionalProperties": false,
-          "description": "Transcript post-processing pipeline configuration. Control the order and enable/disable individual text transform processors. Built-in processors: voiceCommands, stitchSegments, autoPunctuation, autoCapitalize."
+          "description": "Transcript post-processing pipeline configuration. Use the command \"VoxPilot: Post-Processing Pipeline Settings\" to reorder and toggle processors interactively, or edit directly. Built-in processors: stitchSegments, trim, normalizeWhitespace, voiceCommands, fixTypos, autoPunctuation, autoCapitalize."
         }
       }
     }
