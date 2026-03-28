@@ -8,6 +8,9 @@ export class VoiceActivityDetector {
   private silenceFrames = 0;
   private isSpeaking = false;
 
+  /** Whether the detector currently considers speech active. */
+  get speaking(): boolean { return this.isSpeaking; }
+
   // Adaptive noise floor
   private noiseFloor = 0;
   private calibrationFrames = 0;

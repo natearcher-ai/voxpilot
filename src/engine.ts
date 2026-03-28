@@ -37,6 +37,7 @@ export class VoxPilotEngine {
   private noiseGate: NoiseGate;
   private partialOverlay: PartialOverlay;
   private _pipeline: PostProcessingPipeline;
+  private voiceLevelEnabled: boolean;
 
   /** Expose pipeline for settings UI */
   get pipeline(): PostProcessingPipeline { return this._pipeline; }
@@ -60,6 +61,7 @@ export class VoxPilotEngine {
     this.noiseGate = new NoiseGate(noiseGateThreshold);
     this.partialOverlay = new PartialOverlay();
     this._pipeline = new PostProcessingPipeline();
+    this.voiceLevelEnabled = config.get<boolean>('voiceLevelIndicator', true);
     this.vad = new VoiceActivityDetector(sensitivity, silenceTimeout);
 
     // Restore saved audio device preference
@@ -87,6 +89,7 @@ export class VoxPilotEngine {
         const noiseGateVal = cfg.get<number>('noiseGateThreshold', 0);
         this.noiseGate.setThreshold(noiseGateVal);
         this.vad = new VoiceActivityDetector(sens, silence);
+        this.voiceLevelEnabled = cfg.get<boolean>('voiceLevelIndicator', true);
         this._pipeline.reloadConfig();
       }
     });
@@ -271,9 +274,23 @@ export class VoxPilotEngine {
       this.outputChannel.appendLine(`[${new Date().toISOString()}] Speech detected`);
     }
 
+    // Update voice level indicator in status bar
+    if (this.voiceLevelEnabled && this.isListening) {
+      const dB = this.rmsToDb(result.rms);
+      if (this.vad.speaking) {
+        this.statusBar.setSpeechDetectedWithLevel(dB);
+      } else if (result.threshold > 0) {
+        this.statusBar.setListeningWithLevel(dB);
+      }
+    }
+
     // Switch from calibrating to listening once VAD has a threshold
     if (result.threshold > 0 && this.audioChunkCount === 31) {
-      this.statusBar.setListening();
+      if (this.voiceLevelEnabled) {
+        this.statusBar.setListeningWithLevel(this.rmsToDb(result.rms));
+      } else {
+        this.statusBar.setListening();
+      }
     }
 
     // Auto-transcribe if buffer exceeds max duration (model can't handle long audio)
@@ -304,6 +321,12 @@ export class VoxPilotEngine {
       sumSq += sample * sample;
     }
     return Math.sqrt(sumSq / samples);
+  }
+
+  /** Convert RMS (0–1 linear) to dBFS. */
+  private rmsToDb(rms: number): number {
+    if (rms <= 0) { return -Infinity; }
+    return 20 * Math.log10(rms);
   }
 
   /**

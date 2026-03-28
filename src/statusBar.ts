@@ -29,9 +29,23 @@ export class StatusBarManager implements vscode.Disposable {
     this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
   }
 
+  setListeningWithLevel(dB: number) {
+    const display = isFinite(dB) ? `${dB.toFixed(0)} dB` : '—∞ dB';
+    this.item.text = `$(mic-filled) ${display}`;
+    this.item.tooltip = `Voice level: ${display} — click to stop`;
+    this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+  }
+
   setSpeechDetected() {
     this.item.text = '$(record) Speaking...';
     this.item.tooltip = 'Speech detected — recording';
+    this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+  }
+
+  setSpeechDetectedWithLevel(dB: number) {
+    const display = isFinite(dB) ? `${dB.toFixed(0)} dB` : '—∞ dB';
+    this.item.text = `$(record) ${display}`;
+    this.item.tooltip = `Recording — voice level: ${display}`;
     this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
   }
 

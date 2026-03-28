@@ -2,6 +2,15 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.6.4] - 2026-03-28
+
+### Added
+- Voice activity level indicator — real-time numeric dB display in the status bar during recording
+- Status bar shows current voice level in dBFS while listening (e.g. `$(mic-filled) -24 dB`) and while speaking (e.g. `$(record) -12 dB`)
+- New `voxpilot.voiceLevelIndicator` setting (default: enabled) to toggle the dB display on/off
+- Falls back to standard "Listening..." / "Speaking..." text when disabled
+- Exposes VAD `speaking` state via public getter for level-aware status updates
+
 ## [0.6.3] - 2026-03-27
 
 ### Added
