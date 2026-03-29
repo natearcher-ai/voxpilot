@@ -1,8 +1,10 @@
 import * as vscode from 'vscode';
+import { WaveformVisualizer } from './waveformVisualizer';
 
 export class StatusBarManager implements vscode.Disposable {
   private item: vscode.StatusBarItem;
   private sentTimeout: ReturnType<typeof setTimeout> | undefined;
+  private waveform = new WaveformVisualizer(8);
 
   constructor() {
     this.item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
@@ -36,6 +38,13 @@ export class StatusBarManager implements vscode.Disposable {
     this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
   }
 
+  setListeningWithWaveform(rms: number) {
+    this.waveform.push(rms);
+    this.item.text = `$(mic-filled) ${this.waveform.render()}`;
+    this.item.tooltip = 'Listening — click to stop';
+    this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+  }
+
   setSpeechDetected() {
     this.item.text = '$(record) Speaking...';
     this.item.tooltip = 'Speech detected — recording';
@@ -47,6 +56,18 @@ export class StatusBarManager implements vscode.Disposable {
     this.item.text = `$(record) ${display}`;
     this.item.tooltip = `Recording — voice level: ${display}`;
     this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+  }
+
+  setSpeechDetectedWithWaveform(rms: number) {
+    this.waveform.push(rms);
+    this.item.text = `$(record) ${this.waveform.render()}`;
+    this.item.tooltip = 'Recording speech — click to stop';
+    this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+  }
+
+  /** Reset the waveform buffer (call when listening starts/stops). */
+  resetWaveform(): void {
+    this.waveform.reset();
   }
 
   setProcessing() {

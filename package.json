@@ -2,7 +2,7 @@
   "name": "voxpilot",
   "displayName": "VoxPilot — Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "publisher": "natearcher-ai",
   "license": "MIT",
   "repository": {
@@ -236,7 +236,12 @@
         "voxpilot.voiceLevelIndicator": {
           "type": "boolean",
           "default": true,
-          "description": "Show a numeric dB level in the status bar while recording. Displays real-time voice activity level in dBFS."
+          "description": "Show a numeric dB level in the status bar while recording. Displays real-time voice activity level in dBFS. Overridden when waveform visualization is enabled."
+        },
+        "voxpilot.waveformVisualization": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show an animated mini waveform (▁▂▃▅▇) in the status bar while recording, replacing the numeric dB display. Disable to fall back to numeric dB or plain text."
         },
         "voxpilot.outputAction": {
           "type": "string",

@@ -2,6 +2,14 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.6.5] - 2026-03-29
+
+### Added
+- Animated waveform visualization — replaces numeric dB display with a rolling mini waveform (▁▂▃▅▇) in the status bar during recording
+- New `voxpilot.waveformVisualization` setting (default: enabled) to toggle the waveform display
+- Waveform shows 8 bars of recent audio levels, updating in real-time as you speak
+- When disabled, falls back to numeric dB display (if `voiceLevelIndicator` is on) or plain text
+
 ## [0.6.4] - 2026-03-28
 
 ### Added

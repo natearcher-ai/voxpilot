@@ -38,6 +38,7 @@ export class VoxPilotEngine {
   private partialOverlay: PartialOverlay;
   private _pipeline: PostProcessingPipeline;
   private voiceLevelEnabled: boolean;
+  private waveformEnabled: boolean;
 
   /** Expose pipeline for settings UI */
   get pipeline(): PostProcessingPipeline { return this._pipeline; }
@@ -62,6 +63,7 @@ export class VoxPilotEngine {
     this.partialOverlay = new PartialOverlay();
     this._pipeline = new PostProcessingPipeline();
     this.voiceLevelEnabled = config.get<boolean>('voiceLevelIndicator', true);
+    this.waveformEnabled = config.get<boolean>('waveformVisualization', true);
     this.vad = new VoiceActivityDetector(sensitivity, silenceTimeout);
 
     // Restore saved audio device preference
@@ -90,6 +92,7 @@ export class VoxPilotEngine {
         this.noiseGate.setThreshold(noiseGateVal);
         this.vad = new VoiceActivityDetector(sens, silence);
         this.voiceLevelEnabled = cfg.get<boolean>('voiceLevelIndicator', true);
+        this.waveformEnabled = cfg.get<boolean>('waveformVisualization', true);
         this._pipeline.reloadConfig();
       }
     });
@@ -222,6 +225,7 @@ export class VoxPilotEngine {
     this.audio.start();
     this.isListening = true;
     this.statusBar.setCalibrating();
+    this.statusBar.resetWaveform();
     if (this.soundEnabled) { this.sound.playStart(); }
     this.outputChannel.appendLine(`[${new Date().toISOString()}] Listening started`);
   }
@@ -275,18 +279,28 @@ export class VoxPilotEngine {
     }
 
     // Update voice level indicator in status bar
-    if (this.voiceLevelEnabled && this.isListening) {
-      const dB = this.rmsToDb(result.rms);
-      if (this.vad.speaking) {
-        this.statusBar.setSpeechDetectedWithLevel(dB);
-      } else if (result.threshold > 0) {
-        this.statusBar.setListeningWithLevel(dB);
+    if (this.isListening) {
+      if (this.waveformEnabled) {
+        if (this.vad.speaking) {
+          this.statusBar.setSpeechDetectedWithWaveform(result.rms);
+        } else if (result.threshold > 0) {
+          this.statusBar.setListeningWithWaveform(result.rms);
+        }
+      } else if (this.voiceLevelEnabled) {
+        const dB = this.rmsToDb(result.rms);
+        if (this.vad.speaking) {
+          this.statusBar.setSpeechDetectedWithLevel(dB);
+        } else if (result.threshold > 0) {
+          this.statusBar.setListeningWithLevel(dB);
+        }
       }
     }
 
     // Switch from calibrating to listening once VAD has a threshold
     if (result.threshold > 0 && this.audioChunkCount === 31) {
-      if (this.voiceLevelEnabled) {
+      if (this.waveformEnabled) {
+        this.statusBar.setListeningWithWaveform(result.rms);
+      } else if (this.voiceLevelEnabled) {
         this.statusBar.setListeningWithLevel(this.rmsToDb(result.rms));
       } else {
         this.statusBar.setListening();
