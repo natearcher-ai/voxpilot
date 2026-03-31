@@ -2,7 +2,7 @@
   "name": "voxpilot",
   "displayName": "VoxPilot — Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
-  "version": "0.6.5",
+  "version": "0.6.7",
   "publisher": "natearcher-ai",
   "license": "MIT",
   "repository": {
@@ -134,6 +134,10 @@
       {
         "command": "voxpilot.pipelineSettings",
         "title": "VoxPilot: Post-Processing Pipeline Settings"
+      },
+      {
+        "command": "voxpilot.selectLanguage",
+        "title": "VoxPilot: Select Transcription Language"
       }
     ],
     "keybindings": [
@@ -242,6 +246,11 @@
           "type": "boolean",
           "default": true,
           "description": "Show an animated mini waveform (▁▂▃▅▇) in the status bar while recording, replacing the numeric dB display. Disable to fall back to numeric dB or plain text."
+        },
+        "voxpilot.language": {
+          "type": "string",
+          "default": "auto",
+          "description": "Transcription language (ISO 639-1 code). 'auto' enables auto-detection on Whisper models. Ignored for English-only models (Moonshine, Parakeet). Use 'VoxPilot: Select Transcription Language' for a picker UI."
         },
         "voxpilot.outputAction": {
           "type": "string",

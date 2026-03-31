@@ -2,6 +2,11 @@ import * as path from 'path';
 
 let pipelineInstance: any;
 
+export interface TranscriptionResult {
+  text: string;
+  language?: string;
+}
+
 export interface StreamingCallbacks {
   onPartial?: (text: string) => void;
   onFinal?: (text: string) => void;
@@ -12,13 +17,26 @@ export interface StreamingCallbacks {
  * Supports Moonshine, Whisper, and Parakeet models.
  * Parakeet TDT enables streaming partial transcripts via chunked inference.
  */
+/** Models that use the Whisper architecture and support multilingual transcription. */
+const WHISPER_MODEL_IDS = [
+  'whisper-tiny', 'whisper-base', 'whisper-small', 'whisper-medium', 'whisper-large-v3-turbo',
+];
+
 export class Transcriber {
   private loaded = false;
   private isStreaming = false;
+  private _isWhisperModel = false;
+  private _lastDetectedLanguage: string | undefined;
 
   constructor(private modelId: string, private runtimeDir: string, private cacheDir: string) {
     this.isStreaming = modelId === 'parakeet-tdt-0.6b';
+    this._isWhisperModel = WHISPER_MODEL_IDS.includes(modelId);
   }
+
+  get isWhisperModel(): boolean { return this._isWhisperModel; }
+
+  /** The language code detected by the last Whisper transcription (auto-detect mode). */
+  get lastDetectedLanguage(): string | undefined { return this._lastDetectedLanguage; }
 
   get streaming(): boolean {
     return this.isStreaming;
@@ -68,8 +86,9 @@ export class Transcriber {
 
   /**
    * Transcribe raw PCM 16-bit LE mono 16kHz audio buffer.
+   * @param language ISO 639-1 language code for Whisper models, or 'auto' for auto-detect. Ignored for non-Whisper models.
    */
-  async transcribe(pcmBuffer: Buffer): Promise<string> {
+  async transcribe(pcmBuffer: Buffer, language?: string): Promise<TranscriptionResult> {
     if (!this.loaded || !pipelineInstance) {
       throw new Error('Model not loaded');
     }
@@ -77,11 +96,37 @@ export class Transcriber {
     // Convert PCM 16-bit LE to Float32Array (normalized -1 to 1)
     const float32 = this.pcm16ToFloat32(pcmBuffer);
 
-    const result = await pipelineInstance(float32, {
-      sampling_rate: 16000,
-    });
+    const opts: Record<string, any> = { sampling_rate: 16000 };
 
-    return result?.text ?? '';
+    // Pass language hint to Whisper models (not Moonshine/Parakeet)
+    if (this._isWhisperModel && language && language !== 'auto') {
+      opts.language = language;
+    }
+
+    // Request language detection output for Whisper in auto mode
+    if (this._isWhisperModel && (!language || language === 'auto')) {
+      opts.return_timestamps = false;
+    }
+
+    const result = await pipelineInstance(float32, opts);
+
+    const text = result?.text ?? '';
+
+    // Extract detected language from Whisper output
+    this._lastDetectedLanguage = undefined;
+    if (this._isWhisperModel) {
+      // Whisper pipeline may return language in chunks or top-level
+      if (result?.chunks?.[0]?.language) {
+        this._lastDetectedLanguage = result.chunks[0].language;
+      } else if (result?.language) {
+        this._lastDetectedLanguage = result.language;
+      } else if (language && language !== 'auto') {
+        // User explicitly set language — echo it back
+        this._lastDetectedLanguage = language;
+      }
+    }
+
+    return { text, language: this._lastDetectedLanguage };
   }
 
   /**
@@ -89,11 +134,11 @@ export class Transcriber {
    * emits partial transcripts as each chunk is decoded.
    * Falls back to standard transcribe() for non-streaming models.
    */
-  async transcribeStreaming(pcmBuffer: Buffer, callbacks: StreamingCallbacks): Promise<string> {
+  async transcribeStreaming(pcmBuffer: Buffer, callbacks: StreamingCallbacks, language?: string): Promise<TranscriptionResult> {
     if (!this.isStreaming) {
-      const text = await this.transcribe(pcmBuffer);
-      callbacks.onFinal?.(text);
-      return text;
+      const result = await this.transcribe(pcmBuffer, language);
+      callbacks.onFinal?.(result.text);
+      return result;
     }
 
     if (!this.loaded || !pipelineInstance) {
@@ -114,7 +159,7 @@ export class Transcriber {
       const text = result?.text ?? '';
       callbacks.onPartial?.(text);
       callbacks.onFinal?.(text);
-      return text;
+      return { text };
     }
 
     // Chunked streaming: process incrementally and emit partials
@@ -138,7 +183,7 @@ export class Transcriber {
     }
 
     callbacks.onFinal?.(accumulated);
-    return accumulated;
+    return { text: accumulated };
   }
 
   private pcm16ToFloat32(pcm: Buffer): Float32Array {

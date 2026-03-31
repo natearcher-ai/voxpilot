@@ -2,6 +2,25 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.6.7] - 2026-03-31
+
+### Added
+- Whisper auto-language detection — when using a Whisper model with language set to `auto`, the detected spoken language is shown in the status bar tooltip after transcription
+- `Transcriber` now returns a `TranscriptionResult` with both `text` and optional `language` fields
+- Detected language displayed as "English (en)" format in the status bar tooltip alongside the transcript
+- `lastDetectedLanguage` getter on `Transcriber` for programmatic access to the last detected language code
+- Works with all Whisper model sizes; ignored for English-only models (Moonshine, Parakeet)
+
+## [0.6.6] - 2026-03-31
+
+### Added
+- Language selector UI — new `VoxPilot: Select Transcription Language` command opens a quick pick menu with all 90+ Whisper-supported languages
+- New `voxpilot.language` setting (default: `auto`) — set a specific language code or leave as `auto` for auto-detection
+- Current language shown with a checkmark in the picker; language code shown in description for easy search
+- English-only models (Moonshine, Parakeet) show an informational message when language selector is invoked
+- Selected language is passed to the Whisper transcription pipeline as a language hint for improved accuracy
+- Language setting updates live without restarting the extension
+
 ## [0.6.5] - 2026-03-29
 
 ### Added

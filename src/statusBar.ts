@@ -5,6 +5,7 @@ export class StatusBarManager implements vscode.Disposable {
   private item: vscode.StatusBarItem;
   private sentTimeout: ReturnType<typeof setTimeout> | undefined;
   private waveform = new WaveformVisualizer(8);
+  private detectedLang: string | undefined;
 
   constructor() {
     this.item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
@@ -86,14 +87,26 @@ export class StatusBarManager implements vscode.Disposable {
   setSent(text: string) {
     this.clearSentTimeout();
     const truncated = text.length > 30 ? text.slice(0, 30) + '…' : text;
+    const langSuffix = this.detectedLang ? ` · ${this.detectedLang}` : '';
     this.item.text = `$(check) ${truncated}`;
-    this.item.tooltip = `Sent: ${text}`;
+    this.item.tooltip = `Sent: ${text}${langSuffix}`;
     this.item.backgroundColor = undefined;
     // Revert to idle or listening after 3 seconds
     this.sentTimeout = setTimeout(() => {
       this.item.text = '$(mic) VoxPilot';
       this.item.tooltip = 'Click to start voice input';
+      this.detectedLang = undefined;
     }, 3000);
+  }
+
+  /** Show detected language briefly after transcription (Whisper auto-detect). */
+  setDetectedLanguage(code: string, name: string) {
+    this.detectedLang = `${name} (${code})`;
+  }
+
+  /** Get the last detected language string, if any. */
+  getDetectedLanguage(): string | undefined {
+    return this.detectedLang;
   }
 
   setError(msg: string) {

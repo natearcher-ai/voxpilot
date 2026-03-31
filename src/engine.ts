@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { AudioCapture, AudioDevice } from './audioCapture';
 import { VoiceActivityDetector } from './vad';
-import { Transcriber, StreamingCallbacks } from './transcriber';
+import { Transcriber, StreamingCallbacks, TranscriptionResult } from './transcriber';
 import { ModelManager } from './modelManager';
 import { StatusBarManager } from './statusBar';
 import { TranscriptHistory } from './transcriptHistory';
@@ -11,6 +11,7 @@ import { NoiseGate } from './noiseGate';
 import { PartialOverlay } from './partialOverlay';
 import { shouldAutoSubmit } from './autoSubmitRules';
 import { PostProcessingPipeline } from './postProcessingPipeline';
+import { isMultilingualModel, getLanguageName, showLanguageSelector } from './languageSelector';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -39,6 +40,7 @@ export class VoxPilotEngine {
   private _pipeline: PostProcessingPipeline;
   private voiceLevelEnabled: boolean;
   private waveformEnabled: boolean;
+  private currentLanguage: string;
 
   /** Expose pipeline for settings UI */
   get pipeline(): PostProcessingPipeline { return this._pipeline; }
@@ -64,6 +66,7 @@ export class VoxPilotEngine {
     this._pipeline = new PostProcessingPipeline();
     this.voiceLevelEnabled = config.get<boolean>('voiceLevelIndicator', true);
     this.waveformEnabled = config.get<boolean>('waveformVisualization', true);
+    this.currentLanguage = config.get<string>('language', 'auto');
     this.vad = new VoiceActivityDetector(sensitivity, silenceTimeout);
 
     // Restore saved audio device preference
@@ -93,6 +96,7 @@ export class VoxPilotEngine {
         this.vad = new VoiceActivityDetector(sens, silence);
         this.voiceLevelEnabled = cfg.get<boolean>('voiceLevelIndicator', true);
         this.waveformEnabled = cfg.get<boolean>('waveformVisualization', true);
+        this.currentLanguage = cfg.get<string>('language', 'auto');
         this._pipeline.reloadConfig();
       }
     });
@@ -167,6 +171,14 @@ export class VoxPilotEngine {
       const label = pick.deviceId ? pick.label : 'System Default';
       this.outputChannel.appendLine(`[${new Date().toISOString()}] Audio device set: ${label} (${pick.deviceId || 'default'})`);
       vscode.window.showInformationMessage(`VoxPilot: Audio input set to ${label}`);
+    }
+  }
+
+  async selectLanguage(): Promise<void> {
+    const code = await showLanguageSelector();
+    if (code) {
+      this.currentLanguage = code;
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Language set: ${code} (${getLanguageName(code)})`);
     }
   }
 
@@ -365,10 +377,11 @@ export class VoxPilotEngine {
           this.outputChannel.appendLine(`[${new Date().toISOString()}] Streaming partial: "${text}"`);
         },
       };
-      const rawText = await this.transcriber!.transcribeStreaming(audioData, callbacks);
-      if (rawText.trim()) {
-        this.segmentTranscripts.push(rawText.trim());
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Segment ${this.segmentTranscripts.length} stored: "${rawText.trim()}"`);
+      const result = await this.transcriber!.transcribeStreaming(audioData, callbacks, this.currentLanguage);
+      if (result.text.trim()) {
+        this.segmentTranscripts.push(result.text.trim());
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Segment ${this.segmentTranscripts.length} stored: "${result.text.trim()}"`);
+        this.handleDetectedLanguage(result.language);
       }
     } catch (err: any) {
       this.outputChannel.appendLine(`[${new Date().toISOString()}] Segment transcription error: ${err.message}`);
@@ -401,9 +414,10 @@ export class VoxPilotEngine {
             this.outputChannel.appendLine(`[${new Date().toISOString()}] Streaming partial: "${text}"`);
           },
         };
-        const rawText = await this.transcriber!.transcribeStreaming(audioData, callbacks);
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Raw transcript: "${rawText}"`);
-        finalSegment = rawText.trim();
+        const result = await this.transcriber!.transcribeStreaming(audioData, callbacks, this.currentLanguage);
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Raw transcript: "${result.text}"`);
+        finalSegment = result.text.trim();
+        this.handleDetectedLanguage(result.language);
       } catch (err: any) {
         this.outputChannel.appendLine(`[${new Date().toISOString()}] Transcription error: ${err.message}`);
         vscode.window.showErrorMessage(`VoxPilot transcription error: ${err.message}`);
@@ -546,6 +560,18 @@ export class VoxPilotEngine {
         editBuilder.insert(editor.selection.active, text);
       });
     }
+  }
+
+  /** Show detected language in status bar for Whisper auto-detect mode. */
+  private handleDetectedLanguage(language?: string): void {
+    if (!language) { return; }
+    const config = vscode.workspace.getConfiguration('voxpilot');
+    const modelId = config.get<string>('model', 'moonshine-base');
+    if (!isMultilingualModel(modelId)) { return; }
+
+    const langName = getLanguageName(language);
+    this.statusBar.setDetectedLanguage(language, langName);
+    this.outputChannel.appendLine(`[${new Date().toISOString()}] Detected language: ${langName} (${language})`);
   }
 
   private async ensureTranscriber(): Promise<void> {
