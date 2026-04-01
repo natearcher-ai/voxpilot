@@ -2,6 +2,17 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.6.8] - 2026-04-01
+
+### Added
+- Custom voice command schema — define your own voice-to-action mappings in `settings.json` under `voxpilot.customVoiceCommands`
+- Two action types: `insert` (replace spoken phrase with custom text) and `command` (VS Code command ID, execution coming in v0.6.9)
+- Phrases are matched case-insensitively at word boundaries; longer phrases match first to avoid conflicts
+- Replacement text supports `\n` (newline) and `\t` (tab) escape sequences
+- Full JSON schema validation with duplicate detection and clear error messages in the VoxPilot output channel
+- New `customVoiceCommands` post-processor runs after built-in voice commands in the pipeline
+- Example use cases: code snippets ("arrow function" → `() => `), filler word removal ("um" → ""), domain jargon shortcuts
+
 ## [0.6.7] - 2026-03-31
 
 ### Added

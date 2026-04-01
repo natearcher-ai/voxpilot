@@ -10,6 +10,7 @@ import * as vscode from 'vscode';
 import { processVoiceCommands } from './voiceCommands';
 import { stitchSegments } from './smartSpacing';
 import { applyAutoPunctuation } from './autoPunctuation';
+import { CustomVoiceCommandsProcessor } from './customVoiceCommands';
 
 /**
  * Context passed to each processor — includes raw segments and metadata
@@ -177,6 +178,7 @@ const DEFAULT_ORDER: string[] = [
   'trim',
   'normalizeWhitespace',
   'voiceCommands',
+  'customVoiceCommands',
   'fixTypos',
   'autoPunctuation',
   'autoCapitalize',
@@ -188,6 +190,7 @@ const BUILTIN_PROCESSORS: PostProcessor[] = [
   new TrimProcessor(),
   new NormalizeWhitespaceProcessor(),
   new VoiceCommandsProcessor(),
+  new CustomVoiceCommandsProcessor(),
   new FixTyposProcessor(),
   new AutoPunctuationProcessor(),
   new AutoCapitalizeProcessor(),
@@ -255,6 +258,12 @@ export class PostProcessingPipeline {
     }
     if (config.get<boolean>('autoCapitalize') === false) {
       this.disabled.add('autoCapitalize');
+    }
+
+    // Reload custom voice commands
+    const customProcessor = this.processors.get('customVoiceCommands');
+    if (customProcessor && 'reload' in customProcessor) {
+      (customProcessor as CustomVoiceCommandsProcessor).reload();
     }
   }
 
