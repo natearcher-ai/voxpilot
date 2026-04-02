@@ -2,7 +2,7 @@
   "name": "voxpilot",
   "displayName": "VoxPilot — Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
-  "version": "0.6.8",
+  "version": "0.6.9",
   "publisher": "natearcher-ai",
   "license": "MIT",
   "repository": {
@@ -353,7 +353,7 @@
               "action": {
                 "type": "string",
                 "enum": ["insert", "command"],
-                "description": "Action type: 'insert' replaces the phrase with text, 'command' executes a VS Code command (coming in v0.6.9)."
+                "description": "Action type: 'insert' replaces the phrase with text, 'command' executes a VS Code command."
               },
               "text": {
                 "type": "string",
@@ -361,7 +361,7 @@
               },
               "command": {
                 "type": "string",
-                "description": "VS Code command ID for 'command' actions (e.g. 'editor.action.formatDocument'). Execution support coming in v0.6.9."
+                "description": "VS Code command ID for 'command' actions (e.g. 'editor.action.formatDocument')."
               },
               "args": {
                 "description": "Optional arguments passed to the VS Code command."
@@ -374,7 +374,7 @@
             "if": { "properties": { "action": { "const": "insert" } } },
             "then": { "required": ["phrase", "action", "text"] }
           },
-          "markdownDescription": "Define custom voice-to-action mappings. Each entry maps a spoken phrase to an action.\n\nExample:\n```json\n[\n  { \"phrase\": \"arrow function\", \"action\": \"insert\", \"text\": \"() => \" },\n  { \"phrase\": \"hash map\", \"action\": \"insert\", \"text\": \"HashMap\" },\n  { \"phrase\": \"format file\", \"action\": \"command\", \"command\": \"editor.action.formatDocument\" }\n]\n```\n\nPhrases are matched case-insensitively at word boundaries. Longer phrases match first. Insert actions run in the post-processing pipeline; command actions will be executed at runtime in v0.6.9."
+          "markdownDescription": "Define custom voice-to-action mappings. Each entry maps a spoken phrase to an action.\n\nExample:\n```json\n[\n  { \"phrase\": \"arrow function\", \"action\": \"insert\", \"text\": \"() => \" },\n  { \"phrase\": \"hash map\", \"action\": \"insert\", \"text\": \"HashMap\" },\n  { \"phrase\": \"format file\", \"action\": \"command\", \"command\": \"editor.action.formatDocument\" }\n]\n```\n\nPhrases are matched case-insensitively at word boundaries. Longer phrases match first. Insert actions run in the post-processing pipeline; command actions execute the VS Code command and strip the phrase from the transcript."
         }
       }
     }

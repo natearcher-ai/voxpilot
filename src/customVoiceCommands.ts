@@ -177,14 +177,29 @@ export class CustomVoiceCommandsProcessor implements PostProcessor {
     let result = text;
 
     for (const cmd of this.commands) {
-      if (cmd.original.action !== 'insert') { continue; }
+      if (cmd.original.action === 'insert') {
+        const replacement = processEscapes(cmd.original.text ?? '');
+        const before = result;
+        result = result.replace(cmd.pattern, replacement);
 
-      const replacement = processEscapes(cmd.original.text ?? '');
-      const before = result;
-      result = result.replace(cmd.pattern, replacement);
+        if (result !== before) {
+          context.voiceCommandsApplied++;
+        }
+      } else if (cmd.original.action === 'command') {
+        // Check if the phrase appears in the text
+        const before = result;
+        // Strip the phrase from the transcript
+        result = result.replace(cmd.pattern, '');
 
-      if (result !== before) {
-        context.voiceCommandsApplied++;
+        if (result !== before) {
+          // Queue the VS Code command for deferred execution
+          context.pendingCommands.push({
+            command: cmd.original.command!,
+            args: cmd.original.args,
+            phrase: cmd.original.phrase,
+          });
+          context.voiceCommandsApplied++;
+        }
       }
     }
 

@@ -179,6 +179,7 @@ describe('Individual processors', () => {
     voiceCommandsApplied: 0,
     punctuationAdded: false,
     capitalized: false,
+    pendingCommands: [],
   });
 
   it('VoiceCommandsProcessor processes commands', () => {

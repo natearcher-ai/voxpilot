@@ -2,6 +2,19 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.6.9] - 2026-04-02
+
+### Added
+- Custom voice command engine — user-defined `command`-type voice commands now execute at runtime
+- Say a mapped phrase (e.g. "format file") and VoxPilot strips it from the transcript and runs the corresponding VS Code command (`editor.action.formatDocument`)
+- Commands with optional `args` are supported — arguments are passed directly to `vscode.commands.executeCommand`
+- Multiple command phrases in a single transcript are all detected, stripped, and executed in order
+- Mixed transcripts work seamlessly: insert-type phrases get replaced with text, command-type phrases trigger VS Code commands, and the remaining transcript is delivered normally
+- Failed commands show a non-blocking warning notification with the error message
+- All command executions are logged in the VoxPilot output channel with phrase, command ID, and args
+- New `pendingCommands` field on `ProcessorContext` enables pipeline-to-engine command handoff
+- 5 new unit tests covering command queuing, args, mixed actions, multiple commands, and no-match scenarios
+
 ## [0.6.8] - 2026-04-01
 
 ### Added

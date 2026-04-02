@@ -16,6 +16,16 @@ import { CustomVoiceCommandsProcessor } from './customVoiceCommands';
  * Context passed to each processor — includes raw segments and metadata
  * that processors may read or mutate.
  */
+/** A VS Code command queued for execution after pipeline completes */
+export interface PendingCommand {
+  /** VS Code command ID */
+  command: string;
+  /** Optional arguments for the command */
+  args?: unknown;
+  /** The spoken phrase that triggered this command (for logging) */
+  phrase: string;
+}
+
 export interface ProcessorContext {
   /** Original transcript segments before stitching (read-only after stitching) */
   segments: string[];
@@ -25,6 +35,8 @@ export interface ProcessorContext {
   punctuationAdded: boolean;
   /** Whether the text was modified by auto-capitalization */
   capitalized: boolean;
+  /** VS Code commands queued by custom voice command processor for deferred execution */
+  pendingCommands: PendingCommand[];
 }
 
 /**
@@ -277,6 +289,7 @@ export class PostProcessingPipeline {
       voiceCommandsApplied: 0,
       punctuationAdded: false,
       capitalized: false,
+      pendingCommands: [],
     };
 
     // Start with a basic join of segments — stitchSegments will replace

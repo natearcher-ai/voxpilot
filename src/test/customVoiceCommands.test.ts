@@ -106,6 +106,7 @@ describe('CustomVoiceCommandsProcessor', () => {
       voiceCommandsApplied: 0,
       punctuationAdded: false,
       capitalized: false,
+      pendingCommands: [] as Array<{ command: string; args?: unknown; phrase: string }>,
     };
   }
 
@@ -175,8 +176,65 @@ describe('CustomVoiceCommandsProcessor', () => {
     ];
     const proc = new CustomVoiceCommandsProcessor();
     const ctx = makeContext();
-    expect(proc.process('format file please', ctx)).toBe('format file please');
+    const result = proc.process('format file please', ctx);
+    expect(result).toBe(' please');
+    expect(ctx.voiceCommandsApplied).toBe(1);
+    expect(ctx.pendingCommands).toHaveLength(1);
+    expect(ctx.pendingCommands[0].command).toBe('editor.action.formatDocument');
+    expect(ctx.pendingCommands[0].phrase).toBe('format file');
+  });
+
+  it('should queue command with args', () => {
+    (global as any).__testCustomCommands = [
+      { phrase: 'open terminal', action: 'command', command: 'workbench.action.terminal.new', args: { name: 'Voice' } },
+    ];
+    const proc = new CustomVoiceCommandsProcessor();
+    const ctx = makeContext();
+    const result = proc.process('please open terminal', ctx);
+    expect(result).toBe('please ');
+    expect(ctx.pendingCommands).toHaveLength(1);
+    expect(ctx.pendingCommands[0].command).toBe('workbench.action.terminal.new');
+    expect(ctx.pendingCommands[0].args).toEqual({ name: 'Voice' });
+  });
+
+  it('should queue multiple commands from one transcript', () => {
+    (global as any).__testCustomCommands = [
+      { phrase: 'save file', action: 'command', command: 'workbench.action.files.save' },
+      { phrase: 'format file', action: 'command', command: 'editor.action.formatDocument' },
+    ];
+    const proc = new CustomVoiceCommandsProcessor();
+    const ctx = makeContext();
+    proc.process('format file then save file', ctx);
+    expect(ctx.pendingCommands).toHaveLength(2);
+    expect(ctx.pendingCommands.map(c => c.command)).toContain('editor.action.formatDocument');
+    expect(ctx.pendingCommands.map(c => c.command)).toContain('workbench.action.files.save');
+    expect(ctx.voiceCommandsApplied).toBe(2);
+  });
+
+  it('should not queue command if phrase is not in text', () => {
+    (global as any).__testCustomCommands = [
+      { phrase: 'format file', action: 'command', command: 'editor.action.formatDocument' },
+    ];
+    const proc = new CustomVoiceCommandsProcessor();
+    const ctx = makeContext();
+    proc.process('hello world', ctx);
+    expect(ctx.pendingCommands).toHaveLength(0);
     expect(ctx.voiceCommandsApplied).toBe(0);
+  });
+
+  it('should handle mixed insert and command actions', () => {
+    (global as any).__testCustomCommands = [
+      { phrase: 'arrow function', action: 'insert', text: '() => ' },
+      { phrase: 'save file', action: 'command', command: 'workbench.action.files.save' },
+    ];
+    const proc = new CustomVoiceCommandsProcessor();
+    const ctx = makeContext();
+    const result = proc.process('type arrow function then save file', ctx);
+    expect(result).toContain('() => ');
+    expect(result).not.toContain('save file');
+    expect(ctx.pendingCommands).toHaveLength(1);
+    expect(ctx.pendingCommands[0].command).toBe('workbench.action.files.save');
+    expect(ctx.voiceCommandsApplied).toBe(2);
   });
 
   it('should handle multiple replacements in one transcript', () => {

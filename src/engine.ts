@@ -453,6 +453,23 @@ export class VoxPilotEngine {
       this.outputChannel.appendLine(`[${new Date().toISOString()}] Auto-capitalize: capitalized first letter`);
     }
 
+    // Execute any VS Code commands queued by custom voice commands
+    if (pipelineCtx.pendingCommands.length > 0) {
+      for (const pending of pipelineCtx.pendingCommands) {
+        try {
+          this.outputChannel.appendLine(`[${new Date().toISOString()}] Executing voice command: "${pending.phrase}" → ${pending.command}${pending.args !== undefined ? ` (args: ${JSON.stringify(pending.args)})` : ''}`);
+          if (pending.args !== undefined) {
+            await vscode.commands.executeCommand(pending.command, pending.args);
+          } else {
+            await vscode.commands.executeCommand(pending.command);
+          }
+        } catch (err: any) {
+          this.outputChannel.appendLine(`[${new Date().toISOString()}] Voice command failed: ${pending.command} — ${err.message}`);
+          vscode.window.showWarningMessage(`VoxPilot: Voice command "${pending.phrase}" failed — ${err.message}`);
+        }
+      }
+    }
+
     if (text) {
       this.lastTranscript = text;
       this.history.add(this.lastTranscript);
