@@ -26,6 +26,12 @@ export class StatusBarManager implements vscode.Disposable {
     this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
   }
 
+  setDictating() {
+    this.item.text = '$(notebook) Dictation mode';
+    this.item.tooltip = 'Dictation mode — speak freely, click to stop and deliver';
+    this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+  }
+
   setListening() {
     this.item.text = '$(mic-filled) Listening...';
     this.item.tooltip = 'Speak now — click to stop';

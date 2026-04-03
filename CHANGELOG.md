@@ -2,6 +2,17 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.0] - 2026-04-03
+
+### Added
+- Dictation mode — continuous transcription with no VAD cutoff, manual stop only
+- New command `VoxPilot: Toggle Dictation Mode (Continuous)` starts a long-form dictation session where speech segments are transcribed and stashed as you speak, but silence no longer ends the session
+- Press the command again (or click the status bar) to stop and deliver the full stitched transcript
+- Status bar shows `$(notebook) Dictation mode` while active so you always know you're in continuous mode
+- Keybinding: `Ctrl+Alt+D` / `Cmd+Alt+D`
+- Works with all output targets (chat, cursor, clipboard) and the full post-processing pipeline (voice commands, auto-punctuation, auto-capitalize, etc.)
+- Multi-segment stitching handles pauses naturally — speak in bursts, get one clean transcript at the end
+
 ## [0.6.9] - 2026-04-02
 
 ### Added

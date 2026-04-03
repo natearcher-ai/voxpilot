@@ -41,6 +41,7 @@ export class VoxPilotEngine {
   private voiceLevelEnabled: boolean;
   private waveformEnabled: boolean;
   private currentLanguage: string;
+  private isDictating = false;
 
   /** Expose pipeline for settings UI */
   get pipeline(): PostProcessingPipeline { return this._pipeline; }
@@ -107,6 +108,23 @@ export class VoxPilotEngine {
     if (this.isListening) {
       this.stopListening();
     } else {
+      await this.startListening();
+    }
+  }
+
+  /**
+   * Dictation mode: continuous transcription with no VAD cutoff.
+   * Speech segments are transcribed and stashed as they come.
+   * Only a manual stop (second press) finalizes and delivers.
+   */
+  async toggleDictation(): Promise<void> {
+    if (this.isListening) {
+      // Manual stop — finalize everything
+      this.isDictating = false;
+      await this.finalizeSpeech();
+      this.stopListening();
+    } else {
+      this.isDictating = true;
       await this.startListening();
     }
   }
@@ -236,7 +254,11 @@ export class VoxPilotEngine {
     this.noiseGate.reset();
     this.audio.start();
     this.isListening = true;
-    this.statusBar.setCalibrating();
+    if (this.isDictating) {
+      this.statusBar.setDictating();
+    } else {
+      this.statusBar.setCalibrating();
+    }
     this.statusBar.resetWaveform();
     if (this.soundEnabled) { this.sound.playStart(); }
     this.outputChannel.appendLine(`[${new Date().toISOString()}] Listening started`);
@@ -251,6 +273,7 @@ export class VoxPilotEngine {
     this.audio.stop();
     this.isListening = false;
     this.isQuickCapture = false;
+    this.isDictating = false;
     this.audioChunkCount = 0;
     this.segmentTranscripts = [];
     if (this.soundEnabled) { this.sound.playStop(); }
@@ -329,12 +352,18 @@ export class VoxPilotEngine {
     }
 
     if (result.speechEnded) {
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Speech ended, transcribing and delivering...`);
-      this.finalizeSpeech().then(() => {
-        if (this.isQuickCapture) {
-          this.stopListening();
-        }
-      });
+      if (this.isDictating) {
+        // Dictation mode: transcribe segment but keep listening
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Speech ended (dictation), transcribing segment ${this.segmentTranscripts.length + 1}...`);
+        this.transcribeSegment();
+      } else {
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Speech ended, transcribing and delivering...`);
+        this.finalizeSpeech().then(() => {
+          if (this.isQuickCapture) {
+            this.stopListening();
+          }
+        });
+      }
     }
   }
 
