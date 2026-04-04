@@ -11,6 +11,7 @@ import { processVoiceCommands } from './voiceCommands';
 import { stitchSegments } from './smartSpacing';
 import { applyAutoPunctuation } from './autoPunctuation';
 import { CustomVoiceCommandsProcessor } from './customVoiceCommands';
+import { CodeVocabularyProcessor } from './codeVocabulary';
 
 /**
  * Context passed to each processor — includes raw segments and metadata
@@ -192,6 +193,7 @@ const DEFAULT_ORDER: string[] = [
   'voiceCommands',
   'customVoiceCommands',
   'fixTypos',
+  'codeVocabulary',
   'autoPunctuation',
   'autoCapitalize',
 ];
@@ -204,6 +206,7 @@ const BUILTIN_PROCESSORS: PostProcessor[] = [
   new VoiceCommandsProcessor(),
   new CustomVoiceCommandsProcessor(),
   new FixTyposProcessor(),
+  new CodeVocabularyProcessor(),
   new AutoPunctuationProcessor(),
   new AutoCapitalizeProcessor(),
 ];
@@ -270,6 +273,9 @@ export class PostProcessingPipeline {
     }
     if (config.get<boolean>('autoCapitalize') === false) {
       this.disabled.add('autoCapitalize');
+    }
+    if (config.get<boolean>('codeVocabulary') === false) {
+      this.disabled.add('codeVocabulary');
     }
 
     // Reload custom voice commands

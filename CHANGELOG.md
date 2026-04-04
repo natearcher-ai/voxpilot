@@ -2,6 +2,19 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.1] - 2026-04-04
+
+### Added
+- Code vocabulary — built-in dictionary of 120+ programming term corrections for common ASR misrecognitions
+- Automatically corrects split words: "java script" → "JavaScript", "type script" → "TypeScript", "camel case" → "camelCase"
+- Fixes spaced-out acronyms: "a p i" → "API", "a w s" → "AWS", "c i c d" → "CI/CD"
+- Corrects common ASR confusions: "jason" → "JSON", "pie thon" → "Python", "get hub" → "GitHub"
+- Covers languages, frameworks, tools, platforms, cloud services, data formats, casing conventions, and programming keywords
+- New `codeVocabulary` post-processor runs after typo fixes and before auto-punctuation in the pipeline
+- New `voxpilot.codeVocabulary` setting (default: `true`) — disable to get raw transcription output
+- Can also be toggled via the post-processing pipeline settings UI or `voxpilot.postProcessors.disabled`
+- 14 unit tests covering language corrections, casing conventions, acronyms, frameworks, cloud terms, word boundaries, and multi-correction transcripts
+
 ## [0.7.0] - 2026-04-03
 
 ### Added
