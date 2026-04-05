@@ -14,6 +14,7 @@
  * Enable/disable via `voxpilot.codeVocabulary` setting (default: true).
  */
 
+import * as vscode from 'vscode';
 import { PostProcessor, ProcessorContext } from './postProcessingPipeline';
 
 /** A single vocabulary correction rule */
@@ -22,6 +23,14 @@ interface VocabRule {
   pattern: RegExp;
   /** Correct form */
   replacement: string;
+}
+
+/** Shape of a user-defined vocabulary entry in settings.json */
+interface CustomVocabEntry {
+  /** Spoken/misrecognized form to match */
+  from: string;
+  /** Correct replacement text */
+  to: string;
 }
 
 /**
@@ -202,32 +211,89 @@ const CODE_DICTIONARY: Array<[string, string]> = [
 ];
 
 /**
- * Compile the raw dictionary into regex rules.
+ * Compile an array of [spoken, correct] pairs into regex rules.
  * Sorted longest-pattern-first to avoid partial matches.
+ * Uses lookahead/lookbehind instead of \b for correct handling of
+ * patterns that start or end with non-word characters (e.g. "c++").
  */
-function compileDictionary(): VocabRule[] {
-  const entries = [...CODE_DICTIONARY].sort((a, b) => b[0].length - a[0].length);
+function compileEntries(entries: Array<[string, string]>): VocabRule[] {
+  const sorted = [...entries].sort((a, b) => b[0].length - a[0].length);
 
-  return entries.map(([spoken, correct]) => {
+  return sorted.map(([spoken, correct]) => {
     const escaped = spoken.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     return {
-      pattern: new RegExp(`\\b${escaped}\\b`, 'gi'),
+      pattern: new RegExp(`(?<!\\w)${escaped}(?!\\w)`, 'gi'),
       replacement: correct,
     };
   });
 }
 
-const COMPILED_RULES = compileDictionary();
+/** Cached merged rules (user overrides + built-ins) — refreshed on each reload() call.
+ *  Initialized with built-in rules so applyCodeVocabulary works without calling reload first. */
+let mergedRules: VocabRule[] = compileEntries(CODE_DICTIONARY);
+
+/**
+ * Build the merged rule list: user entries override built-in entries
+ * that share the same normalized "from" key.
+ */
+function buildMergedRules(userEntries: Array<[string, string]>): VocabRule[] {
+  const userKeys = new Set(userEntries.map(([from]) => from.toLowerCase()));
+
+  // Filter out built-in entries that the user has overridden
+  const filteredBuiltins = CODE_DICTIONARY.filter(
+    ([spoken]) => !userKeys.has(spoken.toLowerCase())
+  );
+
+  // Compile merged list: user entries + remaining built-ins
+  return compileEntries([...userEntries, ...filteredBuiltins]);
+}
+
+/**
+ * Read user-defined vocabulary entries from voxpilot.customVocabulary setting.
+ * Invalid entries are silently skipped.
+ */
+function loadUserEntries(): Array<[string, string]> {
+  try {
+    const config = vscode.workspace.getConfiguration('voxpilot');
+    const entries = config.get<CustomVocabEntry[]>('customVocabulary');
+    if (!Array.isArray(entries) || entries.length === 0) {
+      return [];
+    }
+
+    const pairs: Array<[string, string]> = [];
+    for (const entry of entries) {
+      if (
+        entry &&
+        typeof entry.from === 'string' && entry.from.trim() &&
+        typeof entry.to === 'string'
+      ) {
+        pairs.push([entry.from.trim().toLowerCase(), entry.to]);
+      }
+    }
+    return pairs;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Reload user-defined vocabulary from settings and rebuild merged rules.
+ * Called by the pipeline on config change.
+ */
+export function reloadCustomVocabulary(): void {
+  mergedRules = buildMergedRules(loadUserEntries());
+}
 
 /**
  * Apply code vocabulary corrections to a transcript.
+ * Uses the merged rule list (user overrides + built-ins).
  * Returns the corrected text and count of corrections made.
  */
 export function applyCodeVocabulary(text: string): { text: string; corrections: number } {
   let result = text;
   let corrections = 0;
 
-  for (const rule of COMPILED_RULES) {
+  for (const rule of mergedRules) {
     const before = result;
     result = result.replace(rule.pattern, rule.replacement);
     if (result !== before) {
@@ -245,7 +311,17 @@ export function applyCodeVocabulary(text: string): { text: string; corrections: 
 export class CodeVocabularyProcessor implements PostProcessor {
   readonly id = 'codeVocabulary';
   readonly name = 'Code Vocabulary';
-  readonly description = 'Correct common ASR misrecognitions of programming terms (e.g. "java script" → "JavaScript")';
+  readonly description = 'Correct common ASR misrecognitions of programming terms, plus your own custom word corrections and aliases';
+
+  constructor() {
+    // Load user vocabulary on first instantiation
+    reloadCustomVocabulary();
+  }
+
+  /** Reload user-defined vocabulary from settings (called by pipeline on config change) */
+  reload(): void {
+    reloadCustomVocabulary();
+  }
 
   process(text: string, _context: ProcessorContext): string {
     const { text: corrected } = applyCodeVocabulary(text);

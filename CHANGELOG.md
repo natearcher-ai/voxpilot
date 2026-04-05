@@ -2,6 +2,17 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.2] - 2026-04-05
+
+### Added
+- User-custom vocabulary — define your own word corrections and aliases in `settings.json` under `voxpilot.customVocabulary`
+- Each entry maps a spoken/misrecognized `from` phrase to a corrected `to` replacement (e.g. `{ "from": "my lib", "to": "MyLib" }`)
+- User entries take priority over the built-in code vocabulary — override any built-in correction or add domain-specific terms
+- Phrases are matched case-insensitively at word boundaries; longer phrases match first to avoid conflicts
+- Custom vocabulary reloads automatically when settings change (no restart needed)
+- Full JSON schema validation in `settings.json` with IntelliSense for `from`/`to` fields
+- Works seamlessly with the existing code vocabulary post-processor — user rules run first, then built-in rules
+
 ## [0.7.1] - 2026-04-04
 
 ### Added

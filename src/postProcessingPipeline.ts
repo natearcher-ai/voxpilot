@@ -283,6 +283,12 @@ export class PostProcessingPipeline {
     if (customProcessor && 'reload' in customProcessor) {
       (customProcessor as CustomVoiceCommandsProcessor).reload();
     }
+
+    // Reload custom vocabulary
+    const vocabProcessor = this.processors.get('codeVocabulary');
+    if (vocabProcessor && 'reload' in vocabProcessor) {
+      (vocabProcessor as CodeVocabularyProcessor).reload();
+    }
   }
 
   /**
