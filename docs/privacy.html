@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — VoxPilot</title>
+  <meta name="description" content="VoxPilot privacy policy. Your audio never leaves your machine. No telemetry, no cloud, no tracking.">
+  <meta property="og:title" content="Privacy Policy — VoxPilot">
+  <meta property="og:description" content="VoxPilot processes all audio on-device. No data collection, no telemetry, no cloud calls.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://natearcher-ai.github.io/voxpilot/privacy.html">
+  <link rel="canonical" href="https://natearcher-ai.github.io/voxpilot/privacy.html">
+  <style>
+    :root { --purple: #6366f1; --dark: #0f0f23; --gray: #a0a0b8; --white: #e8e8f0; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--dark); color: var(--white); line-height: 1.7; }
+    .container { max-width: 720px; margin: 0 auto; padding: 0 24px; }
+    header { padding: 60px 0 32px; text-align: center; }
+    header h1 { font-size: 2.2rem; margin-bottom: 12px; background: linear-gradient(135deg, #6366f1, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    header p { color: var(--gray); font-size: 1rem; }
+    .back { display: inline-block; margin-bottom: 24px; color: var(--purple); text-decoration: none; font-size: 0.95rem; }
+    .back:hover { text-decoration: underline; }
+    section { padding: 24px 0; }
+    section h2 { font-size: 1.4rem; margin-bottom: 12px; color: var(--white); }
+    section p, section li { color: var(--gray); font-size: 0.95rem; margin-bottom: 10px; }
+    section ul { padding-left: 20px; margin-bottom: 16px; }
+    section li { margin-bottom: 6px; }
+    .highlight-box { background: #1a1a2e; border-radius: 12px; padding: 24px; border: 1px solid #2a2a4a; margin: 24px 0; }
+    .highlight-box h3 { font-size: 1.1rem; margin-bottom: 8px; }
+    .highlight-box p { margin-bottom: 0; }
+    .tldr { background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(167,139,250,0.1)); border: 1px solid rgba(99,102,241,0.3); border-radius: 12px; padding: 24px; margin: 32px 0; text-align: center; }
+    .tldr p { color: var(--white); font-size: 1.1rem; margin: 0; }
+    .tldr strong { color: var(--purple); }
+    footer { text-align: center; padding: 40px 0; color: var(--gray); font-size: 0.85rem; border-top: 1px solid #2a2a4a; margin-top: 32px; }
+    footer a { color: var(--purple); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <a href="./" class="back">← Back to VoxPilot</a>
+      <h1>🔒 Privacy Policy</h1>
+      <p>Last updated: April 6, 2026</p>
+    </header>
+
+    <div class="tldr">
+      <p><strong>TL;DR:</strong> VoxPilot processes all audio on your device. We collect nothing. No telemetry, no analytics, no cloud calls. Your voice stays yours.</p>
+    </div>
+
+    <section>
+      <h2>Audio Data</h2>
+      <div class="highlight-box">
+        <h3>🎙️ Your audio never leaves your machine</h3>
+        <p>VoxPilot captures microphone audio solely for real-time transcription using on-device ASR models (Moonshine, Whisper, or Parakeet). Audio is processed in memory and discarded immediately after transcription. No audio is recorded to disk, transmitted over the network, or stored anywhere.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Transcription Output</h2>
+      <p>Transcribed text is delivered to the destination you choose — your editor cursor, a chat panel, or the clipboard. VoxPilot does not store, log, or transmit your transcripts. Once delivered, the text is under your control and your IDE's standard data handling applies.</p>
+    </section>
+
+    <section>
+      <h2>Data Collection</h2>
+      <p>VoxPilot collects <strong>zero</strong> data. Specifically:</p>
+      <ul>
+        <li>No telemetry or usage analytics</li>
+        <li>No crash reports sent externally</li>
+        <li>No user accounts or sign-ups</li>
+        <li>No cookies, fingerprinting, or tracking</li>
+        <li>No network requests of any kind during normal operation</li>
+      </ul>
+      <p>The only network activity VoxPilot may perform is downloading ASR model files when you explicitly request a model download from the Model Manager panel. These downloads fetch ONNX model files from Hugging Face. No user data is sent during this process.</p>
+    </section>
+
+    <section>
+      <h2>Third-Party Services</h2>
+      <p>VoxPilot does not integrate with, send data to, or depend on any third-party services during operation. The extension runs entirely within your VS Code / Kiro instance using local compute.</p>
+      <p>Model downloads (user-initiated only) fetch files from:</p>
+      <ul>
+        <li>Hugging Face Hub (huggingface.co) — ONNX model weights</li>
+      </ul>
+      <p>No authentication, API keys, or user identifiers are required or transmitted.</p>
+    </section>
+
+    <section>
+      <h2>Local Storage</h2>
+      <p>VoxPilot stores the following on your local filesystem:</p>
+      <ul>
+        <li>Downloaded ASR model files (ONNX weights, in VS Code's global storage directory)</li>
+        <li>Extension settings (via VS Code's standard settings.json)</li>
+        <li>Transcript history (last 10 transcripts, in VS Code's workspace state — never written to disk outside VS Code's internal storage)</li>
+      </ul>
+      <p>You can delete all stored data by uninstalling the extension and removing the model files from the global storage directory.</p>
+    </section>
+
+    <section>
+      <h2>Permissions</h2>
+      <p>VoxPilot requires access to your microphone via your operating system's audio capture tools (ffmpeg, arecord, or sox). Microphone access is used exclusively for voice transcription and only while you are actively recording (press-to-talk or dictation mode).</p>
+      <p>No other system permissions are required.</p>
+    </section>
+
+    <section>
+      <h2>Children's Privacy</h2>
+      <p>VoxPilot does not collect any data from any user, including children. There is nothing to comply with because there is nothing collected.</p>
+    </section>
+
+    <section>
+      <h2>Open Source</h2>
+      <p>VoxPilot is MIT-licensed and fully open source. You can audit every line of code to verify these privacy claims:</p>
+      <p><a href="https://github.com/natearcher-ai/voxpilot" style="color: var(--purple);">github.com/natearcher-ai/voxpilot</a></p>
+    </section>
+
+    <section>
+      <h2>Changes to This Policy</h2>
+      <p>If this policy changes, the update will be reflected in the "Last updated" date above and in the project's CHANGELOG. VoxPilot's core commitment — no data collection, no cloud processing — is fundamental to the project and will not change.</p>
+    </section>
+
+    <section>
+      <h2>Contact</h2>
+      <p>Questions or concerns? Open an issue on <a href="https://github.com/natearcher-ai/voxpilot/issues" style="color: var(--purple);">GitHub</a>.</p>
+    </section>
+
+    <footer>
+      <p><a href="./">VoxPilot</a> · Built by <a href="https://github.com/natearcher-ai">natearcher-ai</a> · <a href="https://github.com/natearcher-ai/voxpilot">Source</a></p>
+    </footer>
+  </div>
+</body>
+</html>

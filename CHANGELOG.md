@@ -2,6 +2,15 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.3] - 2026-04-06
+
+### Added
+- Privacy policy page on the landing site — clear, human-readable disclosure of VoxPilot's data handling practices
+- Dedicated `docs/privacy.html` page covering audio data, transcription output, data collection (none), third-party services, local storage, permissions, and open-source auditability
+- TL;DR summary: all audio processed on-device, zero data collected, no telemetry, no analytics, no cloud calls
+- Privacy policy link added to the landing page footer for easy access
+- Covers model downloads (user-initiated only, from Hugging Face), local storage details, and microphone permissions
+
 ## [0.7.2] - 2026-04-05
 
 ### Added
