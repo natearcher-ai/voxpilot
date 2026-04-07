@@ -4,6 +4,8 @@
 [![Open VSX](https://img.shields.io/open-vsx/v/natearcher-ai/voxpilot?label=Open%20VSX&color=purple)](https://open-vsx.org/extension/natearcher-ai/voxpilot)
 [![Downloads](https://img.shields.io/open-vsx/dt/natearcher-ai/voxpilot?color=blue)](https://open-vsx.org/extension/natearcher-ai/voxpilot)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Telemetry-Free](https://img.shields.io/badge/Telemetry-Free-brightgreen?logo=shieldsdotio)](https://natearcher-ai.github.io/voxpilot/privacy.html)
+[![No Cloud](https://img.shields.io/badge/Cloud-None-brightgreen?logo=icloud&logoColor=white)](https://natearcher-ai.github.io/voxpilot/privacy.html)
 [![GitHub](https://img.shields.io/github/stars/natearcher-ai/voxpilot?style=social)](https://github.com/natearcher-ai/voxpilot)
 
 Talk to your IDE coding assistant with your voice. On-device speech recognition with multiple model options. No API keys. No cloud. Just your voice.
@@ -164,9 +166,17 @@ Microphone → PCM Audio → Noise Gate → Voice Activity Detection → ASR Mod
 5. Post-processing: capitalize, punctuate, voice commands
 6. Delivery to chat, cursor, or clipboard
 
-## Privacy
+## Privacy & Trust
 
 All processing happens on your device. No telemetry. No analytics. No network calls (except one-time model download from HuggingFace). Your voice data is never stored or transmitted.
+
+🛡️ **Trust signals:**
+- **Zero telemetry** — No usage tracking, no analytics, no phone-home. Verified by source code.
+- **Zero cloud** — Audio is processed entirely on-device via ONNX Runtime. No data leaves your machine.
+- **Zero data collection** — No accounts, no sign-ups, no personal information gathered.
+- **Fully auditable** — MIT-licensed, open source. Read every line of code that touches your microphone.
+- **Minimal permissions** — Only requests microphone access. No network, no filesystem beyond model cache.
+- **Privacy policy** — Clear, human-readable [privacy policy](https://natearcher-ai.github.io/voxpilot/privacy.html) with no legalese.
 
 ## Contributing
 

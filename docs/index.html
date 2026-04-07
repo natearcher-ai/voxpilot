@@ -50,6 +50,14 @@
     .models-table td { color: var(--gray); font-size: 0.95rem; }
     .models-table tr:hover td { color: var(--white); }
     .model-family { color: var(--white); font-weight: 600; }
+    .trust { background: linear-gradient(135deg, #0d2818, #1a1a2e); border: 1px solid #22c55e33; border-radius: 12px; padding: 32px; margin: 40px 0; }
+    .trust h2 { color: #22c55e; font-size: 1.4rem; margin-bottom: 16px; }
+    .trust-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 600px) { .trust-grid { grid-template-columns: 1fr; } }
+    .trust-item { display: flex; gap: 12px; align-items: flex-start; }
+    .trust-item .icon { font-size: 1.3rem; flex-shrink: 0; }
+    .trust-item .label { font-size: 0.95rem; color: var(--gray); }
+    .trust-item .label strong { color: var(--white); }
     .stats { display: flex; gap: 40px; justify-content: center; margin: 40px 0; flex-wrap: wrap; }
     .stat { text-align: center; }
     .stat .num { font-size: 2rem; font-weight: 700; color: var(--purple); }
@@ -69,6 +77,8 @@
         <a href="https://open-vsx.org/extension/natearcher-ai/voxpilot"><img src="https://img.shields.io/open-vsx/dt/natearcher-ai/voxpilot?color=blue" alt="Downloads"></a>
         <a href="https://github.com/natearcher-ai/voxpilot"><img src="https://img.shields.io/github/stars/natearcher-ai/voxpilot?style=social" alt="GitHub Stars"></a>
         <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License">
+        <a href="privacy.html"><img src="https://img.shields.io/badge/Telemetry-Free-brightgreen?logo=shieldsdotio" alt="Telemetry-Free"></a>
+        <a href="privacy.html"><img src="https://img.shields.io/badge/Cloud-None-brightgreen?logo=icloud&logoColor=white" alt="No Cloud"></a>
       </div>
       <div class="cta-row">
         <a href="https://open-vsx.org/extension/natearcher-ai/voxpilot" class="cta">Install from Open VSX</a>
@@ -152,6 +162,20 @@
       <h2>How It Works</h2>
       <div class="how-it-works">
         Microphone <span class="arrow">→</span> Noise Gate <span class="arrow">→</span> Adaptive VAD <span class="arrow">→</span> ASR Model <span class="arrow">→</span> Post-Processing <span class="arrow">→</span> Delivery
+      </div>
+    </section>
+
+    <section>
+      <div class="trust">
+        <h2>🛡️ Privacy & Trust</h2>
+        <div class="trust-grid">
+          <div class="trust-item"><span class="icon">🚫</span><span class="label"><strong>Zero telemetry</strong> — No usage tracking, no analytics, no phone-home</span></div>
+          <div class="trust-item"><span class="icon">🔒</span><span class="label"><strong>Zero cloud</strong> — Audio processed entirely on-device via ONNX Runtime</span></div>
+          <div class="trust-item"><span class="icon">🙅</span><span class="label"><strong>Zero data collection</strong> — No accounts, no sign-ups, no personal info</span></div>
+          <div class="trust-item"><span class="icon">🔍</span><span class="label"><strong>Fully auditable</strong> — MIT-licensed, open source. Read every line</span></div>
+          <div class="trust-item"><span class="icon">🎤</span><span class="label"><strong>Minimal permissions</strong> — Only microphone access. No network beyond model download</span></div>
+          <div class="trust-item"><span class="icon">📜</span><span class="label"><strong>Privacy policy</strong> — Clear, <a href="privacy.html" style="color: #22c55e;">human-readable policy</a> with no legalese</span></div>
+        </div>
       </div>
     </section>
 

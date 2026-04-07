@@ -2,6 +2,14 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.4] - 2026-04-07
+
+### Added
+- Telemetry-free badge and No Cloud badge in README and landing page — linked to privacy policy for instant verification
+- Trust signals section in README with six concrete privacy guarantees: zero telemetry, zero cloud, zero data collection, fully auditable, minimal permissions, and privacy policy link
+- Privacy & Trust panel on landing page (`docs/index.html`) — styled green-tinted card with icon grid covering all trust signals
+- Badges also added to the landing page header badge row for immediate visibility
+
 ## [0.7.3] - 2026-04-06
 
 ### Added
