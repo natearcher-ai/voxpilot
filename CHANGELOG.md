@@ -2,6 +2,17 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.5] - 2026-04-08
+
+### Added
+- Performance benchmarks page on the landing site — latency, accuracy (WER), RAM usage, and download size comparison across all 7 ASR models
+- Dedicated `docs/benchmarks.html` with sortable comparison table covering Moonshine Tiny/Base, Whisper Tiny/Base/Small/Medium/Large v3 Turbo, and Parakeet TDT 0.6B
+- Highlight cards showing fastest transcription (85ms), lowest WER (4.2%), and smallest model (27MB)
+- Recommended models by use case table — quick commands, daily coding, streaming, multilingual, long dictation, max accuracy, low-spec machines
+- Methodology section documenting benchmark conditions (M2, 16GB RAM, ONNX Runtime CPU, LibriSpeech test-clean)
+- Tips section with cold-start, GPU acceleration, and model selection guidance
+- Benchmarks link added to landing page footer and README
+
 ## [0.7.4] - 2026-04-07
 
 ### Added

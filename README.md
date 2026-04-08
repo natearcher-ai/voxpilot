@@ -220,6 +220,6 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-🌐 [Landing Page](https://natearcher-ai.github.io/voxpilot/) · 📦 [Open VSX](https://open-vsx.org/extension/natearcher-ai/voxpilot) · 📋 [Changelog](CHANGELOG.md)
+🌐 [Landing Page](https://natearcher-ai.github.io/voxpilot/) · 📦 [Open VSX](https://open-vsx.org/extension/natearcher-ai/voxpilot) · 📋 [Changelog](CHANGELOG.md) · ⚡ [Benchmarks](https://natearcher-ai.github.io/voxpilot/benchmarks.html)
 
 **Star the repo** if VoxPilot helps you code faster. It helps others find it. ⭐
