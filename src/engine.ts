@@ -551,16 +551,24 @@ export class VoxPilotEngine {
     });
   }
 
+  /** Detect the host IDE from vscode.env.appName. */
+  private detectIDE(): 'kiro' | 'cursor' | 'vscode' {
+    const name = vscode.env.appName.toLowerCase();
+    if (name.includes('kiro')) { return 'kiro'; }
+    if (name.includes('cursor')) { return 'cursor'; }
+    return 'vscode';
+  }
+
   private async sendToChat(text: string): Promise<void> {
     const config = vscode.workspace.getConfiguration('voxpilot');
     const participant = config.get<string>('targetChatParticipant', '');
     const autoSubmit = shouldAutoSubmit('chat');
-    const isKiro = vscode.env.appName.toLowerCase().includes('kiro');
-    const query = (!isKiro && participant) ? `@${participant} ${text}` : text;
+    const ide = this.detectIDE();
+    const query = (ide === 'vscode' && participant) ? `@${participant} ${text}` : text;
 
-    this.outputChannel.appendLine(`[${new Date().toISOString()}] sendToChat: "${query.slice(0, 50)}..." isKiro=${isKiro} autoSubmit=${autoSubmit}`);
+    this.outputChannel.appendLine(`[${new Date().toISOString()}] sendToChat: "${query.slice(0, 50)}..." ide=${ide} autoSubmit=${autoSubmit}`);
 
-    if (isKiro) {
+    if (ide === 'kiro') {
       // Kiro-specific: focus chat panel, paste transcript, optionally submit
       try {
         await vscode.commands.executeCommand('kiroAgent.acpChatView.focus');
@@ -579,6 +587,9 @@ export class VoxPilotEngine {
       } catch (e: any) {
         this.outputChannel.appendLine(`[${new Date().toISOString()}] Kiro chat delivery failed: ${e.message}`);
       }
+    } else if (ide === 'cursor') {
+      // Cursor IDE: try composer/chat commands, then clipboard-paste fallback
+      if (await this.sendToCursorChat(query, autoSubmit)) { return; }
     } else {
       // Standard VS Code
       try {
@@ -595,8 +606,88 @@ export class VoxPilotEngine {
 
     // Final fallback: clipboard
     await vscode.env.clipboard.writeText(query);
-    vscode.window.showInformationMessage(`VoxPilot: Transcript copied to clipboard. Paste into chat with ${isKiro ? 'Cmd' : 'Ctrl'}+V.`);
+    const pasteHint = process.platform === 'darwin' ? 'Cmd+V' : 'Ctrl+V';
+    vscode.window.showInformationMessage(`VoxPilot: Transcript copied to clipboard. Paste into chat with ${pasteHint}.`);
     this.outputChannel.appendLine(`[${new Date().toISOString()}] Fallback: copied to clipboard`);
+  }
+
+  /**
+   * Cursor IDE chat delivery.
+   * Cursor is a VS Code fork whose chat panel uses different command IDs.
+   * We try multiple known commands in priority order, then fall back to
+   * focusing the chat panel and pasting via clipboard.
+   */
+  private async sendToCursorChat(query: string, autoSubmit: boolean): Promise<boolean> {
+    // Strategy 1: Try Cursor's composer command (opens inline chat with text)
+    const cursorCommands = [
+      'aipanel.newchat.send',
+      'composerAction.startComposerPrompt',
+      'aichat.newchataction',
+    ];
+
+    for (const cmd of cursorCommands) {
+      try {
+        const allCommands = await vscode.commands.getCommands(true);
+        if (!allCommands.includes(cmd)) { continue; }
+
+        await vscode.commands.executeCommand(cmd, { text: query });
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Sent via Cursor command: ${cmd}`);
+        return true;
+      } catch (e: any) {
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Cursor command ${cmd} failed: ${e.message}`);
+      }
+    }
+
+    // Strategy 2: Try standard chat.open — some Cursor versions still support it
+    try {
+      await vscode.commands.executeCommand('workbench.action.chat.open', {
+        query,
+        isPartialQuery: !autoSubmit,
+      });
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Cursor: chat.open succeeded`);
+      return true;
+    } catch (e: any) {
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Cursor: chat.open failed: ${e.message}`);
+    }
+
+    // Strategy 3: Focus chat panel and paste via clipboard
+    const focusCommands = [
+      'aipanel.focus',
+      'workbench.panel.aichat.view.aichat.focus',
+      'workbench.action.chat.open',
+    ];
+
+    for (const cmd of focusCommands) {
+      try {
+        const allCommands = await vscode.commands.getCommands(true);
+        if (!allCommands.includes(cmd)) { continue; }
+
+        await vscode.commands.executeCommand(cmd);
+        await new Promise(r => setTimeout(r, 400));
+
+        const original = await vscode.env.clipboard.readText();
+        await vscode.env.clipboard.writeText(query);
+        await vscode.commands.executeCommand('editor.action.clipboardPasteAction');
+        await new Promise(r => setTimeout(r, 150));
+        if (autoSubmit) {
+          // Try Cursor-specific submit, then standard
+          try {
+            await vscode.commands.executeCommand('aichat.submit');
+          } catch {
+            try {
+              await vscode.commands.executeCommand('workbench.action.chat.submit');
+            } catch { /* submit not available — user presses Enter */ }
+          }
+        }
+        await vscode.env.clipboard.writeText(original);
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] ${autoSubmit ? 'Sent to' : 'Typed into'} Cursor chat via clipboard paste (${cmd})`);
+        return true;
+      } catch (e: any) {
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Cursor focus via ${cmd} failed: ${e.message}`);
+      }
+    }
+
+    return false;
   }
 
   private insertAtCursor(text: string): void {

@@ -2,6 +2,15 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.6] - 2026-04-09
+
+### Added
+- Cursor IDE compatibility — automatic detection of Cursor editor via `vscode.env.appName` with dedicated chat delivery path
+- Multi-strategy chat delivery for Cursor: tries native Cursor commands (`aipanel.newchat.send`, `composerAction.startComposerPrompt`, `aichat.newchataction`), falls back to `workbench.action.chat.open`, then clipboard-paste into focused chat panel
+- Cursor-specific submit command (`aichat.submit`) support for auto-submit after transcript delivery
+- Unified IDE detection helper (`detectIDE()`) that cleanly routes Kiro, Cursor, and standard VS Code through separate delivery paths
+- Platform-aware clipboard fallback hint (Cmd+V on macOS, Ctrl+V elsewhere) replacing hardcoded Ctrl/Cmd check
+
 ## [0.7.5] - 2026-04-08
 
 ### Added
