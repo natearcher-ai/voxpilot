@@ -2,6 +2,14 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.7] - 2026-04-10
+
+### Added
+- Windsurf IDE compatibility — automatic detection of Windsurf (Codeium) editor via `vscode.env.appName` with dedicated Cascade chat delivery path
+- Multi-strategy chat delivery for Windsurf: tries native Cascade commands (`windsurf.newChat`, `cascade.sendMessage`, `windsurf.cascade.send`, `codeium.chatPanelSend`), falls back to `workbench.action.chat.open`, then clipboard-paste into focused Cascade panel
+- Windsurf-specific submit command (`cascade.submit`) support for auto-submit after transcript delivery
+- Updated IDE detection helper (`detectIDE()`) to route Kiro, Cursor, Windsurf, and standard VS Code through separate delivery paths
+
 ## [0.7.6] - 2026-04-09
 
 ### Added

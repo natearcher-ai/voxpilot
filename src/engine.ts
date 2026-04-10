@@ -552,10 +552,11 @@ export class VoxPilotEngine {
   }
 
   /** Detect the host IDE from vscode.env.appName. */
-  private detectIDE(): 'kiro' | 'cursor' | 'vscode' {
+  private detectIDE(): 'kiro' | 'cursor' | 'windsurf' | 'vscode' {
     const name = vscode.env.appName.toLowerCase();
     if (name.includes('kiro')) { return 'kiro'; }
     if (name.includes('cursor')) { return 'cursor'; }
+    if (name.includes('windsurf')) { return 'windsurf'; }
     return 'vscode';
   }
 
@@ -590,6 +591,9 @@ export class VoxPilotEngine {
     } else if (ide === 'cursor') {
       // Cursor IDE: try composer/chat commands, then clipboard-paste fallback
       if (await this.sendToCursorChat(query, autoSubmit)) { return; }
+    } else if (ide === 'windsurf') {
+      // Windsurf IDE: try Cascade/Windsurf-specific commands, then clipboard-paste fallback
+      if (await this.sendToWindsurfChat(query, autoSubmit)) { return; }
     } else {
       // Standard VS Code
       try {
@@ -684,6 +688,86 @@ export class VoxPilotEngine {
         return true;
       } catch (e: any) {
         this.outputChannel.appendLine(`[${new Date().toISOString()}] Cursor focus via ${cmd} failed: ${e.message}`);
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Windsurf IDE chat delivery.
+   * Windsurf (Codeium) is a VS Code fork with its own AI chat panel called Cascade.
+   * We try Windsurf-specific commands first, then standard chat.open, then clipboard paste.
+   */
+  private async sendToWindsurfChat(query: string, autoSubmit: boolean): Promise<boolean> {
+    // Strategy 1: Try Windsurf/Cascade-specific chat commands
+    const windsurfCommands = [
+      'windsurf.newChat',
+      'cascade.sendMessage',
+      'windsurf.cascade.send',
+      'codeium.chatPanelSend',
+    ];
+
+    for (const cmd of windsurfCommands) {
+      try {
+        const allCommands = await vscode.commands.getCommands(true);
+        if (!allCommands.includes(cmd)) { continue; }
+
+        await vscode.commands.executeCommand(cmd, { text: query });
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Sent via Windsurf command: ${cmd}`);
+        return true;
+      } catch (e: any) {
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Windsurf command ${cmd} failed: ${e.message}`);
+      }
+    }
+
+    // Strategy 2: Try standard chat.open — some Windsurf versions may support it
+    try {
+      await vscode.commands.executeCommand('workbench.action.chat.open', {
+        query,
+        isPartialQuery: !autoSubmit,
+      });
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Windsurf: chat.open succeeded`);
+      return true;
+    } catch (e: any) {
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Windsurf: chat.open failed: ${e.message}`);
+    }
+
+    // Strategy 3: Focus Cascade panel and paste via clipboard
+    const focusCommands = [
+      'windsurf.cascade.focus',
+      'codeium.chatPanelFocus',
+      'workbench.panel.chat.view.focus',
+      'workbench.action.chat.open',
+    ];
+
+    for (const cmd of focusCommands) {
+      try {
+        const allCommands = await vscode.commands.getCommands(true);
+        if (!allCommands.includes(cmd)) { continue; }
+
+        await vscode.commands.executeCommand(cmd);
+        await new Promise(r => setTimeout(r, 400));
+
+        const original = await vscode.env.clipboard.readText();
+        await vscode.env.clipboard.writeText(query);
+        await vscode.commands.executeCommand('editor.action.clipboardPasteAction');
+        await new Promise(r => setTimeout(r, 150));
+        if (autoSubmit) {
+          // Try Windsurf-specific submit, then standard
+          try {
+            await vscode.commands.executeCommand('cascade.submit');
+          } catch {
+            try {
+              await vscode.commands.executeCommand('workbench.action.chat.submit');
+            } catch { /* submit not available — user presses Enter */ }
+          }
+        }
+        await vscode.env.clipboard.writeText(original);
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] ${autoSubmit ? 'Sent to' : 'Typed into'} Windsurf Cascade via clipboard paste (${cmd})`);
+        return true;
+      } catch (e: any) {
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Windsurf focus via ${cmd} failed: ${e.message}`);
       }
     }
 
