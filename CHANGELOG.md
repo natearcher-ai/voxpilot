@@ -2,6 +2,14 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.8] - 2026-04-11
+
+### Added
+- Zed IDE compatibility — automatic detection of Zed editor via `vscode.env.appName` with dedicated assistant chat delivery path
+- Multi-strategy chat delivery for Zed: tries native assistant commands (`assistant.sendMessage`, `assistant.newContext`, `zed.assistant.send`, `assistant.open`), falls back to `workbench.action.chat.open`, then clipboard-paste into focused assistant panel
+- Zed-specific submit command (`assistant.submit`) support for auto-submit after transcript delivery
+- Updated IDE detection helper (`detectIDE()`) to route Kiro, Cursor, Windsurf, Zed, and standard VS Code through separate delivery paths
+
 ## [0.7.7] - 2026-04-10
 
 ### Added

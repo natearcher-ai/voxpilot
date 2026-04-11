@@ -552,11 +552,12 @@ export class VoxPilotEngine {
   }
 
   /** Detect the host IDE from vscode.env.appName. */
-  private detectIDE(): 'kiro' | 'cursor' | 'windsurf' | 'vscode' {
+  private detectIDE(): 'kiro' | 'cursor' | 'windsurf' | 'zed' | 'vscode' {
     const name = vscode.env.appName.toLowerCase();
     if (name.includes('kiro')) { return 'kiro'; }
     if (name.includes('cursor')) { return 'cursor'; }
     if (name.includes('windsurf')) { return 'windsurf'; }
+    if (name.includes('zed')) { return 'zed'; }
     return 'vscode';
   }
 
@@ -594,6 +595,9 @@ export class VoxPilotEngine {
     } else if (ide === 'windsurf') {
       // Windsurf IDE: try Cascade/Windsurf-specific commands, then clipboard-paste fallback
       if (await this.sendToWindsurfChat(query, autoSubmit)) { return; }
+    } else if (ide === 'zed') {
+      // Zed IDE: try Zed assistant commands, then clipboard-paste fallback
+      if (await this.sendToZedChat(query, autoSubmit)) { return; }
     } else {
       // Standard VS Code
       try {
@@ -768,6 +772,85 @@ export class VoxPilotEngine {
         return true;
       } catch (e: any) {
         this.outputChannel.appendLine(`[${new Date().toISOString()}] Windsurf focus via ${cmd} failed: ${e.message}`);
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Zed IDE chat delivery.
+   * Zed has its own built-in AI assistant panel. When running VoxPilot through
+   * Zed's VS Code extension compatibility layer, we try Zed-specific assistant
+   * commands first, then standard chat.open, then clipboard paste.
+   */
+  private async sendToZedChat(query: string, autoSubmit: boolean): Promise<boolean> {
+    // Strategy 1: Try Zed assistant-specific commands
+    const zedCommands = [
+      'assistant.sendMessage',
+      'assistant.newContext',
+      'zed.assistant.send',
+      'assistant.open',
+    ];
+
+    for (const cmd of zedCommands) {
+      try {
+        const allCommands = await vscode.commands.getCommands(true);
+        if (!allCommands.includes(cmd)) { continue; }
+
+        await vscode.commands.executeCommand(cmd, { text: query });
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Sent via Zed command: ${cmd}`);
+        return true;
+      } catch (e: any) {
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Zed command ${cmd} failed: ${e.message}`);
+      }
+    }
+
+    // Strategy 2: Try standard chat.open — Zed may support it via compat layer
+    try {
+      await vscode.commands.executeCommand('workbench.action.chat.open', {
+        query,
+        isPartialQuery: !autoSubmit,
+      });
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Zed: chat.open succeeded`);
+      return true;
+    } catch (e: any) {
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Zed: chat.open failed: ${e.message}`);
+    }
+
+    // Strategy 3: Focus assistant panel and paste via clipboard
+    const focusCommands = [
+      'assistant.focus',
+      'zed.assistant.focus',
+      'workbench.action.chat.open',
+    ];
+
+    for (const cmd of focusCommands) {
+      try {
+        const allCommands = await vscode.commands.getCommands(true);
+        if (!allCommands.includes(cmd)) { continue; }
+
+        await vscode.commands.executeCommand(cmd);
+        await new Promise(r => setTimeout(r, 400));
+
+        const original = await vscode.env.clipboard.readText();
+        await vscode.env.clipboard.writeText(query);
+        await vscode.commands.executeCommand('editor.action.clipboardPasteAction');
+        await new Promise(r => setTimeout(r, 150));
+        if (autoSubmit) {
+          try {
+            await vscode.commands.executeCommand('assistant.submit');
+          } catch {
+            try {
+              await vscode.commands.executeCommand('workbench.action.chat.submit');
+            } catch { /* submit not available — user presses Enter */ }
+          }
+        }
+        await vscode.env.clipboard.writeText(original);
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] ${autoSubmit ? 'Sent to' : 'Typed into'} Zed assistant via clipboard paste (${cmd})`);
+        return true;
+      } catch (e: any) {
+        this.outputChannel.appendLine(`[${new Date().toISOString()}] Zed focus via ${cmd} failed: ${e.message}`);
       }
     }
 
