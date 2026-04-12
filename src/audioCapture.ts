@@ -44,12 +44,12 @@ export class AudioCapture extends EventEmitter implements vscode.Disposable {
       this.emit('audio', chunk);
     });
 
-    this.process.on('error', (err) => {
+    this.process.on('error', (err: Error) => {
       this._isCapturing = false;
       this.emit('error', err);
     });
 
-    this.process.on('close', (code) => {
+    this.process.on('close', (code: number | null) => {
       this._isCapturing = false;
       this.emit('stopped', code);
     });

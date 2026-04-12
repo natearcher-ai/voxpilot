@@ -37,7 +37,7 @@ export const window = {
 };
 
 export const commands = {
-  registerCommand: (_cmd: string, _cb: Function) => ({ dispose: () => {} }),
+  registerCommand: (_cmd: string, _cb: (...args: unknown[]) => unknown) => ({ dispose: () => {} }),
   executeCommand: async () => {},
 };
 

@@ -230,7 +230,7 @@ export class ModelManager {
         return;
       }
       const get = parsedUrl.protocol === 'https:' ? https.get : http.get;
-      get(parsedUrl, (res) => {
+      get(parsedUrl, (res: http.IncomingMessage) => {
         if (res.statusCode && [301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
           file.close();
           // Resolve relative redirects against the original URL
@@ -247,7 +247,7 @@ export class ModelManager {
         }
         res.pipe(file);
         file.on('finish', () => { file.close(); resolve(); });
-      }).on('error', (err) => {
+      }).on('error', (err: Error) => {
         file.close();
         try { fs.unlinkSync(dest); } catch {}
         reject(err);
