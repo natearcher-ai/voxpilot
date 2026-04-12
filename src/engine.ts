@@ -106,7 +106,7 @@ export class VoxPilotEngine {
 
   async toggle(): Promise<void> {
     if (this.isListening) {
-      this.stopListening();
+      await this.stopListening();
     } else {
       await this.startListening();
     }
@@ -122,7 +122,7 @@ export class VoxPilotEngine {
       // Manual stop — finalize everything
       this.isDictating = false;
       await this.finalizeSpeech();
-      this.stopListening();
+      await this.stopListening();
     } else {
       this.isDictating = true;
       await this.startListening();
@@ -137,7 +137,7 @@ export class VoxPilotEngine {
     if (this.isListening) {
       this.isQuickCapture = false;
       await this.finalizeSpeech();
-      this.stopListening();
+      await this.stopListening();
     } else {
       this.isQuickCapture = true;
       await this.startListening();
@@ -153,7 +153,7 @@ export class VoxPilotEngine {
     if (this.isListening) {
       this.inlineMode = false;
       await this.finalizeSpeech();
-      this.stopListening();
+      await this.stopListening();
       // Restore setting value
       const config = vscode.workspace.getConfiguration('voxpilot');
       this.inlineMode = config.get<boolean>('inlineMode', false);
@@ -264,18 +264,17 @@ export class VoxPilotEngine {
     this.outputChannel.appendLine(`[${new Date().toISOString()}] Listening started`);
   }
 
-  private stopListening(): void {
+  private async stopListening(): Promise<void> {
     // Transcribe any buffered speech before stopping
     if (this.speechBuffer.length > 0) {
       this.outputChannel.appendLine(`[${new Date().toISOString()}] Stopping with ${this.speechBuffer.length} buffered chunks, transcribing...`);
-      this.finalizeSpeech();
+      await this.finalizeSpeech();
     }
     this.audio.stop();
     this.isListening = false;
     this.isQuickCapture = false;
     this.isDictating = false;
     this.audioChunkCount = 0;
-    this.segmentTranscripts = [];
     if (this.soundEnabled) { this.sound.playStop(); }
     this.statusBar.setIdle();
     this.outputChannel.appendLine(`[${new Date().toISOString()}] Listening stopped`);
@@ -365,17 +364,6 @@ export class VoxPilotEngine {
         });
       }
     }
-  }
-
-  private computeRMS(pcm16: Buffer): number {
-    const samples = pcm16.length / 2;
-    if (samples === 0) { return 0; }
-    let sumSq = 0;
-    for (let i = 0; i < pcm16.length; i += 2) {
-      const sample = pcm16.readInt16LE(i) / 32768;
-      sumSq += sample * sample;
-    }
-    return Math.sqrt(sumSq / samples);
   }
 
   /** Convert RMS (0–1 linear) to dBFS. */
