@@ -24,6 +24,28 @@ export function __clearConfig(): void {
   }
 }
 
+/** Track calls to commands.executeCommand */
+export const __executeCommandCalls: string[] = [];
+
+/** Track calls to env.clipboard.writeText */
+export const __clipboardWriteCalls: string[] = [];
+
+/** Stored clipboard content for readText */
+let __clipboardContent = '';
+
+/** Set the clipboard content for readText to return */
+export function __setClipboardContent(text: string): void {
+  __clipboardContent = text;
+}
+
+/** Reset all tracking arrays */
+export function __resetTracking(): void {
+  __executeCommandCalls.length = 0;
+  __clipboardWriteCalls.length = 0;
+  __clipboardContent = '';
+  window.activeTextEditor = undefined;
+}
+
 export const window = {
   createOutputChannel: () => ({
     appendLine: () => {},
@@ -33,19 +55,19 @@ export const window = {
   showWarningMessage: async () => undefined,
   showErrorMessage: async () => undefined,
   showQuickPick: async () => undefined,
-  activeTextEditor: undefined,
+  activeTextEditor: undefined as any,
 };
 
 export const commands = {
   registerCommand: (_cmd: string, _cb: (...args: unknown[]) => unknown) => ({ dispose: () => {} }),
-  executeCommand: async () => {},
+  executeCommand: async (cmd: string) => { __executeCommandCalls.push(cmd); },
 };
 
 export const env = {
   appName: 'Visual Studio Code',
   clipboard: {
-    readText: async () => '',
-    writeText: async () => {},
+    readText: async () => __clipboardContent,
+    writeText: async (text: string) => { __clipboardWriteCalls.push(text); __clipboardContent = text; },
   },
 };
 

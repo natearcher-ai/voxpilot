@@ -496,9 +496,9 @@ export class VoxPilotEngine {
       const outputAction = config.get<string>('outputAction', 'ask');
 
       if (this.inlineMode || outputAction === 'cursor') {
-        this.insertAtCursor(this.lastTranscript);
+        await this.insertAtCursor(this.lastTranscript);
         if (shouldAutoSubmit('cursor')) {
-          this.insertAtCursor('\n');
+          await this.insertAtCursor('\n');
         }
         this.statusBar.setSent(this.lastTranscript);
         this.outputChannel.appendLine(`[${new Date().toISOString()}] Inserted at cursor (autoSubmit=${shouldAutoSubmit('cursor')})`);
@@ -532,10 +532,10 @@ export class VoxPilotEngine {
       'Send to Chat',
       'Copy',
       'Insert at Cursor',
-    ).then(action => {
+    ).then(async action => {
       if (action === 'Send to Chat') { this.sendToChat(text); }
       else if (action === 'Copy') { vscode.env.clipboard.writeText(text); }
-      else if (action === 'Insert at Cursor') { this.insertAtCursor(text); }
+      else if (action === 'Insert at Cursor') { await this.insertAtCursor(text); }
     });
   }
 
@@ -845,12 +845,19 @@ export class VoxPilotEngine {
     return false;
   }
 
-  private insertAtCursor(text: string): void {
+  private async insertAtCursor(text: string): Promise<void> {
     const editor = vscode.window.activeTextEditor;
     if (editor) {
       editor.edit(editBuilder => {
         editBuilder.insert(editor.selection.active, text);
       });
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Inserted at cursor (editor)`);
+    } else {
+      const original = await vscode.env.clipboard.readText();
+      await vscode.env.clipboard.writeText(text);
+      await vscode.commands.executeCommand('editor.action.clipboardPasteAction');
+      await vscode.env.clipboard.writeText(original);
+      this.outputChannel.appendLine(`[${new Date().toISOString()}] Inserted at cursor (clipboard fallback)`);
     }
   }
 
