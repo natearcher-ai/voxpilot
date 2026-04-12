@@ -80,6 +80,7 @@ export class Transcriber {
       this.loaded = true;
     } catch (err: any) {
       this.loaded = false;
+      pipelineInstance = null;
       throw new Error(`Failed to initialize transcriber: ${err.message}`);
     }
   }

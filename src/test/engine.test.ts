@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { Transcriber } from '../transcriber';
 
 /**
  * Engine integration tests — verify the module structure and exports.
@@ -21,5 +22,20 @@ describe('Extension module', () => {
     expect(mod.deactivate).toBeDefined();
     expect(typeof mod.activate).toBe('function');
     expect(typeof mod.deactivate).toBe('function');
+  });
+});
+
+describe('Transcriber error before load', () => {
+  it('should throw Model not loaded for transcribe() before load()', async () => {
+    const t = new Transcriber('moonshine-base', '/tmp/runtime', '/tmp/cache');
+    const pcm = Buffer.alloc(32000);
+    await expect(t.transcribe(pcm)).rejects.toThrow('Model not loaded');
+  });
+
+  it('should throw Model not loaded for transcribeStreaming() before load()', async () => {
+    const t = new Transcriber('moonshine-base', '/tmp/runtime', '/tmp/cache');
+    const pcm = Buffer.alloc(32000);
+    const callbacks = { onPartial: () => {}, onFinal: () => {} };
+    await expect(t.transcribeStreaming(pcm, callbacks)).rejects.toThrow('Model not loaded');
   });
 });
