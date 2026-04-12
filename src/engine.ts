@@ -877,7 +877,7 @@ export class VoxPilotEngine {
     const transcriber = new Transcriber(modelId, runtimeDir, cacheDir);
     try {
       await transcriber.load();
-    } catch (err) {
+    } catch (err: unknown) {
       // Ensure the transcriber is not left in a half-initialized state
       // so the next call to ensureTranscriber() will retry initialization
       await transcriber.dispose();

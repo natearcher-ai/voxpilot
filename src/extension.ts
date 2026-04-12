@@ -4,7 +4,7 @@ import * as path from 'path';
 import { VoxPilotEngine } from './engine';
 import { StatusBarManager } from './statusBar';
 import { ModelManager } from './modelManager';
-import { ModelManagerPanel } from './modelManagerPanel';
+import { ModelManagerPanel, ModelTreeItem } from './modelManagerPanel';
 import { showPipelineSettings } from './pipelineSettingsUI';
 import { showLanguageSelector } from './languageSelector';
 
@@ -51,9 +51,9 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('voxpilot.selectLanguage', () => engine?.selectLanguage()),
     vscode.commands.registerCommand('voxpilot.clearCache', () => clearCache(context)),
     vscode.commands.registerCommand('voxpilot.pipelineSettings', () => engine ? showPipelineSettings(engine.pipeline) : undefined),
-    vscode.commands.registerCommand('voxpilot.modelManager.download', (item) => modelPanel.downloadModel(item)),
-    vscode.commands.registerCommand('voxpilot.modelManager.switch', (item) => modelPanel.switchModel(item)),
-    vscode.commands.registerCommand('voxpilot.modelManager.delete', (item) => modelPanel.deleteModel(item)),
+    vscode.commands.registerCommand('voxpilot.modelManager.download', (item: ModelTreeItem) => modelPanel.downloadModel(item)),
+    vscode.commands.registerCommand('voxpilot.modelManager.switch', (item: ModelTreeItem) => modelPanel.switchModel(item)),
+    vscode.commands.registerCommand('voxpilot.modelManager.delete', (item: ModelTreeItem) => modelPanel.deleteModel(item)),
     vscode.commands.registerCommand('voxpilot.modelManager.refresh', () => modelPanel.refresh()),
     treeView,
     configWatcher,
