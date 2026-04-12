@@ -21,13 +21,42 @@ npm run build
 
 ```
 src/
-├── extension.ts      — Entry point, command registration
-├── engine.ts         — Core orchestration (listen → transcribe → deliver)
-├── transcriber.ts    — Moonshine ONNX inference
-├── modelManager.ts   — Model download and caching
-├── audioCapture.ts   — Platform-specific mic capture
-├── vad.ts            — Voice activity detection
-└── statusBar.ts      — Status bar UI
+├── extension.ts              — Entry point, command registration
+├── engine.ts                 — Core orchestration (listen -> transcribe -> deliver)
+├── transcriber.ts            — ASR inference (Moonshine, Whisper, Parakeet TDT)
+├── modelManager.ts           — Model download and caching
+├── modelManagerPanel.ts      — Sidebar tree view for model management
+├── audioCapture.ts           — Mic capture via native helper, sox, arecord, or ffmpeg
+├── vad.ts                    — Adaptive energy-based voice activity detection
+├── statusBar.ts              — Status bar UI with waveform integration
+├── noiseGate.ts              — RMS-based noise gate filter for PCM audio
+├── waveformVisualizer.ts     — Unicode block-character waveform for status bar
+├── voiceCommands.ts          — Built-in spoken command to action mapping
+├── customVoiceCommands.ts    — User-defined voice-to-action mappings via settings
+├── postProcessingPipeline.ts — Pluggable pipeline for transcript transforms
+├── autoPunctuation.ts        — Auto-period insertion based on speech pause patterns
+├── smartSpacing.ts           — Whitespace normalization between transcript segments
+├── codeVocabulary.ts         — Programming term correction dictionary
+├── languageSelector.ts       — Whisper language selection (multilingual support)
+├── transcriptHistory.ts      — Recent transcript storage and recall
+├── partialOverlay.ts         — Floating live-caption overlay in the editor
+├── pipelineSettingsUI.ts     — QuickPick UI to reorder and toggle post-processors
+├── soundFeedback.ts          — Audio beep feedback for start/stop listening
+├── autoSubmitRules.ts        — Auto-submit (Enter) rules per output target
+└── test/
+    ├── __mocks__/vscode.ts   — VS Code API mock for tests
+    ├── engine.test.ts
+    ├── transcriber.test.ts
+    ├── vad.test.ts
+    ├── noiseGate.test.ts
+    ├── waveformVisualizer.test.ts
+    ├── voiceCommands.test.ts
+    ├── customVoiceCommands.test.ts
+    ├── customVocabulary.test.ts
+    ├── codeVocabulary.test.ts
+    ├── postProcessingPipeline.test.ts
+    ├── autoPunctuation.test.ts
+    └── smartSpacing.test.ts
 ```
 
 ## Guidelines
