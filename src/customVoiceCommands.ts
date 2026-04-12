@@ -13,6 +13,16 @@
 import * as vscode from 'vscode';
 import { PostProcessor, ProcessorContext } from './postProcessingPipeline';
 
+/** Lazy-initialized singleton output channel for validation warnings */
+let outputChannel: vscode.OutputChannel | undefined;
+
+function getOutputChannel(): vscode.OutputChannel {
+  if (!outputChannel) {
+    outputChannel = vscode.window.createOutputChannel('VoxPilot');
+  }
+  return outputChannel;
+}
+
 /** Supported action types for custom voice commands */
 export type CustomVoiceCommandAction = 'insert' | 'command';
 
@@ -112,7 +122,7 @@ export function loadCustomCommands(): CompiledCommand[] {
 
   const errors = validateCustomCommands(raw);
   if (errors.length > 0) {
-    const channel = vscode.window.createOutputChannel('VoxPilot');
+    const channel = getOutputChannel();
     for (const err of errors) {
       channel.appendLine(`[CustomVoiceCommands] Entry ${err.index}: ${err.message}`);
     }
