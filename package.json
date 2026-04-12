@@ -2,7 +2,7 @@
   "name": "voxpilot",
   "displayName": "VoxPilot — Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
-  "version": "0.7.8",
+  "version": "0.7.9",
   "publisher": "natearcher-ai",
   "license": "MIT",
   "repository": {
@@ -298,7 +298,10 @@
           "default": [],
           "items": {
             "type": "object",
-            "required": ["from", "to"],
+            "required": [
+              "from",
+              "to"
+            ],
             "properties": {
               "from": {
                 "type": "string",
@@ -378,7 +381,10 @@
           "default": [],
           "items": {
             "type": "object",
-            "required": ["phrase", "action"],
+            "required": [
+              "phrase",
+              "action"
+            ],
             "properties": {
               "phrase": {
                 "type": "string",
@@ -386,7 +392,10 @@
               },
               "action": {
                 "type": "string",
-                "enum": ["insert", "command"],
+                "enum": [
+                  "insert",
+                  "command"
+                ],
                 "description": "Action type: 'insert' replaces the phrase with text, 'command' executes a VS Code command."
               },
               "text": {
@@ -405,8 +414,20 @@
                 "description": "Optional human-readable description of what this command does."
               }
             },
-            "if": { "properties": { "action": { "const": "insert" } } },
-            "then": { "required": ["phrase", "action", "text"] }
+            "if": {
+              "properties": {
+                "action": {
+                  "const": "insert"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "phrase",
+                "action",
+                "text"
+              ]
+            }
           },
           "markdownDescription": "Define custom voice-to-action mappings. Each entry maps a spoken phrase to an action.\n\nExample:\n```json\n[\n  { \"phrase\": \"arrow function\", \"action\": \"insert\", \"text\": \"() => \" },\n  { \"phrase\": \"hash map\", \"action\": \"insert\", \"text\": \"HashMap\" },\n  { \"phrase\": \"format file\", \"action\": \"command\", \"command\": \"editor.action.formatDocument\" }\n]\n```\n\nPhrases are matched case-insensitively at word boundaries. Longer phrases match first. Insert actions run in the post-processing pipeline; command actions execute the VS Code command and strip the phrase from the transcript."
         }
