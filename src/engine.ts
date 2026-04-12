@@ -886,8 +886,16 @@ export class VoxPilotEngine {
 
     const runtimeDir = await this.modelManager.ensureOnnxRuntime();
     const cacheDir = path.join(this.context.globalStorageUri.fsPath, 'hf-cache');
-    this.transcriber = new Transcriber(modelId, runtimeDir, cacheDir);
-    await this.transcriber.load();
+    const transcriber = new Transcriber(modelId, runtimeDir, cacheDir);
+    try {
+      await transcriber.load();
+    } catch (err) {
+      // Ensure the transcriber is not left in a half-initialized state
+      // so the next call to ensureTranscriber() will retry initialization
+      await transcriber.dispose();
+      throw err;
+    }
+    this.transcriber = transcriber;
     this.outputChannel.appendLine(`Model loaded: ${modelId}`);
   }
 
