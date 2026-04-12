@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as https from 'https';
 import * as http from 'http';
-import { execSync } from 'child_process';
+import { exec, execSync } from 'child_process';
 
 const ONNX_RUNTIME_VERSION = '1.17.0';
 
@@ -151,11 +151,25 @@ export class ModelManager {
         title: 'VoxPilot: Installing runtime dependencies (one-time setup)',
         cancellable: true,
       },
-      async () => {
-        execSync(
-          `npm install --prefix "${this.runtimeDir}" onnxruntime-node@${ONNX_RUNTIME_VERSION} @huggingface/transformers --no-save`,
-          { stdio: 'pipe', timeout: 180000 },
-        );
+      async (_progress, token) => {
+        await new Promise<void>((resolve, reject) => {
+          const child = exec(
+            `npm install --prefix "${this.runtimeDir}" onnxruntime-node@${ONNX_RUNTIME_VERSION} @huggingface/transformers --no-save`,
+            { timeout: 180000 },
+            (error) => {
+              if (error) {
+                reject(error);
+              } else {
+                resolve();
+              }
+            },
+          );
+
+          token.onCancellationRequested(() => {
+            child.kill();
+            reject(new Error('Installation cancelled'));
+          });
+        });
       },
     );
 

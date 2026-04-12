@@ -23,6 +23,11 @@ describe('Extension module', () => {
     expect(typeof mod.activate).toBe('function');
     expect(typeof mod.deactivate).toBe('function');
   });
+
+  it('should not throw when calling deactivate()', async () => {
+    const mod = await import('../extension');
+    expect(() => mod.deactivate()).not.toThrow();
+  });
 });
 
 describe('Transcriber error before load', () => {

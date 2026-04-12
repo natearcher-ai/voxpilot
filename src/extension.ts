@@ -111,5 +111,15 @@ function getDirSize(dir: string): number {
 }
 
 export function deactivate() {
-  // Handled by disposables
+  try {
+    if (engine) {
+      engine.dispose();
+      engine = undefined;
+    }
+    if (statusBar) {
+      statusBar.dispose();
+    }
+  } catch {
+    // Safety net -- never throw during deactivation
+  }
 }

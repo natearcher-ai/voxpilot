@@ -13,8 +13,8 @@ export class SoundFeedback {
   private stopBeepPath: string;
   private ready = false;
 
-  constructor() {
-    this.tempDir = path.join(os.tmpdir(), 'voxpilot-sounds');
+  constructor(storagePath?: string) {
+    this.tempDir = path.join(storagePath || os.tmpdir(), 'voxpilot-sounds');
     this.startBeepPath = path.join(this.tempDir, 'start.wav');
     this.stopBeepPath = path.join(this.tempDir, 'stop.wav');
     this.ensureSounds();

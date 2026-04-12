@@ -52,7 +52,7 @@ export class VoxPilotEngine {
     this.modelManager = new ModelManager(context);
     this.outputChannel = vscode.window.createOutputChannel('VoxPilot');
     this.history = new TranscriptHistory(context);
-    this.sound = new SoundFeedback();
+    this.sound = new SoundFeedback(context.globalStorageUri.fsPath);
 
     const config = vscode.workspace.getConfiguration('voxpilot');
     const sensitivity = config.get<number>('vadSensitivity', 0.5);

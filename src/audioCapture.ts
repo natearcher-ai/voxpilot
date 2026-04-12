@@ -12,10 +12,13 @@ export interface AudioDevice {
   name: string;
 }
 
+const INITIAL_VALIDATION_CHUNKS = 3;
+
 export class AudioCapture extends EventEmitter implements vscode.Disposable {
   private process: ChildProcess | null = null;
   private _isCapturing = false;
   private deviceId: string = '';
+  private initialChunksValidated = 0;
 
   get isCapturing(): boolean {
     return this._isCapturing;
@@ -34,6 +37,8 @@ export class AudioCapture extends EventEmitter implements vscode.Disposable {
       return;
     }
 
+    this.initialChunksValidated = 0;
+
     this.process = spawn(cmd.bin, cmd.args, {
       stdio: ['ignore', 'pipe', 'ignore'],
       env: { ...process.env, ...cmd.env },
@@ -41,6 +46,13 @@ export class AudioCapture extends EventEmitter implements vscode.Disposable {
     this._isCapturing = true;
 
     this.process.stdout?.on('data', (chunk: Buffer) => {
+      if (this.initialChunksValidated < INITIAL_VALIDATION_CHUNKS) {
+        if (!this.isLikelyPCM(chunk)) {
+          // Skip non-PCM data (e.g., ffmpeg banner, error text)
+          return;
+        }
+        this.initialChunksValidated++;
+      }
       this.emit('audio', chunk);
     });
 
@@ -183,6 +195,30 @@ export class AudioCapture extends EventEmitter implements vscode.Disposable {
       } catch {}
     }
     return devices;
+  }
+
+  private isLikelyPCM(chunk: Buffer): boolean {
+    if (chunk.length === 0) {
+      return false;
+    }
+    if (chunk.length % 2 !== 0) {
+      return false;
+    }
+    // Check if the first bytes are all printable ASCII (text banner, not PCM)
+    const checkLen = Math.min(chunk.length, 8);
+    if (checkLen >= 8) {
+      let allPrintable = true;
+      for (let i = 0; i < checkLen; i++) {
+        if (chunk[i] < 0x20 || chunk[i] > 0x7e) {
+          allPrintable = false;
+          break;
+        }
+      }
+      if (allPrintable) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private getCaptureCommand(): { bin: string; args: string[]; env?: Record<string, string> } | null {
