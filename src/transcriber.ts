@@ -1,7 +1,5 @@
 import * as path from 'path';
 
-let pipelineInstance: any;
-
 export interface TranscriptionResult {
   text: string;
   language?: string;
@@ -27,6 +25,7 @@ export class Transcriber {
   private isStreaming = false;
   private _isWhisperModel = false;
   private _lastDetectedLanguage: string | undefined;
+  private pipelineInstance: any = null;
 
   constructor(private modelId: string, private runtimeDir: string, private cacheDir: string) {
     this.isStreaming = modelId === 'parakeet-tdt-0.6b';
@@ -73,14 +72,14 @@ export class Transcriber {
       };
       const repo = MODEL_REPOS[this.modelId] || 'onnx-community/moonshine-base-ONNX';
 
-      pipelineInstance = await transformers.pipeline('automatic-speech-recognition', repo, {
+      this.pipelineInstance = await transformers.pipeline('automatic-speech-recognition', repo, {
         dtype: 'fp32',
       });
 
       this.loaded = true;
     } catch (err: any) {
       this.loaded = false;
-      pipelineInstance = null;
+      this.pipelineInstance = null;
       throw new Error(`Failed to initialize transcriber: ${err.message}`);
     }
   }
@@ -90,7 +89,7 @@ export class Transcriber {
    * @param language ISO 639-1 language code for Whisper models, or 'auto' for auto-detect. Ignored for non-Whisper models.
    */
   async transcribe(pcmBuffer: Buffer, language?: string): Promise<TranscriptionResult> {
-    if (!this.loaded || !pipelineInstance) {
+    if (!this.loaded || !this.pipelineInstance) {
       throw new Error('Model not loaded');
     }
 
@@ -109,7 +108,7 @@ export class Transcriber {
       opts.return_timestamps = false;
     }
 
-    const result = await pipelineInstance(float32, opts);
+    const result = await this.pipelineInstance(float32, opts);
 
     const text = result?.text ?? '';
 
@@ -142,7 +141,7 @@ export class Transcriber {
       return result;
     }
 
-    if (!this.loaded || !pipelineInstance) {
+    if (!this.loaded || !this.pipelineInstance) {
       throw new Error('Model not loaded');
     }
 
@@ -156,7 +155,7 @@ export class Transcriber {
 
     if (totalSamples <= SAMPLES_PER_CHUNK) {
       // Short audio — single pass, no chunking needed
-      const result = await pipelineInstance(float32, { sampling_rate: 16000 });
+      const result = await this.pipelineInstance(float32, { sampling_rate: 16000 });
       const text = result?.text ?? '';
       callbacks.onPartial?.(text);
       callbacks.onFinal?.(text);
@@ -172,7 +171,7 @@ export class Transcriber {
       const end = Math.min((i + 1) * SAMPLES_PER_CHUNK, totalSamples);
       const chunk = float32.slice(start, end);
 
-      const result = await pipelineInstance(chunk, {
+      const result = await this.pipelineInstance(chunk, {
         sampling_rate: 16000,
       });
 
@@ -197,9 +196,9 @@ export class Transcriber {
   }
 
   async dispose(): Promise<void> {
-    if (pipelineInstance) {
-      try { await pipelineInstance.dispose(); } catch {}
-      pipelineInstance = null;
+    if (this.pipelineInstance) {
+      try { await this.pipelineInstance.dispose(); } catch {}
+      this.pipelineInstance = null;
     }
     this.loaded = false;
   }
