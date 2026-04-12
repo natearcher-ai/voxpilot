@@ -25,7 +25,7 @@ export interface VoiceCommandResult {
 
 interface CommandRule {
   pattern: RegExp;
-  apply: (match: RegExpMatchArray, textBefore: string) => string;
+  apply: (text: string) => string;
 }
 
 const PUNCTUATION_COMMANDS: Array<{ patterns: string[]; replacement: string }> = [
@@ -58,17 +58,17 @@ function buildPunctuationRules(): CommandRule[] {
 
     rules.push({
       pattern,
-      apply: (_match, textBefore) => {
+      apply: (text) => {
         // For newline, just insert the newline
         if (replacement === '\n') {
-          return textBefore.replace(pattern, '\n');
+          return text.replace(pattern, '\n');
         }
         // For opening parens, add space before and the paren
         if (replacement === '(') {
-          return textBefore.replace(pattern, ' (');
+          return text.replace(pattern, ' (');
         }
         // For punctuation, attach directly to the preceding word (trim trailing space)
-        return textBefore.replace(pattern, replacement);
+        return text.replace(pattern, replacement);
       },
     });
   }
@@ -122,12 +122,10 @@ export function processVoiceCommands(rawText: string): VoiceCommandResult {
 
   // Apply punctuation commands first
   for (const rule of punctuationRules) {
-    const before = text;
-    text = rule.apply(null as any, text);
-    if (text !== before) {
-      // Count how many replacements happened
-      const diff = before.length - text.length;
-      commandsApplied += Math.max(1, Math.abs(diff) > 0 ? 1 : 0);
+    const matchCount = [...text.matchAll(rule.pattern)].length;
+    if (matchCount > 0) {
+      text = rule.apply(text);
+      commandsApplied += matchCount;
     }
   }
 

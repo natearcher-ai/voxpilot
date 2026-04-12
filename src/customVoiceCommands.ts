@@ -92,6 +92,9 @@ export function validateCustomCommands(commands: unknown[]): ValidationError[] {
   return errors;
 }
 
+/** Lazily-initialized output channel for validation errors */
+let validationChannel: vscode.OutputChannel | null = null;
+
 /** A compiled custom command ready for matching */
 interface CompiledCommand {
   pattern: RegExp;
@@ -112,9 +115,11 @@ export function loadCustomCommands(): CompiledCommand[] {
 
   const errors = validateCustomCommands(raw);
   if (errors.length > 0) {
-    const channel = vscode.window.createOutputChannel('VoxPilot');
+    if (!validationChannel) {
+      validationChannel = vscode.window.createOutputChannel('VoxPilot');
+    }
     for (const err of errors) {
-      channel.appendLine(`[CustomVoiceCommands] Entry ${err.index}: ${err.message}`);
+      validationChannel.appendLine(`[CustomVoiceCommands] Entry ${err.index}: ${err.message}`);
     }
     // Don't show a modal — just log. Users can check the output channel.
   }

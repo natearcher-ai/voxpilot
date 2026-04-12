@@ -69,4 +69,21 @@ describe('Transcriber', () => {
     await t.dispose();
     // No error thrown -- dispose is idempotent
   });
+
+  it('should have independent pipeline state across instances', async () => {
+    const t1 = new Transcriber('moonshine-base', '/tmp/runtime', '/tmp/cache');
+    const t2 = new Transcriber('moonshine-base', '/tmp/runtime', '/tmp/cache');
+    const pcm = Buffer.alloc(32000); // 1 second of silence
+
+    // Dispose one instance
+    await t1.dispose();
+
+    // The other instance should still independently report "Model not loaded"
+    // (not affected by t1's dispose)
+    await expect(t2.transcribe(pcm)).rejects.toThrow('Model not loaded');
+
+    // Dispose the second instance as well -- no cross-contamination
+    await t2.dispose();
+    await expect(t1.transcribe(pcm)).rejects.toThrow('Model not loaded');
+  });
 });

@@ -80,7 +80,7 @@ export class VoxPilotEngine {
     this.audio.on('error', (err: Error) => {
       vscode.window.showErrorMessage(`VoxPilot: ${err.message}`);
       this.statusBar.setError(err.message);
-      this.stopListening();
+      void this.stopListening();
     });
 
     const configWatcher = vscode.workspace.onDidChangeConfiguration(e => {
@@ -888,7 +888,7 @@ export class VoxPilotEngine {
   }
 
   dispose(): void {
-    this.stopListening();
+    void this.stopListening();
     this.audio.dispose();
     this.sound.dispose();
     this.partialOverlay.dispose();
