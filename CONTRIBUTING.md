@@ -21,13 +21,29 @@ npm run build
 
 ```
 src/
-├── extension.ts      — Entry point, command registration
-├── engine.ts         — Core orchestration (listen → transcribe → deliver)
-├── transcriber.ts    — Moonshine ONNX inference
-├── modelManager.ts   — Model download and caching
-├── audioCapture.ts   — Platform-specific mic capture
-├── vad.ts            — Voice activity detection
-└── statusBar.ts      — Status bar UI
+├── extension.ts              — Entry point, command registration
+├── engine.ts                 — Core orchestration (listen → transcribe → deliver)
+├── transcriber.ts            — Moonshine/Whisper/Parakeet inference
+├── modelManager.ts           — Model download, caching, and selection
+├── modelManagerPanel.ts      — Sidebar tree view for model management
+├── audioCapture.ts           — Platform-specific mic capture (sox/arecord/ffmpeg)
+├── vad.ts                    — Voice activity detection
+├── noiseGate.ts              — Ambient noise calibration and gating
+├── statusBar.ts              — Status bar UI with waveform display
+├── waveformVisualizer.ts     — Real-time audio level visualization
+├── voiceCommands.ts          — Built-in voice command recognition
+├── customVoiceCommands.ts    — User-defined voice commands
+├── postProcessingPipeline.ts — Text processing pipeline orchestration
+├── autoPunctuation.ts        — Automatic punctuation insertion
+├── smartSpacing.ts           — Context-aware spacing rules
+├── codeVocabulary.ts         — Programming term normalization
+├── languageSelector.ts       — Whisper language selection UI
+├── transcriptHistory.ts      — Session transcript log
+├── partialOverlay.ts         — Live partial transcript overlay
+├── pipelineSettingsUI.ts     — Pipeline configuration webview
+├── soundFeedback.ts          — Audio feedback for state changes
+├── autoSubmitRules.ts        — Auto-submit trigger configuration
+└── test/                     — Vitest unit tests
 ```
 
 ## Guidelines
