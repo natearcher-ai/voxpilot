@@ -6,6 +6,7 @@ export interface TranscriptEntry {
 }
 
 const MAX_ENTRIES = 10;
+const MAX_ENTRY_LENGTH = 10000;
 
 export class TranscriptHistory {
   private entries: TranscriptEntry[] = [];
@@ -16,7 +17,8 @@ export class TranscriptHistory {
   }
 
   add(text: string): void {
-    this.entries.unshift({ text, timestamp: Date.now() });
+    const stored = text.length > MAX_ENTRY_LENGTH ? text.slice(0, MAX_ENTRY_LENGTH) + '...' : text;
+    this.entries.unshift({ text: stored, timestamp: Date.now() });
     if (this.entries.length > MAX_ENTRIES) {
       this.entries = this.entries.slice(0, MAX_ENTRIES);
     }

@@ -149,7 +149,7 @@ export class ModelManager {
       {
         location: vscode.ProgressLocation.Notification,
         title: 'VoxPilot: Installing runtime dependencies (one-time setup)',
-        cancellable: false,
+        cancellable: true,
       },
       async () => {
         execSync(

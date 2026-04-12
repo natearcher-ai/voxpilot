@@ -22,6 +22,10 @@ export class SoundFeedback {
 
   private ensureSounds(): void {
     try {
+      if (fs.existsSync(this.startBeepPath) && fs.existsSync(this.stopBeepPath)) {
+        this.ready = true;
+        return;
+      }
       fs.mkdirSync(this.tempDir, { recursive: true });
       // Start beep: short high-pitched chirp (880Hz, 80ms)
       fs.writeFileSync(this.startBeepPath, this.generateWav(880, 0.08, 0.3));

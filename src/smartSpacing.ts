@@ -5,8 +5,6 @@
  * whitespace runs, and avoids spaces before punctuation.
  */
 
-const PUNCTUATION_NO_LEADING_SPACE = /^\s+([.,!?;:…)\]}])/;
-
 /**
  * Stitch an array of transcript segments into a single string
  * with clean, consistent spacing.
