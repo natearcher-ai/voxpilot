@@ -48,7 +48,7 @@ export class VoxPilotEngine {
 
   /** Log a message to the output channel, prefixed with timestamp and active model name. */
   private log(msg: string): void {
-    this.log(`${this.modelTag}: ${msg}`);
+    this.outputChannel.appendLine(`[${new Date().toISOString()}] ${this.modelTag}: ${msg}`);
   }
 
   /** Get the active model name for log prefixing. */
@@ -114,10 +114,10 @@ export class VoxPilotEngine {
         if (e.affectsConfiguration('voxpilot.model') && this.transcriber) {
           const newModelId = cfg.get<string>('model', 'moonshine-base');
           if (newModelId !== this.transcriber.activeModelId) {
-            this.log(`${this.modelTag}: Model changed to ${newModelId}, disposing old transcriber...`);
+            this.log(`Model changed to ${newModelId}, disposing old transcriber...`);
             this.transcriber.dispose().catch(() => {});
             this.transcriber = null;
-            this.log(`${newModelId}: Ready — will load on next use`);
+            this.log(`Ready — will load on next use (switched to ${newModelId})`);
             vscode.window.showInformationMessage(`VoxPilot: Switched to ${newModelId}. Model will load on next recording.`);
           }
         }
