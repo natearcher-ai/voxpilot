@@ -27,8 +27,6 @@ export class Transcriber {
   private _lastDetectedLanguage: string | undefined;
   private pipelineInstance: any = null;
 
-  get activeModelId(): string { return this.modelId; }
-
   constructor(private modelId: string, private runtimeDir: string, private cacheDir: string) {
     this.isStreaming = modelId === 'parakeet-tdt-0.6b';
     this._isWhisperModel = WHISPER_MODEL_IDS.includes(modelId);
@@ -74,37 +72,14 @@ export class Transcriber {
       };
       const repo = MODEL_REPOS[this.modelId] || 'onnx-community/moonshine-base-ONNX';
 
-      try {
-        this.pipelineInstance = await transformers.pipeline('automatic-speech-recognition', repo, {
-          dtype: 'fp32',
-        });
-      } catch (innerErr: any) {
-        const msg = innerErr?.message ?? String(innerErr);
-        if (/unauthorized|403|401|access.*denied|gated/i.test(msg)) {
-          throw new Error(
-            `Model "${repo}" requires authentication. Set the HF_TOKEN environment variable with a Hugging Face access token that has permission to access this model.`,
-          );
-        }
-        if (/protobuf|onnx.*parse|invalid model|corrupt/i.test(msg)) {
-          // Clear corrupted cache and retry once
-          const fs = require('fs');
-          const modelCacheDir = path.join(this.cacheDir, repo.replace('/', '--'));
-          try { fs.rmSync(modelCacheDir, { recursive: true, force: true }); } catch {}
-          this.pipelineInstance = await transformers.pipeline('automatic-speech-recognition', repo, {
-            dtype: 'fp32',
-          });
-        } else {
-          throw innerErr;
-        }
-      }
+      this.pipelineInstance = await transformers.pipeline('automatic-speech-recognition', repo, {
+        dtype: 'fp32',
+      });
 
       this.loaded = true;
     } catch (err: any) {
       this.loaded = false;
       this.pipelineInstance = null;
-      if (err.message?.startsWith('Model "') || err.message?.startsWith('Failed to')) {
-        throw err;
-      }
       throw new Error(`Failed to initialize transcriber: ${err.message}`);
     }
   }
