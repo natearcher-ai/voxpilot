@@ -86,4 +86,53 @@ describe('Transcriber', () => {
     await t2.dispose();
     await expect(t1.transcribe(pcm)).rejects.toThrow('Model not loaded');
   });
+
+  it('should create Whisper Transcriber instances for all whisper model IDs without error', () => {
+    const whisperIds = ['whisper-tiny', 'whisper-base', 'whisper-small', 'whisper-medium', 'whisper-large-v3-turbo'];
+    for (const id of whisperIds) {
+      const t = new Transcriber(id, '/tmp/runtime', '/tmp/cache');
+      expect(t).toBeDefined();
+      expect(t.isWhisperModel).toBe(true);
+      expect(t.streaming).toBe(false);
+    }
+  });
+
+  it('should create Parakeet Transcriber without error and report streaming=true', () => {
+    const t = new Transcriber('parakeet-tdt-0.6b', '/tmp/runtime', '/tmp/cache');
+    expect(t).toBeDefined();
+    expect(t.streaming).toBe(true);
+    expect(t.isWhisperModel).toBe(false);
+  });
+
+  it('should support dispose-then-recreate with different model', async () => {
+    const t1 = new Transcriber('moonshine-base', '/tmp/runtime', '/tmp/cache');
+    expect(t1.isWhisperModel).toBe(false);
+    expect(t1.streaming).toBe(false);
+    await t1.dispose();
+
+    const t2 = new Transcriber('whisper-tiny', '/tmp/runtime', '/tmp/cache');
+    expect(t2.isWhisperModel).toBe(true);
+    expect(t2.streaming).toBe(false);
+    await t2.dispose();
+
+    const t3 = new Transcriber('parakeet-tdt-0.6b', '/tmp/runtime', '/tmp/cache');
+    expect(t3.isWhisperModel).toBe(false);
+    expect(t3.streaming).toBe(true);
+    await t3.dispose();
+  });
+
+  it('should have independent model properties across instances with different models', () => {
+    const moonshine = new Transcriber('moonshine-base', '/tmp/runtime', '/tmp/cache');
+    const whisper = new Transcriber('whisper-tiny', '/tmp/runtime', '/tmp/cache');
+    const parakeet = new Transcriber('parakeet-tdt-0.6b', '/tmp/runtime', '/tmp/cache');
+
+    expect(moonshine.isWhisperModel).toBe(false);
+    expect(moonshine.streaming).toBe(false);
+
+    expect(whisper.isWhisperModel).toBe(true);
+    expect(whisper.streaming).toBe(false);
+
+    expect(parakeet.isWhisperModel).toBe(false);
+    expect(parakeet.streaming).toBe(true);
+  });
 });

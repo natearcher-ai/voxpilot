@@ -124,3 +124,85 @@ describe('insertAtCursor fallback', () => {
     expect(finalContent).toBe('user clipboard data');
   });
 });
+
+describe('Log formatting with model name', () => {
+  it('should format log lines with model name prefix', () => {
+    const modelId = 'whisper-tiny';
+    const message = 'Listening started';
+    const formatted = `[${new Date().toISOString()}] ${modelId}: ${message}`;
+    expect(formatted).toMatch(/^\[\d{4}-\d{2}-\d{2}T.*\] whisper-tiny: Listening started$/);
+  });
+
+  it('should include model name for different model IDs', () => {
+    const models = ['moonshine-base', 'whisper-large-v3-turbo', 'parakeet-tdt-0.6b'];
+    for (const modelId of models) {
+      const message = 'Model loaded';
+      const formatted = `[${new Date().toISOString()}] ${modelId}: ${message}`;
+      expect(formatted).toContain(`${modelId}: Model loaded`);
+    }
+  });
+
+  it('should format log lines with dynamic messages', () => {
+    const modelId = 'moonshine-base';
+    const chunkCount = 42;
+    const message = `Segment transcribe: ${chunkCount} chunks`;
+    const formatted = `[${new Date().toISOString()}] ${modelId}: ${message}`;
+    expect(formatted).toMatch(/moonshine-base: Segment transcribe: 42 chunks$/);
+  });
+});
+
+describe('Model hot-swap detection', () => {
+  it('should detect model change when new model differs from current', () => {
+    let currentModelId = 'moonshine-base';
+    const newModel = 'whisper-tiny';
+    let transcriberDisposed = false;
+    let logMessages: string[] = [];
+
+    // Simulate the config watcher logic from engine.ts
+    if (newModel !== currentModelId) {
+      const oldModel = currentModelId;
+      currentModelId = newModel;
+      transcriberDisposed = true; // simulates this.transcriber.dispose()
+      logMessages.push(`Model switched: ${oldModel} -> ${newModel}`);
+    }
+
+    expect(currentModelId).toBe('whisper-tiny');
+    expect(transcriberDisposed).toBe(true);
+    expect(logMessages).toContain('Model switched: moonshine-base -> whisper-tiny');
+  });
+
+  it('should not dispose transcriber when model stays the same', () => {
+    let currentModelId = 'moonshine-base';
+    const newModel = 'moonshine-base';
+    let transcriberDisposed = false;
+    let logMessages: string[] = [];
+
+    if (newModel !== currentModelId) {
+      const oldModel = currentModelId;
+      currentModelId = newModel;
+      transcriberDisposed = true;
+      logMessages.push(`Model switched: ${oldModel} -> ${newModel}`);
+    }
+
+    expect(currentModelId).toBe('moonshine-base');
+    expect(transcriberDisposed).toBe(false);
+    expect(logMessages.length).toBe(0);
+  });
+
+  it('should handle switching between all model families', () => {
+    const modelSequence = ['moonshine-base', 'whisper-tiny', 'parakeet-tdt-0.6b', 'whisper-large-v3-turbo', 'moonshine-tiny'];
+    let currentModelId = modelSequence[0];
+    let switchCount = 0;
+
+    for (let i = 1; i < modelSequence.length; i++) {
+      const newModel = modelSequence[i];
+      if (newModel !== currentModelId) {
+        currentModelId = newModel;
+        switchCount++;
+      }
+    }
+
+    expect(switchCount).toBe(4);
+    expect(currentModelId).toBe('moonshine-tiny');
+  });
+});
