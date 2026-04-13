@@ -396,6 +396,8 @@ export class VoxPilotEngine {
   private async transcribeSegment(): Promise<void> {
     if (this.speechBuffer.length === 0) { return; }
 
+    await this.ensureTranscriber();
+
     const audioData = Buffer.concat(this.speechBuffer);
     const chunkCount = this.speechBuffer.length;
     this.speechBuffer = [];
@@ -429,6 +431,8 @@ export class VoxPilotEngine {
 
   private async finalizeSpeech(): Promise<void> {
     if (this.speechBuffer.length === 0 && this.segmentTranscripts.length === 0) { return; }
+
+    await this.ensureTranscriber();
 
     // Transcribe any remaining audio in the buffer
     let finalSegment = '';
@@ -870,11 +874,24 @@ export class VoxPilotEngine {
       });
       this.log('Inserted at cursor (editor)');
     } else {
+      // Newline: simulate keypress instead of clipboard round-trip
+      if (text === '\n') {
+        await vscode.commands.executeCommand('type', { text: '\n' });
+        this.log('Inserted newline (type command)');
+        return;
+      }
       const original = await vscode.env.clipboard.readText();
       await vscode.env.clipboard.writeText(text);
-      await vscode.commands.executeCommand('editor.action.clipboardPasteAction');
-      await vscode.env.clipboard.writeText(original);
-      this.log('Inserted at cursor (clipboard fallback)');
+      try {
+        await vscode.commands.executeCommand('editor.action.clipboardPasteAction');
+        await new Promise(r => setTimeout(r, 150));
+        await vscode.env.clipboard.writeText(original);
+        this.log('Inserted at cursor (clipboard fallback)');
+      } catch {
+        // Paste failed (no focused input) - leave transcript on clipboard and notify
+        this.log('Clipboard paste failed - transcript copied to clipboard');
+        vscode.window.showInformationMessage('VoxPilot: Transcript copied to clipboard (no active input to paste into).');
+      }
     }
   }
 

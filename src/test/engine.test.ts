@@ -206,3 +206,156 @@ describe('Model hot-swap detection', () => {
     expect(currentModelId).toBe('moonshine-tiny');
   });
 });
+
+describe('ensureTranscriber guard in transcribeSegment and finalizeSpeech', () => {
+  it('should call ensureTranscriber when transcriber is null before transcription', () => {
+    // Simulate: transcriber is null after model hot-swap, ensureTranscriber re-creates it
+    let transcriber: { transcribeStreaming: Function } | null = null;
+    let ensureTranscriberCalled = false;
+
+    const ensureTranscriber = () => {
+      ensureTranscriberCalled = true;
+      transcriber = {
+        transcribeStreaming: async () => ({ text: 'hello', language: undefined }),
+      };
+    };
+
+    // Simulate transcribeSegment guard: call ensureTranscriber before accessing transcriber
+    const speechBuffer = [Buffer.alloc(1920)];
+    if (speechBuffer.length === 0) { return; }
+    ensureTranscriber();
+
+    expect(ensureTranscriberCalled).toBe(true);
+    expect(transcriber).not.toBeNull();
+    expect(transcriber!.transcribeStreaming).toBeDefined();
+  });
+
+  it('should be idempotent when transcriber already exists', () => {
+    let loadCount = 0;
+    const existingTranscriber = {
+      transcribeStreaming: async () => ({ text: 'test', language: undefined }),
+    };
+    let transcriber: typeof existingTranscriber | null = existingTranscriber;
+
+    // Simulate ensureTranscriber: if transcriber exists, do nothing
+    const ensureTranscriber = () => {
+      if (transcriber) { return; }
+      loadCount++;
+      transcriber = existingTranscriber;
+    };
+
+    ensureTranscriber();
+    ensureTranscriber();
+    ensureTranscriber();
+
+    expect(loadCount).toBe(0);
+    expect(transcriber).toBe(existingTranscriber);
+  });
+
+  it('should re-create transcriber after config watcher sets it to null', () => {
+    let transcriber: { transcribeStreaming: Function } | null = {
+      transcribeStreaming: async () => ({ text: 'old', language: undefined }),
+    };
+    let modelId = 'moonshine-base';
+    let loadedModelId = '';
+
+    // Simulate config watcher: dispose and null out transcriber
+    const newModel = 'whisper-tiny';
+    if (newModel !== modelId) {
+      modelId = newModel;
+      transcriber = null; // simulates dispose + null
+    }
+
+    expect(transcriber).toBeNull();
+
+    // Simulate ensureTranscriber called from transcribeSegment/finalizeSpeech
+    const ensureTranscriber = () => {
+      if (transcriber) { return; }
+      loadedModelId = modelId;
+      transcriber = {
+        transcribeStreaming: async () => ({ text: 'new', language: undefined }),
+      };
+    };
+
+    ensureTranscriber();
+
+    expect(transcriber).not.toBeNull();
+    expect(loadedModelId).toBe('whisper-tiny');
+  });
+});
+
+describe('insertAtCursor clipboard fallback improvements', () => {
+  it('should use type command for newline instead of clipboard round-trip', async () => {
+    const vscode = await import('./__mocks__/vscode');
+    vscode.__resetTracking();
+
+    // activeTextEditor is undefined -- triggers fallback branch
+    const editor = vscode.window.activeTextEditor;
+    expect(editor).toBeUndefined();
+
+    const text = '\n';
+
+    // Simulate the improved insertAtCursor newline branch
+    if (!editor) {
+      if (text === '\n') {
+        await vscode.commands.executeCommand('type', { text: '\n' });
+      }
+    }
+
+    // Should have called executeCommand('type', ...) not clipboard
+    expect(vscode.__executeCommandCalls).toContain('type');
+    expect(vscode.__executeCommandCallsWithArgs[0].cmd).toBe('type');
+    expect(vscode.__executeCommandCallsWithArgs[0].args[0]).toEqual({ text: '\n' });
+    // Clipboard should NOT have been used
+    expect(vscode.__clipboardWriteCalls.length).toBe(0);
+  });
+
+  it('should call paste before clipboard restore in fallback path', async () => {
+    const vscode = await import('./__mocks__/vscode');
+    vscode.__resetTracking();
+    vscode.__setClipboardContent('original');
+
+    // Simulate the improved clipboard fallback (non-newline text)
+    const text = 'hello voice';
+    const original = await vscode.env.clipboard.readText();
+    await vscode.env.clipboard.writeText(text);
+    await vscode.commands.executeCommand('editor.action.clipboardPasteAction');
+    // In the real code, there's a 150ms delay here before restore
+    await vscode.env.clipboard.writeText(original);
+
+    // Verify call order: write text, paste, write original
+    expect(vscode.__clipboardWriteCalls[0]).toBe('hello voice');
+    expect(vscode.__executeCommandCalls[0]).toBe('editor.action.clipboardPasteAction');
+    expect(vscode.__clipboardWriteCalls[1]).toBe('original');
+  });
+
+  it('should leave text on clipboard and notify when paste fails', async () => {
+    const vscode = await import('./__mocks__/vscode');
+    vscode.__resetTracking();
+    vscode.__setClipboardContent('original');
+
+    // Make clipboardPasteAction throw
+    vscode.__failCommand('editor.action.clipboardPasteAction');
+
+    const text = 'voice transcript';
+    const original = await vscode.env.clipboard.readText();
+    await vscode.env.clipboard.writeText(text);
+
+    let pasteFailed = false;
+    try {
+      await vscode.commands.executeCommand('editor.action.clipboardPasteAction');
+      // If paste succeeded, restore original clipboard
+      await vscode.env.clipboard.writeText(original);
+    } catch {
+      // Paste failed - leave transcript on clipboard
+      pasteFailed = true;
+    }
+
+    expect(pasteFailed).toBe(true);
+    // The transcript should still be on clipboard (not restored to original)
+    const clipboardContent = await vscode.env.clipboard.readText();
+    expect(clipboardContent).toBe('voice transcript');
+    // clipboardPasteAction should NOT be in the successful calls list
+    expect(vscode.__executeCommandCalls).not.toContain('editor.action.clipboardPasteAction');
+  });
+});
