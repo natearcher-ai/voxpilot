@@ -59,6 +59,10 @@ export class Transcriber {
       // Configure cache directory and environment
       transformers.env.cacheDir = this.cacheDir;
       transformers.env.allowLocalModels = true;
+      // ModelManager downloads all files before load(), so remote access is unnecessary.
+      // This prevents "Unauthorized access" errors for gated repos (e.g. Parakeet)
+      // and ensures fully offline operation after initial download.
+      transformers.env.allowRemoteModels = false;
 
       const MODEL_REPOS: Record<string, string> = {
         'moonshine-tiny': 'onnx-community/moonshine-tiny-ONNX',
@@ -72,9 +76,15 @@ export class Transcriber {
       };
       const repo = MODEL_REPOS[this.modelId] || 'onnx-community/moonshine-base-ONNX';
 
-      this.pipelineInstance = await transformers.pipeline('automatic-speech-recognition', repo, {
-        dtype: 'fp32',
-      });
+      const pipelineOptions: Record<string, any> = {};
+
+      // Moonshine repos have ONNX files at onnx/ root level with fp32
+      // Whisper/Parakeet repos use quantization subdirectories; let the library auto-resolve
+      if (this.modelId.startsWith('moonshine-')) {
+        pipelineOptions.dtype = 'fp32';
+      }
+
+      this.pipelineInstance = await transformers.pipeline('automatic-speech-recognition', repo, pipelineOptions);
 
       this.loaded = true;
     } catch (err: any) {
