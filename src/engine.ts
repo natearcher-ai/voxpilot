@@ -46,6 +46,16 @@ export class VoxPilotEngine {
   /** Expose pipeline for settings UI */
   get pipeline(): PostProcessingPipeline { return this._pipeline; }
 
+  /** Log a message to the output channel, prefixed with timestamp and active model name. */
+  private log(msg: string): void {
+    this.log(`${this.modelTag}: ${msg}`);
+  }
+
+  /** Get the active model name for log prefixing. */
+  private get modelTag(): string {
+    return this.transcriber?.activeModelId ?? vscode.workspace.getConfiguration('voxpilot').get<string>('model', 'moonshine-base');
+  }
+
   constructor(private context: vscode.ExtensionContext, statusBar: StatusBarManager) {
     this.statusBar = statusBar;
     this.audio = new AudioCapture();
@@ -99,6 +109,18 @@ export class VoxPilotEngine {
         this.waveformEnabled = cfg.get<boolean>('waveformVisualization', true);
         this.currentLanguage = cfg.get<string>('language', 'auto');
         this._pipeline.reloadConfig();
+
+        // Hot-swap model: dispose old transcriber so next ensureTranscriber() loads the new one
+        if (e.affectsConfiguration('voxpilot.model') && this.transcriber) {
+          const newModelId = cfg.get<string>('model', 'moonshine-base');
+          if (newModelId !== this.transcriber.activeModelId) {
+            this.log(`${this.modelTag}: Model changed to ${newModelId}, disposing old transcriber...`);
+            this.transcriber.dispose().catch(() => {});
+            this.transcriber = null;
+            this.log(`${newModelId}: Ready — will load on next use`);
+            vscode.window.showInformationMessage(`VoxPilot: Switched to ${newModelId}. Model will load on next recording.`);
+          }
+        }
       }
     });
     this.disposables.push(configWatcher);
@@ -187,7 +209,7 @@ export class VoxPilotEngine {
       await vscode.workspace.getConfiguration('voxpilot').update('audioDevice', pick.deviceId, true);
       this.audio.setDevice(pick.deviceId);
       const label = pick.deviceId ? pick.label : 'System Default';
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Audio device set: ${label} (${pick.deviceId || 'default'})`);
+      this.log(`Audio device set: ${label} (${pick.deviceId || 'default'})`);
       vscode.window.showInformationMessage(`VoxPilot: Audio input set to ${label}`);
     }
   }
@@ -196,7 +218,7 @@ export class VoxPilotEngine {
     const code = await showLanguageSelector();
     if (code) {
       this.currentLanguage = code;
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Language set: ${code} (${getLanguageName(code)})`);
+      this.log(`Language set: ${code} (${getLanguageName(code)})`);
     }
   }
 
@@ -261,13 +283,13 @@ export class VoxPilotEngine {
     }
     this.statusBar.resetWaveform();
     if (this.soundEnabled) { this.sound.playStart(); }
-    this.outputChannel.appendLine(`[${new Date().toISOString()}] Listening started`);
+    this.log(`Listening started`);
   }
 
   private async stopListening(): Promise<void> {
     // Transcribe any buffered speech before stopping
     if (this.speechBuffer.length > 0) {
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Stopping with ${this.speechBuffer.length} buffered chunks, transcribing...`);
+      this.log(`Stopping with ${this.speechBuffer.length} buffered chunks, transcribing...`);
       await this.finalizeSpeech();
     }
     this.audio.stop();
@@ -277,7 +299,7 @@ export class VoxPilotEngine {
     this.audioChunkCount = 0;
     if (this.soundEnabled) { this.sound.playStop(); }
     this.statusBar.setIdle();
-    this.outputChannel.appendLine(`[${new Date().toISOString()}] Listening stopped`);
+    this.log(`Listening stopped`);
   }
 
   private onAudioChunk(chunk: Buffer): void {
@@ -298,8 +320,8 @@ export class VoxPilotEngine {
 
     this.audioChunkCount++;
     if (this.audioChunkCount % 100 === 1) {
-      this.outputChannel.appendLine(
-        `[${new Date().toISOString()}] Audio: frames=${this.audioChunkCount}, rms=${result.rms.toFixed(4)}, threshold=${result.threshold.toFixed(4)}, speaking=${result.isSpeech}, buffered=${this.speechBuffer.length}`,
+      this.log(
+        `Audio: frames=${this.audioChunkCount}, rms=${result.rms.toFixed(4)}, threshold=${result.threshold.toFixed(4)}, speaking=${result.isSpeech}, buffered=${this.speechBuffer.length}`,
       );
     }
 
@@ -309,7 +331,7 @@ export class VoxPilotEngine {
 
     if (result.speechStarted) {
       this.statusBar.setSpeechDetected();
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Speech detected`);
+      this.log(`Speech detected`);
     }
 
     // Update voice level indicator in status bar
@@ -345,7 +367,7 @@ export class VoxPilotEngine {
     // Stash the segment transcript and keep listening for more speech
     const totalBytes = this.speechBuffer.reduce((sum, b) => sum + b.length, 0);
     if (result.isSpeech && totalBytes >= this.maxSpeechBytes) {
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Max speech duration reached, transcribing segment ${this.segmentTranscripts.length + 1}...`);
+      this.log(`Max speech duration reached, transcribing segment ${this.segmentTranscripts.length + 1}...`);
       this.transcribeSegment();
       return;
     }
@@ -353,10 +375,10 @@ export class VoxPilotEngine {
     if (result.speechEnded) {
       if (this.isDictating) {
         // Dictation mode: transcribe segment but keep listening
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Speech ended (dictation), transcribing segment ${this.segmentTranscripts.length + 1}...`);
+        this.log(`Speech ended (dictation), transcribing segment ${this.segmentTranscripts.length + 1}...`);
         this.transcribeSegment();
       } else {
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Speech ended, transcribing and delivering...`);
+        this.log(`Speech ended, transcribing and delivering...`);
         this.finalizeSpeech().then(() => {
           if (this.isQuickCapture) {
             this.stopListening();
@@ -384,24 +406,24 @@ export class VoxPilotEngine {
     this.speechBuffer = [];
     this.statusBar.setProcessing();
 
-    this.outputChannel.appendLine(`[${new Date().toISOString()}] Segment transcribe: ${chunkCount} chunks (${audioData.length} bytes, ~${(audioData.length / 32000).toFixed(1)}s audio)`);
+    this.log(`Segment transcribe: ${chunkCount} chunks (${audioData.length} bytes, ~${(audioData.length / 32000).toFixed(1)}s audio)`);
 
     try {
       const callbacks: StreamingCallbacks = {
         onPartial: (text: string) => {
           this.statusBar.setStreamingPartial(text);
           this.partialOverlay.show(text);
-          this.outputChannel.appendLine(`[${new Date().toISOString()}] Streaming partial: "${text}"`);
+          this.log(`Streaming partial: "${text}"`);
         },
       };
       const result = await this.transcriber!.transcribeStreaming(audioData, callbacks, this.currentLanguage);
       if (result.text.trim()) {
         this.segmentTranscripts.push(result.text.trim());
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Segment ${this.segmentTranscripts.length} stored: "${result.text.trim()}"`);
+        this.log(`Segment ${this.segmentTranscripts.length} stored: "${result.text.trim()}"`);
         this.handleDetectedLanguage(result.language);
       }
     } catch (err: any) {
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Segment transcription error: ${err.message}`);
+      this.log(`Segment transcription error: ${err.message}`);
     }
 
     this.partialOverlay.hide();
@@ -421,22 +443,22 @@ export class VoxPilotEngine {
       this.speechBuffer = [];
       this.statusBar.setProcessing();
 
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Final segment: ${chunkCount} chunks (${audioData.length} bytes, ~${(audioData.length / 32000).toFixed(1)}s audio)`);
+      this.log(`Final segment: ${chunkCount} chunks (${audioData.length} bytes, ~${(audioData.length / 32000).toFixed(1)}s audio)`);
 
       try {
         const callbacks: StreamingCallbacks = {
           onPartial: (text: string) => {
             this.statusBar.setStreamingPartial(text);
             this.partialOverlay.show(text);
-            this.outputChannel.appendLine(`[${new Date().toISOString()}] Streaming partial: "${text}"`);
+            this.log(`Streaming partial: "${text}"`);
           },
         };
         const result = await this.transcriber!.transcribeStreaming(audioData, callbacks, this.currentLanguage);
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Raw transcript: "${result.text}"`);
+        this.log(`Raw transcript: "${result.text}"`);
         finalSegment = result.text.trim();
         this.handleDetectedLanguage(result.language);
       } catch (err: any) {
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Transcription error: ${err.message}`);
+        this.log(`Transcription error: ${err.message}`);
         vscode.window.showErrorMessage(`VoxPilot transcription error: ${err.message}`);
       }
     } else {
@@ -453,7 +475,7 @@ export class VoxPilotEngine {
     const segmentCount = this.segmentTranscripts.length;
 
     if (segmentCount > 1) {
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Processing ${segmentCount} segments through pipeline`);
+      this.log(`Processing ${segmentCount} segments through pipeline`);
     }
 
     // Run the post-processing pipeline
@@ -461,27 +483,27 @@ export class VoxPilotEngine {
     this.segmentTranscripts = [];
 
     if (pipelineCtx.voiceCommandsApplied > 0) {
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Voice commands applied: ${pipelineCtx.voiceCommandsApplied}`);
+      this.log(`Voice commands applied: ${pipelineCtx.voiceCommandsApplied}`);
     }
     if (pipelineCtx.punctuationAdded) {
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Auto-punctuation: added period`);
+      this.log(`Auto-punctuation: added period`);
     }
     if (pipelineCtx.capitalized) {
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Auto-capitalize: capitalized first letter`);
+      this.log(`Auto-capitalize: capitalized first letter`);
     }
 
     // Execute any VS Code commands queued by custom voice commands
     if (pipelineCtx.pendingCommands.length > 0) {
       for (const pending of pipelineCtx.pendingCommands) {
         try {
-          this.outputChannel.appendLine(`[${new Date().toISOString()}] Executing voice command: "${pending.phrase}" → ${pending.command}${pending.args !== undefined ? ` (args: ${JSON.stringify(pending.args)})` : ''}`);
+          this.log(`Executing voice command: "${pending.phrase}" → ${pending.command}${pending.args !== undefined ? ` (args: ${JSON.stringify(pending.args)})` : ''}`);
           if (pending.args !== undefined) {
             await vscode.commands.executeCommand(pending.command, pending.args);
           } else {
             await vscode.commands.executeCommand(pending.command);
           }
         } catch (err: any) {
-          this.outputChannel.appendLine(`[${new Date().toISOString()}] Voice command failed: ${pending.command} — ${err.message}`);
+          this.log(`Voice command failed: ${pending.command} — ${err.message}`);
           vscode.window.showWarningMessage(`VoxPilot: Voice command "${pending.phrase}" failed — ${err.message}`);
         }
       }
@@ -490,7 +512,7 @@ export class VoxPilotEngine {
     if (text) {
       this.lastTranscript = text;
       this.history.add(this.lastTranscript);
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Transcript: ${this.lastTranscript}`);
+      this.log(`Transcript: ${this.lastTranscript}`);
 
       const config = vscode.workspace.getConfiguration('voxpilot');
       const outputAction = config.get<string>('outputAction', 'ask');
@@ -501,21 +523,21 @@ export class VoxPilotEngine {
           await this.insertAtCursor('\n');
         }
         this.statusBar.setSent(this.lastTranscript);
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Inserted at cursor (autoSubmit=${shouldAutoSubmit('cursor')})`);
+        this.log(`Inserted at cursor (autoSubmit=${shouldAutoSubmit('cursor')})`);
       } else if (outputAction === 'chat' || config.get<boolean>('autoSendToChat', false)) {
         await this.sendToChat(this.lastTranscript);
         this.statusBar.setSent(this.lastTranscript);
       } else if (outputAction === 'clipboard') {
         await vscode.env.clipboard.writeText(this.lastTranscript);
         this.statusBar.setSent(this.lastTranscript);
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Copied to clipboard`);
+        this.log(`Copied to clipboard`);
         vscode.window.showInformationMessage(`VoxPilot: Transcript copied to clipboard.`);
       } else {
         this.showTranscriptNotification(this.lastTranscript);
         this.statusBar.setSent(this.lastTranscript);
       }
     } else {
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Transcript was empty`);
+      this.log(`Transcript was empty`);
     }
 
     if (this.isListening) {
@@ -556,7 +578,7 @@ export class VoxPilotEngine {
     const ide = this.detectIDE();
     const query = (ide === 'vscode' && participant) ? `@${participant} ${text}` : text;
 
-    this.outputChannel.appendLine(`[${new Date().toISOString()}] sendToChat: "${query.slice(0, 50)}..." ide=${ide} autoSubmit=${autoSubmit}`);
+    this.log(`sendToChat: "${query.slice(0, 50)}..." ide=${ide} autoSubmit=${autoSubmit}`);
 
     if (ide === 'kiro') {
       // Kiro-specific: focus chat panel, paste transcript, optionally submit
@@ -572,10 +594,10 @@ export class VoxPilotEngine {
           await vscode.commands.executeCommand('workbench.action.chat.submit');
         }
         await vscode.env.clipboard.writeText(original);
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] ${autoSubmit ? 'Sent to' : 'Typed into'} Kiro chat`);
+        this.log(`${autoSubmit ? 'Sent to' : 'Typed into'} Kiro chat`);
         return;
       } catch (e: any) {
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Kiro chat delivery failed: ${e.message}`);
+        this.log(`Kiro chat delivery failed: ${e.message}`);
       }
     } else if (ide === 'cursor') {
       // Cursor IDE: try composer/chat commands, then clipboard-paste fallback
@@ -593,10 +615,10 @@ export class VoxPilotEngine {
           query,
           isPartialQuery: !autoSubmit,
         });
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] ${autoSubmit ? 'Sent' : 'Typed'} via chat.open query arg`);
+        this.log(`${autoSubmit ? 'Sent' : 'Typed'} via chat.open query arg`);
         return;
       } catch (e: any) {
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] chat.open query failed: ${e.message}`);
+        this.log(`chat.open query failed: ${e.message}`);
       }
     }
 
@@ -604,7 +626,7 @@ export class VoxPilotEngine {
     await vscode.env.clipboard.writeText(query);
     const pasteHint = process.platform === 'darwin' ? 'Cmd+V' : 'Ctrl+V';
     vscode.window.showInformationMessage(`VoxPilot: Transcript copied to clipboard. Paste into chat with ${pasteHint}.`);
-    this.outputChannel.appendLine(`[${new Date().toISOString()}] Fallback: copied to clipboard`);
+    this.log(`Fallback: copied to clipboard`);
   }
 
   /**
@@ -627,10 +649,10 @@ export class VoxPilotEngine {
         if (!allCommands.includes(cmd)) { continue; }
 
         await vscode.commands.executeCommand(cmd, { text: query });
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Sent via Cursor command: ${cmd}`);
+        this.log(`Sent via Cursor command: ${cmd}`);
         return true;
       } catch (e: any) {
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Cursor command ${cmd} failed: ${e.message}`);
+        this.log(`Cursor command ${cmd} failed: ${e.message}`);
       }
     }
 
@@ -640,10 +662,10 @@ export class VoxPilotEngine {
         query,
         isPartialQuery: !autoSubmit,
       });
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Cursor: chat.open succeeded`);
+      this.log(`Cursor: chat.open succeeded`);
       return true;
     } catch (e: any) {
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Cursor: chat.open failed: ${e.message}`);
+      this.log(`Cursor: chat.open failed: ${e.message}`);
     }
 
     // Strategy 3: Focus chat panel and paste via clipboard
@@ -676,10 +698,10 @@ export class VoxPilotEngine {
           }
         }
         await vscode.env.clipboard.writeText(original);
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] ${autoSubmit ? 'Sent to' : 'Typed into'} Cursor chat via clipboard paste (${cmd})`);
+        this.log(`${autoSubmit ? 'Sent to' : 'Typed into'} Cursor chat via clipboard paste (${cmd})`);
         return true;
       } catch (e: any) {
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Cursor focus via ${cmd} failed: ${e.message}`);
+        this.log(`Cursor focus via ${cmd} failed: ${e.message}`);
       }
     }
 
@@ -706,10 +728,10 @@ export class VoxPilotEngine {
         if (!allCommands.includes(cmd)) { continue; }
 
         await vscode.commands.executeCommand(cmd, { text: query });
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Sent via Windsurf command: ${cmd}`);
+        this.log(`Sent via Windsurf command: ${cmd}`);
         return true;
       } catch (e: any) {
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Windsurf command ${cmd} failed: ${e.message}`);
+        this.log(`Windsurf command ${cmd} failed: ${e.message}`);
       }
     }
 
@@ -719,10 +741,10 @@ export class VoxPilotEngine {
         query,
         isPartialQuery: !autoSubmit,
       });
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Windsurf: chat.open succeeded`);
+      this.log(`Windsurf: chat.open succeeded`);
       return true;
     } catch (e: any) {
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Windsurf: chat.open failed: ${e.message}`);
+      this.log(`Windsurf: chat.open failed: ${e.message}`);
     }
 
     // Strategy 3: Focus Cascade panel and paste via clipboard
@@ -756,10 +778,10 @@ export class VoxPilotEngine {
           }
         }
         await vscode.env.clipboard.writeText(original);
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] ${autoSubmit ? 'Sent to' : 'Typed into'} Windsurf Cascade via clipboard paste (${cmd})`);
+        this.log(`${autoSubmit ? 'Sent to' : 'Typed into'} Windsurf Cascade via clipboard paste (${cmd})`);
         return true;
       } catch (e: any) {
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Windsurf focus via ${cmd} failed: ${e.message}`);
+        this.log(`Windsurf focus via ${cmd} failed: ${e.message}`);
       }
     }
 
@@ -787,10 +809,10 @@ export class VoxPilotEngine {
         if (!allCommands.includes(cmd)) { continue; }
 
         await vscode.commands.executeCommand(cmd, { text: query });
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Sent via Zed command: ${cmd}`);
+        this.log(`Sent via Zed command: ${cmd}`);
         return true;
       } catch (e: any) {
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Zed command ${cmd} failed: ${e.message}`);
+        this.log(`Zed command ${cmd} failed: ${e.message}`);
       }
     }
 
@@ -800,10 +822,10 @@ export class VoxPilotEngine {
         query,
         isPartialQuery: !autoSubmit,
       });
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Zed: chat.open succeeded`);
+      this.log(`Zed: chat.open succeeded`);
       return true;
     } catch (e: any) {
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Zed: chat.open failed: ${e.message}`);
+      this.log(`Zed: chat.open failed: ${e.message}`);
     }
 
     // Strategy 3: Focus assistant panel and paste via clipboard
@@ -835,10 +857,10 @@ export class VoxPilotEngine {
           }
         }
         await vscode.env.clipboard.writeText(original);
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] ${autoSubmit ? 'Sent to' : 'Typed into'} Zed assistant via clipboard paste (${cmd})`);
+        this.log(`${autoSubmit ? 'Sent to' : 'Typed into'} Zed assistant via clipboard paste (${cmd})`);
         return true;
       } catch (e: any) {
-        this.outputChannel.appendLine(`[${new Date().toISOString()}] Zed focus via ${cmd} failed: ${e.message}`);
+        this.log(`Zed focus via ${cmd} failed: ${e.message}`);
       }
     }
 
@@ -851,13 +873,13 @@ export class VoxPilotEngine {
       editor.edit(editBuilder => {
         editBuilder.insert(editor.selection.active, text);
       });
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Inserted at cursor (editor)`);
+      this.log(`Inserted at cursor (editor)`);
     } else {
       const original = await vscode.env.clipboard.readText();
       await vscode.env.clipboard.writeText(text);
       await vscode.commands.executeCommand('editor.action.clipboardPasteAction');
       await vscode.env.clipboard.writeText(original);
-      this.outputChannel.appendLine(`[${new Date().toISOString()}] Inserted at cursor (clipboard fallback)`);
+      this.log(`Inserted at cursor (clipboard fallback)`);
     }
   }
 
@@ -870,7 +892,7 @@ export class VoxPilotEngine {
 
     const langName = getLanguageName(language);
     this.statusBar.setDetectedLanguage(language, langName);
-    this.outputChannel.appendLine(`[${new Date().toISOString()}] Detected language: ${langName} (${language})`);
+    this.log(`Detected language: ${langName} (${language})`);
   }
 
   private async ensureTranscriber(): Promise<void> {
@@ -891,7 +913,7 @@ export class VoxPilotEngine {
       throw err;
     }
     this.transcriber = transcriber;
-    this.outputChannel.appendLine(`Model loaded: ${modelId}`);
+    this.log(`Model loaded`);
   }
 
   dispose(): void {
