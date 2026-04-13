@@ -27,6 +27,9 @@ export class Transcriber {
   private _lastDetectedLanguage: string | undefined;
   private pipelineInstance: any = null;
 
+  /** The model ID this transcriber was initialized with. */
+  get activeModelId(): string { return this.modelId; }
+
   constructor(private modelId: string, private runtimeDir: string, private cacheDir: string) {
     this.isStreaming = modelId === 'parakeet-tdt-0.6b';
     this._isWhisperModel = WHISPER_MODEL_IDS.includes(modelId);
@@ -72,14 +75,62 @@ export class Transcriber {
       };
       const repo = MODEL_REPOS[this.modelId] || 'onnx-community/moonshine-base-ONNX';
 
-      this.pipelineInstance = await transformers.pipeline('automatic-speech-recognition', repo, {
-        dtype: 'fp32',
-      });
+      try {
+        this.pipelineInstance = await transformers.pipeline('automatic-speech-recognition', repo, {
+          dtype: 'fp32',
+        });
+      } catch (innerErr: any) {
+        const msg = innerErr?.message ?? String(innerErr);
+
+        // Detect gated/auth errors (Parakeet and other gated repos)
+        if (/unauthorized|403|401|access.*denied|gated/i.test(msg)) {
+          throw new Error(
+            `Unauthorized access to model "${this.modelId}". ` +
+            `This model may be gated on Hugging Face. ` +
+            `Set the HF_TOKEN environment variable with a token from https://huggingface.co/settings/tokens ` +
+            `that has access to ${repo}, then reload the window.`,
+          );
+        }
+
+        // Detect corrupted cache (protobuf / ONNX parse failures)
+        if (/protobuf|onnx.*parse|invalid model|corrupt/i.test(msg)) {
+          const fs = require('fs');
+          // Auto-clear the cached model files and retry once
+          // HF transformers.js caches under models--<org>--<name>
+          const flatName = repo.replace('/', '--');
+          const modelCacheDir = path.join(this.cacheDir, flatName);
+          if (fs.existsSync(modelCacheDir)) {
+            fs.rmSync(modelCacheDir, { recursive: true, force: true });
+          }
+          // Also try models--<org>--<name> variant
+          const modelsPrefix = path.join(this.cacheDir, `models--${flatName}`);
+          if (fs.existsSync(modelsPrefix)) {
+            fs.rmSync(modelsPrefix, { recursive: true, force: true });
+          }
+
+          try {
+            this.pipelineInstance = await transformers.pipeline('automatic-speech-recognition', repo, {
+              dtype: 'fp32',
+            });
+          } catch (retryErr: any) {
+            throw new Error(
+              `Model "${this.modelId}" cache was corrupted and re-download also failed: ${retryErr.message}. ` +
+              `Try running "VoxPilot: Clear Cache" from the command palette and reload the window.`,
+            );
+          }
+        } else {
+          throw innerErr;
+        }
+      }
 
       this.loaded = true;
     } catch (err: any) {
       this.loaded = false;
       this.pipelineInstance = null;
+      // Re-throw our enriched messages as-is; wrap unknown errors
+      if (err.message?.startsWith('Unauthorized access') || err.message?.startsWith('Model "')) {
+        throw err;
+      }
       throw new Error(`Failed to initialize transcriber: ${err.message}`);
     }
   }
