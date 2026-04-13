@@ -27,22 +27,35 @@ export function __clearConfig(): void {
 /** Track calls to commands.executeCommand */
 export const __executeCommandCalls: string[] = [];
 
+/** Track calls to commands.executeCommand with full arguments */
+export const __executeCommandCallsWithArgs: Array<{ cmd: string; args: any[] }> = [];
+
 /** Track calls to env.clipboard.writeText */
 export const __clipboardWriteCalls: string[] = [];
 
 /** Stored clipboard content for readText */
 let __clipboardContent = '';
 
+/** Commands that should reject when executed */
+const __failingCommands: Set<string> = new Set();
+
 /** Set the clipboard content for readText to return */
 export function __setClipboardContent(text: string): void {
   __clipboardContent = text;
 }
 
+/** Make executeCommand reject for a specific command */
+export function __failCommand(cmd: string): void {
+  __failingCommands.add(cmd);
+}
+
 /** Reset all tracking arrays */
 export function __resetTracking(): void {
   __executeCommandCalls.length = 0;
+  __executeCommandCallsWithArgs.length = 0;
   __clipboardWriteCalls.length = 0;
   __clipboardContent = '';
+  __failingCommands.clear();
   window.activeTextEditor = undefined;
 }
 
@@ -60,7 +73,13 @@ export const window = {
 
 export const commands = {
   registerCommand: (_cmd: string, _cb: (...args: unknown[]) => unknown) => ({ dispose: () => {} }),
-  executeCommand: async (cmd: string) => { __executeCommandCalls.push(cmd); },
+  executeCommand: async (cmd: string, ...args: any[]) => {
+    if (__failingCommands.has(cmd)) {
+      throw new Error(`Command failed: ${cmd}`);
+    }
+    __executeCommandCalls.push(cmd);
+    __executeCommandCallsWithArgs.push({ cmd, args });
+  },
 };
 
 export const env = {
