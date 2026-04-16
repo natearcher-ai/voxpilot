@@ -288,6 +288,11 @@
           "default": true,
           "description": "Automatically capitalize the first letter of every transcript."
         },
+        "voxpilot.fillerWordRemoval": {
+          "type": "boolean",
+          "default": true,
+          "description": "Strip filler words (um, uh, hmm, like, you know) from transcriptions automatically."
+        },
         "voxpilot.codeVocabulary": {
           "type": "boolean",
           "default": true,
@@ -374,7 +379,7 @@
             }
           },
           "additionalProperties": false,
-          "description": "Transcript post-processing pipeline configuration. Use the command \"VoxPilot: Post-Processing Pipeline Settings\" to reorder and toggle processors interactively, or edit directly. Built-in processors: stitchSegments, trim, normalizeWhitespace, voiceCommands, customVoiceCommands, fixTypos, codeVocabulary, autoPunctuation, autoCapitalize."
+          "description": "Transcript post-processing pipeline configuration. Use the command \"VoxPilot: Post-Processing Pipeline Settings\" to reorder and toggle processors interactively, or edit directly. Built-in processors: stitchSegments, trim, normalizeWhitespace, voiceCommands, customVoiceCommands, fixTypos, fillerWordRemoval, codeVocabulary, autoPunctuation, autoCapitalize."
         },
         "voxpilot.customVoiceCommands": {
           "type": "array",

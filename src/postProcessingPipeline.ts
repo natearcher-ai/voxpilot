@@ -111,6 +111,33 @@ const TYPO_FIXES: Array<[RegExp, string]> = [
   [/\blets\b/gi, "let's"],
 ];
 
+/**
+ * Filler words to strip from transcriptions.
+ * Matches whole words only, case-insensitive.
+ */
+const FILLER_WORDS = ['um', 'uh', 'uhh', 'umm', 'hmm', 'hm', 'mhm', 'uh huh', 'like', 'you know', 'I mean', 'sort of', 'kind of', 'basically', 'actually', 'literally'];
+
+/** Build a single regex that matches any filler word/phrase as a whole word */
+const FILLER_REGEX = new RegExp(
+  '\\b(' + FILLER_WORDS.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')\\b',
+  'gi',
+);
+
+export class FillerWordRemovalProcessor implements PostProcessor {
+  readonly id = 'fillerWordRemoval';
+  readonly name = 'Filler Word Removal';
+  readonly description = 'Strip filler words (um, uh, hmm, like, you know) from transcriptions';
+
+  process(text: string, _context: ProcessorContext): string {
+    const config = vscode.workspace.getConfiguration('voxpilot');
+    if (config.get<boolean>('fillerWordRemoval') === false) {
+      return text;
+    }
+    // Remove fillers and collapse resulting double spaces
+    return text.replace(FILLER_REGEX, '').replace(/\s{2,}/g, ' ').trim();
+  }
+}
+
 export class FixTyposProcessor implements PostProcessor {
   readonly id = 'fixTypos';
   readonly name = 'Fix Typos';
@@ -193,6 +220,7 @@ const DEFAULT_ORDER: string[] = [
   'voiceCommands',
   'customVoiceCommands',
   'fixTypos',
+  'fillerWordRemoval',
   'codeVocabulary',
   'autoPunctuation',
   'autoCapitalize',
@@ -206,6 +234,7 @@ const BUILTIN_PROCESSORS: PostProcessor[] = [
   new VoiceCommandsProcessor(),
   new CustomVoiceCommandsProcessor(),
   new FixTyposProcessor(),
+  new FillerWordRemovalProcessor(),
   new CodeVocabularyProcessor(),
   new AutoPunctuationProcessor(),
   new AutoCapitalizeProcessor(),
