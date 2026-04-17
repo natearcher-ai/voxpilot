@@ -2,6 +2,14 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.32] - 2026-04-17
+
+### Added
+- Filler word removal post-processor — automatically strips common filler words and phrases (um, uh, uhh, umm, hmm, hm, mhm, uh huh, like, you know, I mean, sort of, kind of, basically, actually, literally) from transcriptions
+- New `voxpilot.fillerWordRemoval` setting (default: `true`) to toggle filler word stripping on or off
+- Integrated into the post-processing pipeline as `fillerWordRemoval` — can be reordered or disabled via `voxpilot.postProcessors` settings
+- Smart cleanup: collapses double spaces left by removed fillers and trims the result
+
 ## [0.7.8] - 2026-04-11
 
 ### Added
