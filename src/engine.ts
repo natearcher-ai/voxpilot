@@ -30,6 +30,8 @@ export class VoxPilotEngine {
   private readonly FRAME_SIZE = 960 * 2; // 30ms at 16kHz mono 16-bit = 960 samples * 2 bytes
   private maxSpeechBytes: number;
   private segmentTranscripts: string[] = [];
+  private idleTimer: ReturnType<typeof setTimeout> | null = null;
+  private idleAutoStopMs: number;
   private outputChannel: vscode.OutputChannel;
   private history: TranscriptHistory;
   private sound: SoundFeedback;
@@ -62,6 +64,7 @@ export class VoxPilotEngine {
     this.maxSpeechBytes = maxSpeechSec * 16000 * 2;
     this.soundEnabled = config.get<boolean>('soundFeedback', true);
     this.inlineMode = config.get<boolean>('inlineMode', false);
+    this.idleAutoStopMs = (config.get<number>('idleAutoStopSeconds', 0)) * 1000;
     const noiseGateThreshold = config.get<number>('noiseGateThreshold', 0);
     this.noiseGate = new NoiseGate(noiseGateThreshold);
     this.partialOverlay = new PartialOverlay();
@@ -94,6 +97,7 @@ export class VoxPilotEngine {
         this.maxSpeechBytes = maxSec * 16000 * 2;
         this.soundEnabled = cfg.get<boolean>('soundFeedback', true);
         this.inlineMode = cfg.get<boolean>('inlineMode', false);
+        this.idleAutoStopMs = (cfg.get<number>('idleAutoStopSeconds', 0)) * 1000;
         const noiseGateVal = cfg.get<number>('noiseGateThreshold', 0);
         this.noiseGate.setThreshold(noiseGateVal);
         this.vad = new VoiceActivityDetector(sens, silence);
@@ -274,6 +278,7 @@ export class VoxPilotEngine {
     this.statusBar.resetWaveform();
     if (this.soundEnabled) { this.sound.playStart(); }
     this.log('Listening started');
+    this.resetIdleTimer();
   }
 
   private async stopListening(): Promise<void> {
@@ -283,6 +288,7 @@ export class VoxPilotEngine {
       await this.finalizeSpeech();
     }
     this.audio.stop();
+    this.clearIdleTimer();
     this.isListening = false;
     this.isQuickCapture = false;
     this.isDictating = false;
@@ -322,6 +328,7 @@ export class VoxPilotEngine {
     if (result.speechStarted) {
       this.statusBar.setSpeechDetected();
       this.log('Speech detected');
+      this.resetIdleTimer();
     }
 
     // Update voice level indicator in status bar
@@ -923,6 +930,31 @@ export class VoxPilotEngine {
     } else {
       terminal.sendText(text, false); // false = no newline (type only)
       this.log(`Sent to terminal (typed, not executed): "${text.slice(0, 50)}..."`);
+    }
+  }
+
+  /**
+   * Reset the idle auto-stop timer. Called when listening starts and on each speech detection.
+   * When the timer expires without speech, recording stops automatically.
+   */
+  private resetIdleTimer(): void {
+    this.clearIdleTimer();
+    if (this.idleAutoStopMs > 0 && this.isListening) {
+      this.idleTimer = setTimeout(() => {
+        if (this.isListening) {
+          this.log(`Idle auto-stop: no speech for ${this.idleAutoStopMs / 1000}s, stopping`);
+          vscode.window.showInformationMessage(`VoxPilot: Recording stopped — idle for ${this.idleAutoStopMs / 1000}s`);
+          this.finalizeSpeech().then(() => this.stopListening());
+        }
+      }, this.idleAutoStopMs);
+    }
+  }
+
+  /** Clear the idle auto-stop timer */
+  private clearIdleTimer(): void {
+    if (this.idleTimer) {
+      clearTimeout(this.idleTimer);
+      this.idleTimer = null;
     }
   }
 

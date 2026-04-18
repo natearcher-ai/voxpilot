@@ -474,6 +474,13 @@
           "type": "boolean",
           "default": true,
           "description": "Detect cursor context (string, comment, function signature) and format transcription accordingly."
+        },
+        "voxpilot.idleAutoStopSeconds": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 300,
+          "description": "Automatically stop recording after this many seconds of silence (0 = disabled). Useful for hands-free workflows where you forget to stop recording."
         }
       }
     }
