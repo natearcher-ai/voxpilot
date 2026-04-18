@@ -503,6 +503,30 @@
           "minimum": 500,
           "maximum": 5000,
           "description": "How often to update the streaming transcription (milliseconds). Lower values give faster feedback but use more CPU."
+        },
+        "voxpilot.multiLanguage": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable enhanced multi-language support with language profiles, auto-model suggestions, and quick language toggle."
+        },
+        "voxpilot.languageProfiles": {
+          "type": "array",
+          "default": [],
+          "description": "Saved language profiles for quick switching between language+model combinations.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "language": {
+                "type": "string"
+              },
+              "model": {
+                "type": "string"
+              }
+            }
+          }
         }
       }
     }
