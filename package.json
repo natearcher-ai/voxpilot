@@ -693,6 +693,11 @@
           "type": "boolean",
           "default": true,
           "description": "Enable voice-driven git \u2014 say \"commit\", \"push\", \"pull\", \"checkout\", \"stash\" to execute git operations by voice."
+        },
+        "voxpilot.snippetMarketplace": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the snippet marketplace \u2014 browse and install community-shared voice macro packs."
         }
       }
     }
