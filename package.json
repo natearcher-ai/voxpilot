@@ -592,6 +592,18 @@
           "type": "boolean",
           "default": true,
           "description": "Enable accessibility features: ARIA labels, screen reader announcements, high contrast support, and keyboard navigation."
+        },
+        "voxpilot.walkyTalky": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable walky-talky mode \u2014 press and hold the keybinding to record, release to stop and transcribe."
+        },
+        "voxpilot.walkyTalkyThresholdMs": {
+          "type": "number",
+          "default": 300,
+          "minimum": 100,
+          "maximum": 1000,
+          "description": "How long to hold the keybinding before entering walky-talky mode (milliseconds). Shorter presses are treated as toggle."
         }
       }
     }
