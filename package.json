@@ -268,13 +268,15 @@
             "ask",
             "chat",
             "cursor",
-            "clipboard"
+            "clipboard",
+            "terminal"
           ],
           "enumDescriptions": [
             "Show notification with options (default)",
             "Always send to chat panel",
             "Always insert at cursor position",
-            "Always copy to clipboard"
+            "Always copy to clipboard",
+            "Always send to the integrated terminal"
           ],
           "description": "Default action for completed transcripts. 'ask' shows a notification with all options."
         },
@@ -445,6 +447,11 @@
           "type": "boolean",
           "default": true,
           "description": "Enable prefix commands \u2014 say a keyword before dictating to auto-wrap output (e.g. \"comment hello\" \u2192 // hello)"
+        },
+        "voxpilot.terminalAutoExecute": {
+          "type": "boolean",
+          "default": false,
+          "description": "When outputAction is \"terminal\", automatically press Enter to execute the command. When false (default), text is typed into the terminal for review before executing."
         }
       }
     }

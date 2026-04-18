@@ -531,6 +531,9 @@ export class VoxPilotEngine {
         this.statusBar.setSent(this.lastTranscript);
         this.log('Copied to clipboard');
         vscode.window.showInformationMessage(`VoxPilot: Transcript copied to clipboard.`);
+      } else if (outputAction === 'terminal') {
+        await this.sendToTerminal(this.lastTranscript);
+        this.statusBar.setSent(this.lastTranscript);
       } else {
         this.showTranscriptNotification(this.lastTranscript);
         this.statusBar.setSent(this.lastTranscript);
@@ -553,10 +556,12 @@ export class VoxPilotEngine {
       'Send to Chat',
       'Copy',
       'Insert at Cursor',
+      'Send to Terminal',
     ).then(async action => {
       if (action === 'Send to Chat') { this.sendToChat(text); }
       else if (action === 'Copy') { vscode.env.clipboard.writeText(text); }
       else if (action === 'Insert at Cursor') { await this.insertAtCursor(text); }
+      else if (action === 'Send to Terminal') { await this.sendToTerminal(text); }
     });
   }
 
@@ -892,6 +897,32 @@ export class VoxPilotEngine {
         this.log('Clipboard paste failed - transcript copied to clipboard');
         vscode.window.showInformationMessage('VoxPilot: Transcript copied to clipboard (no active input to paste into).');
       }
+    }
+  }
+
+  /**
+   * Send transcript text to the active integrated terminal.
+   * Creates a new terminal if none exists. Does NOT execute (no Enter) —
+   * the text is typed into the terminal for the user to review and submit.
+   * Set voxpilot.terminalAutoExecute to true to auto-press Enter.
+   */
+  private async sendToTerminal(text: string): Promise<void> {
+    const config = vscode.workspace.getConfiguration('voxpilot');
+    const autoExecute = config.get<boolean>('terminalAutoExecute', false);
+
+    let terminal = vscode.window.activeTerminal;
+    if (!terminal) {
+      terminal = vscode.window.createTerminal('VoxPilot');
+      this.log('Created new terminal for voice input');
+    }
+    terminal.show(true); // preserveFocus = true
+
+    if (autoExecute) {
+      terminal.sendText(text, true); // true = append newline (execute)
+      this.log(`Sent to terminal (executed): "${text.slice(0, 50)}..."`);
+    } else {
+      terminal.sendText(text, false); // false = no newline (type only)
+      this.log(`Sent to terminal (typed, not executed): "${text.slice(0, 50)}..."`);
     }
   }
 
