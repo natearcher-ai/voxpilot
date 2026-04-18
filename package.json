@@ -527,6 +527,18 @@
               }
             }
           }
+        },
+        "voxpilot.historyPanel": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the searchable transcript history panel with timestamps, search, and click-to-insert."
+        },
+        "voxpilot.historyMaxEntries": {
+          "type": "number",
+          "default": 100,
+          "minimum": 10,
+          "maximum": 1000,
+          "description": "Maximum number of transcripts to keep in history."
         }
       }
     }
