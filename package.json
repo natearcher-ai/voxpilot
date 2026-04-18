@@ -1,6 +1,6 @@
 {
   "name": "voxpilot",
-  "displayName": "VoxPilot — Voice to Code",
+  "displayName": "VoxPilot \u2014 Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
   "version": "0.7.34",
   "publisher": "natearcher-ai",
@@ -184,14 +184,14 @@
             "parakeet-tdt-0.6b"
           ],
           "enumDescriptions": [
-            "Moonshine Tiny (~27MB) — fast, English-only",
-            "Moonshine Base (~65MB) — accurate, English-only",
-            "Whisper Tiny (~120MB) — fast, 90+ languages",
-            "Whisper Base (~200MB) — balanced, 90+ languages",
-            "Whisper Small (~600MB) — accurate, 90+ languages",
-            "Whisper Medium (~1.5GB) — high accuracy, 90+ languages",
-            "Whisper Large v3 Turbo (~1.6GB) — best accuracy, 90+ languages",
-            "Parakeet TDT 0.6B (~150MB) — streaming, low-latency, English-only"
+            "Moonshine Tiny (~27MB) \u2014 fast, English-only",
+            "Moonshine Base (~65MB) \u2014 accurate, English-only",
+            "Whisper Tiny (~120MB) \u2014 fast, 90+ languages",
+            "Whisper Base (~200MB) \u2014 balanced, 90+ languages",
+            "Whisper Small (~600MB) \u2014 accurate, 90+ languages",
+            "Whisper Medium (~1.5GB) \u2014 high accuracy, 90+ languages",
+            "Whisper Large v3 Turbo (~1.6GB) \u2014 best accuracy, 90+ languages",
+            "Parakeet TDT 0.6B (~150MB) \u2014 streaming, low-latency, English-only"
           ],
           "description": "ASR model to use. Moonshine models are English-only and lightweight. Whisper models support 90+ languages with increasing accuracy and size. Parakeet TDT offers streaming low-latency transcription for English."
         },
@@ -244,7 +244,7 @@
           "default": 0,
           "minimum": 0,
           "maximum": 0.1,
-          "description": "Noise gate RMS threshold (0–0.1). Audio frames below this level are silenced before reaching VAD. 0 = disabled. Try 0.005–0.02 to filter fan/hum noise."
+          "description": "Noise gate RMS threshold (0\u20130.1). Audio frames below this level are silenced before reaching VAD. 0 = disabled. Try 0.005\u20130.02 to filter fan/hum noise."
         },
         "voxpilot.voiceLevelIndicator": {
           "type": "boolean",
@@ -254,7 +254,7 @@
         "voxpilot.waveformVisualization": {
           "type": "boolean",
           "default": true,
-          "description": "Show an animated mini waveform (▁▂▃▅▇) in the status bar while recording, replacing the numeric dB display. Disable to fall back to numeric dB or plain text."
+          "description": "Show an animated mini waveform (\u2581\u2582\u2583\u2585\u2587) in the status bar while recording, replacing the numeric dB display. Disable to fall back to numeric dB or plain text."
         },
         "voxpilot.language": {
           "type": "string",
@@ -301,7 +301,7 @@
         "voxpilot.codeVocabulary": {
           "type": "boolean",
           "default": true,
-          "description": "Correct common ASR misrecognitions of programming terms (e.g. \"java script\" → \"JavaScript\", \"camel case\" → \"camelCase\"). Disable if you prefer raw transcription output."
+          "description": "Correct common ASR misrecognitions of programming terms (e.g. \"java script\" \u2192 \"JavaScript\", \"camel case\" \u2192 \"camelCase\"). Disable if you prefer raw transcription output."
         },
         "voxpilot.customVocabulary": {
           "type": "array",
@@ -440,6 +440,11 @@
             }
           },
           "markdownDescription": "Define custom voice-to-action mappings. Each entry maps a spoken phrase to an action.\n\nExample:\n```json\n[\n  { \"phrase\": \"arrow function\", \"action\": \"insert\", \"text\": \"() => \" },\n  { \"phrase\": \"hash map\", \"action\": \"insert\", \"text\": \"HashMap\" },\n  { \"phrase\": \"format file\", \"action\": \"command\", \"command\": \"editor.action.formatDocument\" }\n]\n```\n\nPhrases are matched case-insensitively at word boundaries. Longer phrases match first. Insert actions run in the post-processing pipeline; command actions execute the VS Code command and strip the phrase from the transcript."
+        },
+        "voxpilot.prefixCommands": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable prefix commands \u2014 say a keyword before dictating to auto-wrap output (e.g. \"comment hello\" \u2192 // hello)"
         }
       }
     }

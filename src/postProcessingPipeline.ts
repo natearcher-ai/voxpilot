@@ -13,6 +13,7 @@ import { applyAutoPunctuation } from './autoPunctuation';
 import { CustomVoiceCommandsProcessor } from './customVoiceCommands';
 import { CodeVocabularyProcessor } from './codeVocabulary';
 import { EditorVoiceCommandsProcessor } from './editorVoiceCommands';
+import { PrefixCommandsProcessor } from './prefixCommands';
 
 /**
  * Context passed to each processor — includes raw segments and metadata
@@ -220,6 +221,7 @@ const DEFAULT_ORDER: string[] = [
   'normalizeWhitespace',
   'voiceCommands',
   'editorVoiceCommands',
+  'prefixCommands',
   'customVoiceCommands',
   'fixTypos',
   'fillerWordRemoval',
@@ -235,6 +237,7 @@ const BUILTIN_PROCESSORS: PostProcessor[] = [
   new NormalizeWhitespaceProcessor(),
   new VoiceCommandsProcessor(),
   new EditorVoiceCommandsProcessor(),
+  new PrefixCommandsProcessor(),
   new CustomVoiceCommandsProcessor(),
   new FixTyposProcessor(),
   new FillerWordRemovalProcessor(),
