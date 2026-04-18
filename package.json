@@ -678,6 +678,11 @@
           "type": "boolean",
           "default": true,
           "description": "Enable performance metrics collection for the dashboard (transcription latency, model benchmarks, session stats)."
+        },
+        "voxpilot.voiceAnnotations": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable voice annotations \u2014 say \"annotate\", \"note\", or \"bookmark\" to add inline comments without moving the cursor."
         }
       }
     }
