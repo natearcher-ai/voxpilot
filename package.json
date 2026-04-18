@@ -587,6 +587,11 @@
               }
             }
           }
+        },
+        "voxpilot.accessibility": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable accessibility features: ARIA labels, screen reader announcements, high contrast support, and keyboard navigation."
         }
       }
     }
