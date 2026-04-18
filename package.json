@@ -673,6 +673,11 @@
           "type": "boolean",
           "default": false,
           "description": "Enable RNNoise neural noise reduction for superior background noise filtering. Downloads a ~200KB WASM module on first use. Falls back to adaptive noise gate if unavailable."
+        },
+        "voxpilot.performanceDashboard": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable performance metrics collection for the dashboard (transcription latency, model benchmarks, session stats)."
         }
       }
     }
