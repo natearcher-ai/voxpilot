@@ -633,6 +633,36 @@
           "type": "string",
           "default": "",
           "description": "Preferred voice name for readback (platform-dependent). Leave empty for system default."
+        },
+        "voxpilot.vocabularyBoostEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable vocabulary boost \u2014 prioritize domain-specific terms with configurable weights and phoneme hints."
+        },
+        "voxpilot.vocabularyBoost": {
+          "type": "array",
+          "default": [],
+          "maxItems": 200,
+          "description": "Boosted vocabulary entries. Each entry has a term, boost factor (1.0-10.0), and optional phoneme hint.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "term": {
+                "type": "string",
+                "description": "The correct term to recognize"
+              },
+              "boost": {
+                "type": "number",
+                "minimum": 1.0,
+                "maximum": 10.0,
+                "description": "Priority weight (higher = matched first)"
+              },
+              "phoneme": {
+                "type": "string",
+                "description": "How the term sounds when spoken (e.g. cube-control for kubectl)"
+              }
+            }
+          }
         }
       }
     }
