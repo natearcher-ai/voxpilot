@@ -604,6 +604,35 @@
           "minimum": 100,
           "maximum": 1000,
           "description": "How long to hold the keybinding before entering walky-talky mode (milliseconds). Shorter presses are treated as toggle."
+        },
+        "voxpilot.readback": {
+          "type": "string",
+          "default": "off",
+          "enum": [
+            "off",
+            "always",
+            "on-error",
+            "on-demand"
+          ],
+          "enumDescriptions": [
+            "No readback (default)",
+            "Read back every transcription",
+            "Read back only when confidence is low",
+            "Add a Read Back button to the notification"
+          ],
+          "description": "Text-to-speech readback mode \u2014 hear your transcription read aloud for verification."
+        },
+        "voxpilot.readbackRate": {
+          "type": "number",
+          "default": 1.2,
+          "minimum": 0.5,
+          "maximum": 2.0,
+          "description": "Speech rate for readback (0.5=slow, 1.0=normal, 2.0=fast)."
+        },
+        "voxpilot.readbackVoice": {
+          "type": "string",
+          "default": "",
+          "description": "Preferred voice name for readback (platform-dependent). Leave empty for system default."
         }
       }
     }
