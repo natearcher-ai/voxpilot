@@ -688,6 +688,11 @@
           "type": "boolean",
           "default": true,
           "description": "Enable voice navigation \u2014 say \"go to file\", \"find function\", \"open test\", or \"go to line\" to navigate by voice."
+        },
+        "voxpilot.voiceGit": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable voice-driven git \u2014 say \"commit\", \"push\", \"pull\", \"checkout\", \"stash\" to execute git operations by voice."
         }
       }
     }
