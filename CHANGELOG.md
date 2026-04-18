@@ -2,6 +2,15 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.33] - 2026-04-18
+
+### Added
+- Editor voice commands post-processor — say "undo", "redo", "save", "new line", "select all", "delete line", "copy", "cut", "paste", "format document", or "close tab" to execute the corresponding VS Code editor action instead of typing the words
+- Phrases are stripped from the transcript and executed as deferred VS Code commands via the pipeline's `pendingCommands` mechanism
+- New `voxpilot.editorVoiceCommands` setting (default: `true`) to toggle editor voice commands on or off
+- Integrated into the post-processing pipeline as `editorVoiceCommands` between `voiceCommands` and `customVoiceCommands` — can be reordered or disabled via `voxpilot.postProcessors` settings
+- Multi-word phrases ("save file", "close tab", "select all", "delete line", "format document", "copy that", "cut that", "paste that") matched before shorter variants to avoid false positives
+
 ## [0.7.32] - 2026-04-17
 
 ### Added

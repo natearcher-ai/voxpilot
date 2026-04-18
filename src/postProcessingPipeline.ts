@@ -12,6 +12,7 @@ import { stitchSegments } from './smartSpacing';
 import { applyAutoPunctuation } from './autoPunctuation';
 import { CustomVoiceCommandsProcessor } from './customVoiceCommands';
 import { CodeVocabularyProcessor } from './codeVocabulary';
+import { EditorVoiceCommandsProcessor } from './editorVoiceCommands';
 
 /**
  * Context passed to each processor — includes raw segments and metadata
@@ -218,6 +219,7 @@ const DEFAULT_ORDER: string[] = [
   'trim',
   'normalizeWhitespace',
   'voiceCommands',
+  'editorVoiceCommands',
   'customVoiceCommands',
   'fixTypos',
   'fillerWordRemoval',
@@ -232,6 +234,7 @@ const BUILTIN_PROCESSORS: PostProcessor[] = [
   new TrimProcessor(),
   new NormalizeWhitespaceProcessor(),
   new VoiceCommandsProcessor(),
+  new EditorVoiceCommandsProcessor(),
   new CustomVoiceCommandsProcessor(),
   new FixTyposProcessor(),
   new FillerWordRemovalProcessor(),
