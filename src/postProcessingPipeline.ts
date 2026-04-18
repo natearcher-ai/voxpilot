@@ -14,6 +14,7 @@ import { CustomVoiceCommandsProcessor } from './customVoiceCommands';
 import { CodeVocabularyProcessor } from './codeVocabulary';
 import { EditorVoiceCommandsProcessor } from './editorVoiceCommands';
 import { PrefixCommandsProcessor } from './prefixCommands';
+import { AutoVocabularyProcessor } from './autoVocabulary';
 
 /**
  * Context passed to each processor — includes raw segments and metadata
@@ -225,6 +226,7 @@ const DEFAULT_ORDER: string[] = [
   'customVoiceCommands',
   'fixTypos',
   'fillerWordRemoval',
+  'autoVocabulary',
   'codeVocabulary',
   'autoPunctuation',
   'autoCapitalize',
@@ -241,6 +243,7 @@ const BUILTIN_PROCESSORS: PostProcessor[] = [
   new CustomVoiceCommandsProcessor(),
   new FixTyposProcessor(),
   new FillerWordRemovalProcessor(),
+  new AutoVocabularyProcessor(),
   new CodeVocabularyProcessor(),
   new AutoPunctuationProcessor(),
   new AutoCapitalizeProcessor(),

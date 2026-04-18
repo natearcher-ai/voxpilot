@@ -452,6 +452,11 @@
           "type": "boolean",
           "default": false,
           "description": "When outputAction is \"terminal\", automatically press Enter to execute the command. When false (default), text is typed into the terminal for review before executing."
+        },
+        "voxpilot.autoVocabulary": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically learn project-specific terms from open files and workspace symbols to improve transcription accuracy."
         }
       }
     }
