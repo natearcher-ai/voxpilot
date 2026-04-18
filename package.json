@@ -698,6 +698,11 @@
           "type": "boolean",
           "default": true,
           "description": "Enable the snippet marketplace \u2014 browse and install community-shared voice macro packs."
+        },
+        "voxpilot.pairProgramming": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable pair programming mode \u2014 distinguish two speakers by voice profile and route to different targets."
         }
       }
     }
