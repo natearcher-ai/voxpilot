@@ -481,6 +481,16 @@
           "minimum": 0,
           "maximum": 300,
           "description": "Automatically stop recording after this many seconds of silence (0 = disabled). Useful for hands-free workflows where you forget to stop recording."
+        },
+        "voxpilot.wakeWord": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable wake word detection \u2014 say \"hey vox\" to start recording hands-free without clicking the button."
+        },
+        "voxpilot.wakePhrase": {
+          "type": "string",
+          "default": "hey vox",
+          "description": "Custom wake phrase to trigger recording (default: \"hey vox\"). Fuzzy matching handles common ASR misrecognitions."
         }
       }
     }
