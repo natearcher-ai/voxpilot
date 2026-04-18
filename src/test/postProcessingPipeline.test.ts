@@ -121,12 +121,13 @@ describe('PostProcessingPipeline', () => {
   it('getProcessorInfo returns all processors with status', () => {
     const pipeline = new PostProcessingPipeline();
     const info = pipeline.getProcessorInfo();
-    expect(info.length).toBe(10);
+    expect(info.length).toBe(11);
     expect(info.map(i => i.id)).toEqual([
       'stitchSegments',
       'trim',
       'normalizeWhitespace',
       'voiceCommands',
+      'editorVoiceCommands',
       'customVoiceCommands',
       'fixTypos',
       'fillerWordRemoval',
