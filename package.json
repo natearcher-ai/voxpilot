@@ -539,6 +539,54 @@
           "minimum": 10,
           "maximum": 1000,
           "description": "Maximum number of transcripts to keep in history."
+        },
+        "voxpilot.voiceMacros": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable voice macros \u2014 trigger custom code snippets and multi-step editor actions by voice."
+        },
+        "voxpilot.voiceMacroDefinitions": {
+          "type": "array",
+          "default": [],
+          "description": "Custom voice macro definitions. Each macro maps a spoken phrase to a sequence of actions (insert, snippet, command, terminal, wrap).",
+          "items": {
+            "type": "object",
+            "properties": {
+              "phrase": {
+                "type": "string",
+                "description": "Spoken phrase to trigger this macro"
+              },
+              "description": {
+                "type": "string",
+                "description": "Human-readable description"
+              },
+              "actions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "insert",
+                        "snippet",
+                        "command",
+                        "terminal",
+                        "wrap"
+                      ]
+                    },
+                    "value": {
+                      "type": "string"
+                    },
+                    "suffix": {
+                      "type": "string"
+                    },
+                    "args": {}
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }
