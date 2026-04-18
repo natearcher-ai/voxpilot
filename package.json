@@ -683,6 +683,11 @@
           "type": "boolean",
           "default": true,
           "description": "Enable voice annotations \u2014 say \"annotate\", \"note\", or \"bookmark\" to add inline comments without moving the cursor."
+        },
+        "voxpilot.voiceNavigation": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable voice navigation \u2014 say \"go to file\", \"find function\", \"open test\", or \"go to line\" to navigate by voice."
         }
       }
     }
