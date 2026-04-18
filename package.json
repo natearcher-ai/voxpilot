@@ -491,6 +491,18 @@
           "type": "string",
           "default": "hey vox",
           "description": "Custom wake phrase to trigger recording (default: \"hey vox\"). Fuzzy matching handles common ASR misrecognitions."
+        },
+        "voxpilot.streamingTranscription": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show partial transcription results in real-time as you speak, instead of waiting for silence."
+        },
+        "voxpilot.streamingWindowMs": {
+          "type": "number",
+          "default": 2000,
+          "minimum": 500,
+          "maximum": 5000,
+          "description": "How often to update the streaming transcription (milliseconds). Lower values give faster feedback but use more CPU."
         }
       }
     }
