@@ -708,6 +708,11 @@
           "type": "boolean",
           "default": true,
           "description": "Enable the public extension API \u2014 allows other extensions to listen for transcription events and control VoxPilot programmatically."
+        },
+        "voxpilot.offlineModelManager": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the offline model manager \u2014 download, cache, and switch between ASR models with progress UI and disk usage tracking."
         }
       }
     }
