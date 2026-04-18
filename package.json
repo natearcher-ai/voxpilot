@@ -668,6 +668,11 @@
           "type": "boolean",
           "default": true,
           "description": "Show a live rewriting zone with dotted underline that updates in real-time as speech recognition improves."
+        },
+        "voxpilot.neuralNoiseReduction": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable RNNoise neural noise reduction for superior background noise filtering. Downloads a ~200KB WASM module on first use. Falls back to adaptive noise gate if unavailable."
         }
       }
     }
