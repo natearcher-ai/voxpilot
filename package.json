@@ -469,6 +469,11 @@
           "minimum": 1,
           "maximum": 5,
           "description": "Noise reduction sensitivity (1=aggressive, 5=gentle). Higher values let more background noise through but preserve quiet speech."
+        },
+        "voxpilot.smartInsert": {
+          "type": "boolean",
+          "default": true,
+          "description": "Detect cursor context (string, comment, function signature) and format transcription accordingly."
         }
       }
     }

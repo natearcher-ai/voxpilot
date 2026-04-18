@@ -15,6 +15,7 @@ import { CodeVocabularyProcessor } from './codeVocabulary';
 import { EditorVoiceCommandsProcessor } from './editorVoiceCommands';
 import { PrefixCommandsProcessor } from './prefixCommands';
 import { AutoVocabularyProcessor } from './autoVocabulary';
+import { SmartInsertProcessor } from './smartInsert';
 
 /**
  * Context passed to each processor — includes raw segments and metadata
@@ -228,6 +229,7 @@ const DEFAULT_ORDER: string[] = [
   'fillerWordRemoval',
   'autoVocabulary',
   'codeVocabulary',
+  'smartInsert',
   'autoPunctuation',
   'autoCapitalize',
 ];
@@ -245,6 +247,7 @@ const BUILTIN_PROCESSORS: PostProcessor[] = [
   new FillerWordRemovalProcessor(),
   new AutoVocabularyProcessor(),
   new CodeVocabularyProcessor(),
+  new SmartInsertProcessor(),
   new AutoPunctuationProcessor(),
   new AutoCapitalizeProcessor(),
 ];

@@ -121,7 +121,7 @@ describe('PostProcessingPipeline', () => {
   it('getProcessorInfo returns all processors with status', () => {
     const pipeline = new PostProcessingPipeline();
     const info = pipeline.getProcessorInfo();
-    expect(info.length).toBe(13);
+    expect(info.length).toBe(14);
     expect(info.map(i => i.id)).toEqual([
       'stitchSegments',
       'trim',
@@ -134,6 +134,7 @@ describe('PostProcessingPipeline', () => {
       'fillerWordRemoval',
       'autoVocabulary',
       'codeVocabulary',
+      'smartInsert',
       'autoPunctuation',
       'autoCapitalize',
     ]);
