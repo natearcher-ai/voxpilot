@@ -703,6 +703,11 @@
           "type": "boolean",
           "default": false,
           "description": "Enable pair programming mode \u2014 distinguish two speakers by voice profile and route to different targets."
+        },
+        "voxpilot.extensionApi": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the public extension API \u2014 allows other extensions to listen for transcription events and control VoxPilot programmatically."
         }
       }
     }
