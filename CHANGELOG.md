@@ -2,6 +2,16 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.35] - 2026-04-19
+
+### Added
+- Prefix commands post-processor — say a keyword before dictating to auto-wrap the output in code constructs
+- Supported prefixes: `comment`, `block comment`, `todo`, `fixme`, `function`, `variable`/`const`, `let`, `log`/`print`, `return`, `import`, `class`, `if`
+- Examples: "comment hello world" → `// hello world`, "function greet" → `function greet() {}`, "log hello" → `console.log("hello");`
+- New `voxpilot.prefixCommands` setting (default: `true`) to toggle prefix commands on or off
+- Greedy longest-prefix-first matching so "block comment" matches before "comment"
+- Integrated into the post-processing pipeline as `prefixCommands` — can be reordered or disabled via `voxpilot.postProcessors` settings
+
 ## [0.7.33] - 2026-04-18
 
 ### Added
