@@ -1,8 +1,8 @@
 {
   "name": "voxpilot",
-  "displayName": "VoxPilot \u2014 Voice to Code",
+  "displayName": "VoxPilot — Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
-  "version": "0.7.35",
+  "version": "0.7.36",
   "publisher": "natearcher-ai",
   "license": "MIT",
   "repository": {
@@ -184,14 +184,14 @@
             "parakeet-tdt-0.6b"
           ],
           "enumDescriptions": [
-            "Moonshine Tiny (~27MB) \u2014 fast, English-only",
-            "Moonshine Base (~65MB) \u2014 accurate, English-only",
-            "Whisper Tiny (~120MB) \u2014 fast, 90+ languages",
-            "Whisper Base (~200MB) \u2014 balanced, 90+ languages",
-            "Whisper Small (~600MB) \u2014 accurate, 90+ languages",
-            "Whisper Medium (~1.5GB) \u2014 high accuracy, 90+ languages",
-            "Whisper Large v3 Turbo (~1.6GB) \u2014 best accuracy, 90+ languages",
-            "Parakeet TDT 0.6B (~150MB) \u2014 streaming, low-latency, English-only"
+            "Moonshine Tiny (~27MB) — fast, English-only",
+            "Moonshine Base (~65MB) — accurate, English-only",
+            "Whisper Tiny (~120MB) — fast, 90+ languages",
+            "Whisper Base (~200MB) — balanced, 90+ languages",
+            "Whisper Small (~600MB) — accurate, 90+ languages",
+            "Whisper Medium (~1.5GB) — high accuracy, 90+ languages",
+            "Whisper Large v3 Turbo (~1.6GB) — best accuracy, 90+ languages",
+            "Parakeet TDT 0.6B (~150MB) — streaming, low-latency, English-only"
           ],
           "description": "ASR model to use. Moonshine models are English-only and lightweight. Whisper models support 90+ languages with increasing accuracy and size. Parakeet TDT offers streaming low-latency transcription for English."
         },
@@ -244,7 +244,7 @@
           "default": 0,
           "minimum": 0,
           "maximum": 0.1,
-          "description": "Noise gate RMS threshold (0\u20130.1). Audio frames below this level are silenced before reaching VAD. 0 = disabled. Try 0.005\u20130.02 to filter fan/hum noise."
+          "description": "Noise gate RMS threshold (0–0.1). Audio frames below this level are silenced before reaching VAD. 0 = disabled. Try 0.005–0.02 to filter fan/hum noise."
         },
         "voxpilot.voiceLevelIndicator": {
           "type": "boolean",
@@ -254,7 +254,7 @@
         "voxpilot.waveformVisualization": {
           "type": "boolean",
           "default": true,
-          "description": "Show an animated mini waveform (\u2581\u2582\u2583\u2585\u2587) in the status bar while recording, replacing the numeric dB display. Disable to fall back to numeric dB or plain text."
+          "description": "Show an animated mini waveform (▁▂▃▅▇) in the status bar while recording, replacing the numeric dB display. Disable to fall back to numeric dB or plain text."
         },
         "voxpilot.language": {
           "type": "string",
@@ -303,7 +303,7 @@
         "voxpilot.codeVocabulary": {
           "type": "boolean",
           "default": true,
-          "description": "Correct common ASR misrecognitions of programming terms (e.g. \"java script\" \u2192 \"JavaScript\", \"camel case\" \u2192 \"camelCase\"). Disable if you prefer raw transcription output."
+          "description": "Correct common ASR misrecognitions of programming terms (e.g. \"java script\" → \"JavaScript\", \"camel case\" → \"camelCase\"). Disable if you prefer raw transcription output."
         },
         "voxpilot.customVocabulary": {
           "type": "array",
@@ -446,7 +446,7 @@
         "voxpilot.prefixCommands": {
           "type": "boolean",
           "default": true,
-          "description": "Enable prefix commands \u2014 say a keyword before dictating to auto-wrap output (e.g. \"comment hello\" \u2192 // hello)"
+          "description": "Enable prefix commands — say a keyword before dictating to auto-wrap output (e.g. \"comment hello\" → // hello)"
         },
         "voxpilot.terminalAutoExecute": {
           "type": "boolean",
@@ -485,7 +485,7 @@
         "voxpilot.wakeWord": {
           "type": "boolean",
           "default": false,
-          "description": "Enable wake word detection \u2014 say \"hey vox\" to start recording hands-free without clicking the button."
+          "description": "Enable wake word detection — say \"hey vox\" to start recording hands-free without clicking the button."
         },
         "voxpilot.wakePhrase": {
           "type": "string",
@@ -543,7 +543,7 @@
         "voxpilot.voiceMacros": {
           "type": "boolean",
           "default": true,
-          "description": "Enable voice macros \u2014 trigger custom code snippets and multi-step editor actions by voice."
+          "description": "Enable voice macros — trigger custom code snippets and multi-step editor actions by voice."
         },
         "voxpilot.voiceMacroDefinitions": {
           "type": "array",
@@ -596,7 +596,7 @@
         "voxpilot.walkyTalky": {
           "type": "boolean",
           "default": true,
-          "description": "Enable walky-talky mode \u2014 press and hold the keybinding to record, release to stop and transcribe."
+          "description": "Enable walky-talky mode — press and hold the keybinding to record, release to stop and transcribe."
         },
         "voxpilot.walkyTalkyThresholdMs": {
           "type": "number",
@@ -620,13 +620,13 @@
             "Read back only when confidence is low",
             "Add a Read Back button to the notification"
           ],
-          "description": "Text-to-speech readback mode \u2014 hear your transcription read aloud for verification."
+          "description": "Text-to-speech readback mode — hear your transcription read aloud for verification."
         },
         "voxpilot.readbackRate": {
           "type": "number",
           "default": 1.2,
           "minimum": 0.5,
-          "maximum": 2.0,
+          "maximum": 2,
           "description": "Speech rate for readback (0.5=slow, 1.0=normal, 2.0=fast)."
         },
         "voxpilot.readbackVoice": {
@@ -637,7 +637,7 @@
         "voxpilot.vocabularyBoostEnabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable vocabulary boost \u2014 prioritize domain-specific terms with configurable weights and phoneme hints."
+          "description": "Enable vocabulary boost — prioritize domain-specific terms with configurable weights and phoneme hints."
         },
         "voxpilot.vocabularyBoost": {
           "type": "array",
@@ -653,8 +653,8 @@
               },
               "boost": {
                 "type": "number",
-                "minimum": 1.0,
-                "maximum": 10.0,
+                "minimum": 1,
+                "maximum": 10,
                 "description": "Priority weight (higher = matched first)"
               },
               "phoneme": {
@@ -682,37 +682,37 @@
         "voxpilot.voiceAnnotations": {
           "type": "boolean",
           "default": true,
-          "description": "Enable voice annotations \u2014 say \"annotate\", \"note\", or \"bookmark\" to add inline comments without moving the cursor."
+          "description": "Enable voice annotations — say \"annotate\", \"note\", or \"bookmark\" to add inline comments without moving the cursor."
         },
         "voxpilot.voiceNavigation": {
           "type": "boolean",
           "default": true,
-          "description": "Enable voice navigation \u2014 say \"go to file\", \"find function\", \"open test\", or \"go to line\" to navigate by voice."
+          "description": "Enable voice navigation — say \"go to file\", \"find function\", \"open test\", or \"go to line\" to navigate by voice."
         },
         "voxpilot.voiceGit": {
           "type": "boolean",
           "default": true,
-          "description": "Enable voice-driven git \u2014 say \"commit\", \"push\", \"pull\", \"checkout\", \"stash\" to execute git operations by voice."
+          "description": "Enable voice-driven git — say \"commit\", \"push\", \"pull\", \"checkout\", \"stash\" to execute git operations by voice."
         },
         "voxpilot.snippetMarketplace": {
           "type": "boolean",
           "default": true,
-          "description": "Enable the snippet marketplace \u2014 browse and install community-shared voice macro packs."
+          "description": "Enable the snippet marketplace — browse and install community-shared voice macro packs."
         },
         "voxpilot.pairProgramming": {
           "type": "boolean",
           "default": false,
-          "description": "Enable pair programming mode \u2014 distinguish two speakers by voice profile and route to different targets."
+          "description": "Enable pair programming mode — distinguish two speakers by voice profile and route to different targets."
         },
         "voxpilot.extensionApi": {
           "type": "boolean",
           "default": true,
-          "description": "Enable the public extension API \u2014 allows other extensions to listen for transcription events and control VoxPilot programmatically."
+          "description": "Enable the public extension API — allows other extensions to listen for transcription events and control VoxPilot programmatically."
         },
         "voxpilot.offlineModelManager": {
           "type": "boolean",
           "default": true,
-          "description": "Enable the offline model manager \u2014 download, cache, and switch between ASR models with progress UI and disk usage tracking."
+          "description": "Enable the offline model manager — download, cache, and switch between ASR models with progress UI and disk usage tracking."
         }
       }
     }
