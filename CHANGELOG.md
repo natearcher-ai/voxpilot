@@ -2,6 +2,15 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.36] - 2026-04-20
+
+### Added
+- Terminal target output — route transcription directly to the integrated terminal instead of the active editor
+- Set `voxpilot.outputAction` to `"terminal"` to always send transcripts to the terminal, or choose "terminal" from the notification prompt when `outputAction` is `"ask"`
+- New `voxpilot.terminalAutoExecute` setting (default: `false`) — when enabled, automatically presses Enter to execute the command; when disabled, text is typed into the terminal for review before submitting
+- Creates a new terminal named "VoxPilot" if no active terminal exists
+- Works with dictation mode for hands-free terminal command entry
+
 ## [0.7.35] - 2026-04-19
 
 ### Added
