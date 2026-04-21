@@ -2,6 +2,18 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.37] - 2026-04-21
+
+### Added
+- Auto-vocabulary post-processor — dynamically learns project-specific terms from open files and workspace symbols to improve transcription accuracy
+- Scans camelCase, PascalCase, snake_case, SCREAMING_SNAKE_CASE, and kebab-case identifiers from open documents and builds a correction dictionary mapping spoken forms to code identifiers
+- Examples: "get user name" → `getUserName`, "my component" → `MyComponent`, "max retry count" → `MAX_RETRY_COUNT`
+- Vocabulary refreshes automatically when files are opened or saved, with debounced refresh to avoid thrashing
+- New `voxpilot.autoVocabulary` setting (default: `true`) to toggle auto-vocabulary on or off
+- Integrated into the post-processing pipeline as `autoVocabulary` — runs before static code vocabulary so project-specific terms take priority
+- Greedy longest-match-first replacement to avoid partial matches
+- Skips very large files (>500KB) and common language keywords to keep vocabulary clean
+
 ## [0.7.36] - 2026-04-20
 
 ### Added
