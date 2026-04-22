@@ -147,7 +147,38 @@ Speak these during dictation for hands-free formatting:
 - **Chat** — Send directly to any VS Code chat participant
 - **Cursor** — Insert at current cursor position in the editor
 - **Clipboard** — Copy to clipboard for pasting anywhere
+- **Terminal** — Route transcription to the integrated terminal with optional auto-execute
 - **Ask** — Choose each time via notification
+
+### Voice Intelligence
+- **Filler word removal** — Strips um, uh, hmm, like, you know automatically
+- **Editor voice commands** — Say "undo", "redo", "save", "select all", "delete line" to execute editor actions
+- **Prefix commands** — Say "comment", "function", "log" before dictating to auto-wrap output
+- **Auto-vocabulary** — Learns project-specific identifiers from your workspace (camelCase, snake_case)
+- **Smart insert** — Context-aware formatting (raw in strings, capitalized in comments, camelCase in code)
+- **Voice macros** — Custom snippets and actions triggered by spoken phrases
+- **Voice refactoring** — Say "rename", "extract function", "organize imports"
+- **Multi-file navigation** — "Go to file auth.ts", "go to function handleLogin"
+- **Voice-driven git** — "Commit", "push", "checkout main" by voice
+
+### Audio Processing
+- **Adaptive noise reduction** — Auto-calibrating noise gate with 5 sensitivity presets
+- **Neural noise reduction** — RNNoise WASM denoiser for aggressive noise filtering
+- **Wake word** — "Hey Vox" hands-free activation
+- **Walky-talky mode** — Press-hold-release for push-to-talk
+- **Idle auto-stop** — Configurable silence timeout
+- **Streaming transcription** — Rolling buffer for real-time partial results
+- **TTS readback** — Hear your transcription read back aloud
+- **Vocabulary boost** — Weighted terms and phoneme hints for domain-specific accuracy
+
+### Tools & Panels
+- **History panel** — Searchable transcript history with timestamps and export
+- **Performance dashboard** — Latency metrics, accuracy benchmarks, model comparison
+- **Offline model manager** — Download, cache, and switch ASR models from a built-in panel
+- **Multi-language profiles** — Switch languages with model suggestions per profile
+- **Snippet marketplace** — Community-shared voice macro packs
+- **Extension API** — Public hooks for other extensions to integrate with VoxPilot
+- **Accessibility** — ARIA labels, screen reader support, high contrast mode
 
 ### IDE Support
 - **VS Code** — Full support
