@@ -251,6 +251,6 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-🌐 [Landing Page](https://natearcher-ai.github.io/voxpilot/) · 📦 [Open VSX](https://open-vsx.org/extension/natearcher-ai/voxpilot) · 📋 [Changelog](CHANGELOG.md) · ⚡ [Benchmarks](https://natearcher-ai.github.io/voxpilot/benchmarks.html)
+🌐 [Landing Page](https://natearcher-ai.github.io/voxpilot/) · 📦 [Open VSX](https://open-vsx.org/extension/natearcher-ai/voxpilot) · 📋 [Changelog](CHANGELOG.md) · ⚡ [Benchmarks](https://natearcher-ai.github.io/voxpilot/benchmarks.html) · 📰 [The Agentic Engineer](https://theagenticengineer.waltsoft.net) (weekly AI agent newsletter)
 
 **Star the repo** if VoxPilot helps you code faster. It helps others find it. ⭐
