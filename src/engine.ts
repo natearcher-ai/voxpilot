@@ -8,6 +8,7 @@ import { StatusBarManager } from './statusBar';
 import { TranscriptHistory } from './transcriptHistory';
 import { SoundFeedback } from './soundFeedback';
 import { NoiseGate } from './noiseGate';
+import { AdaptiveNoiseReduction } from './adaptiveNoiseReduction';
 import { PartialOverlay } from './partialOverlay';
 import { shouldAutoSubmit } from './autoSubmitRules';
 import { PostProcessingPipeline } from './postProcessingPipeline';
@@ -38,6 +39,8 @@ export class VoxPilotEngine {
   private soundEnabled: boolean;
   private inlineMode: boolean;
   private noiseGate: NoiseGate;
+  private adaptiveNR: AdaptiveNoiseReduction | null = null;
+  private noiseReductionEnabled: boolean;
   private partialOverlay: PartialOverlay;
   private _pipeline: PostProcessingPipeline;
   private voiceLevelEnabled: boolean;
@@ -67,6 +70,11 @@ export class VoxPilotEngine {
     this.idleAutoStopMs = (config.get<number>('idleAutoStopSeconds', 0)) * 1000;
     const noiseGateThreshold = config.get<number>('noiseGateThreshold', 0);
     this.noiseGate = new NoiseGate(noiseGateThreshold);
+    this.noiseReductionEnabled = config.get<boolean>('noiseReduction', true);
+    if (this.noiseReductionEnabled) {
+      const nrSensitivity = config.get<number>('noiseReductionSensitivity', 3);
+      this.adaptiveNR = new AdaptiveNoiseReduction(nrSensitivity);
+    }
     this.partialOverlay = new PartialOverlay();
     this._pipeline = new PostProcessingPipeline();
     this.voiceLevelEnabled = config.get<boolean>('voiceLevelIndicator', true);
@@ -100,6 +108,17 @@ export class VoxPilotEngine {
         this.idleAutoStopMs = (cfg.get<number>('idleAutoStopSeconds', 0)) * 1000;
         const noiseGateVal = cfg.get<number>('noiseGateThreshold', 0);
         this.noiseGate.setThreshold(noiseGateVal);
+        const nrEnabled = cfg.get<boolean>('noiseReduction', true);
+        if (nrEnabled && !this.adaptiveNR) {
+          const nrSens = cfg.get<number>('noiseReductionSensitivity', 3);
+          this.adaptiveNR = new AdaptiveNoiseReduction(nrSens);
+        } else if (nrEnabled && this.adaptiveNR) {
+          const nrSens = cfg.get<number>('noiseReductionSensitivity', 3);
+          this.adaptiveNR.setSensitivity(nrSens);
+        } else if (!nrEnabled) {
+          this.adaptiveNR = null;
+        }
+        this.noiseReductionEnabled = nrEnabled;
         this.vad = new VoiceActivityDetector(sens, silence);
         this.voiceLevelEnabled = cfg.get<boolean>('voiceLevelIndicator', true);
         this.waveformEnabled = cfg.get<boolean>('waveformVisualization', true);
@@ -268,6 +287,7 @@ export class VoxPilotEngine {
     this.audioChunkCount = 0;
     this.vad.reset();
     this.noiseGate.reset();
+    if (this.adaptiveNR) { this.adaptiveNR.reset(); }
     this.audio.start();
     this.isListening = true;
     if (this.isDictating) {
@@ -310,8 +330,10 @@ export class VoxPilotEngine {
   }
 
   private processFrame(frame: Buffer): void {
-    // Apply noise gate before VAD — zero out frames below threshold
-    const gatedFrame = this.noiseGate.process(frame);
+    // Apply noise reduction before VAD — adaptive NR auto-calibrates, falls back to static gate
+    const gatedFrame = this.adaptiveNR
+      ? this.adaptiveNR.process(frame)
+      : this.noiseGate.process(frame);
     const result = this.vad.process(gatedFrame);
 
     this.audioChunkCount++;

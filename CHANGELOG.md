@@ -2,6 +2,17 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.38] - 2026-04-22
+
+### Added
+- Adaptive noise reduction — auto-calibrates a noise gate based on ambient noise levels before sending audio to VAD
+- During the first 500ms of recording, measures the ambient noise floor and sets the gate threshold just above it
+- Ongoing adaptation: tracks noise floor with exponential moving average and re-calibrates if the environment changes (e.g. moving from quiet room to noisy café)
+- Sensitivity adjustable via `voxpilot.noiseReductionSensitivity` (1=aggressive, 5=gentle, default 3)
+- New `voxpilot.noiseReduction` setting (default: `true`) to toggle adaptive noise reduction on or off
+- Falls back to the static `noiseGateThreshold` when adaptive noise reduction is disabled
+- Integrated into the audio pipeline in `engine.ts` — replaces the static noise gate when enabled
+
 ## [0.7.37] - 2026-04-21
 
 ### Added
