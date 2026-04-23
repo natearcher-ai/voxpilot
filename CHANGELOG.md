@@ -2,6 +2,18 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.39] - 2026-04-23
+
+### Added
+- Smart insert mode — detects cursor context (string, comment, function signature, general code) and formats transcription accordingly
+- Inside a string literal: inserts raw text with no extra formatting
+- Inside a comment: capitalizes first letter and adds trailing period for natural language style
+- Inside a function signature: converts spoken words to camelCase parameter names (e.g. "user name" → `userName`)
+- At statement level or unknown context: passes text through unchanged for other processors to handle
+- Lightweight character-scanning context detection — no AST dependency, handles single/double/backtick strings, line/block comments, and nested parentheses
+- New `voxpilot.smartInsert` setting (default: `true`) to toggle smart insert mode on or off
+- Integrated into the post-processing pipeline as `smartInsert`
+
 ## [0.7.38] - 2026-04-22
 
 ### Added
