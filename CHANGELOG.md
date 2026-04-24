@@ -2,6 +2,16 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.40] - 2026-04-24
+
+### Added
+- Idle auto-stop — automatically stops recording after a configurable period of silence (no speech detected)
+- Default: disabled (0 seconds). Set `voxpilot.idleAutoStopSeconds` to enable (e.g. 30 for 30 seconds)
+- Timer resets on each speech detection, so active conversations won't be cut off
+- Shows an informational message when recording is auto-stopped due to idle timeout
+- Useful for hands-free workflows where you might forget to stop recording
+- Configurable range: 0–300 seconds (0 = disabled)
+
 ## [0.7.39] - 2026-04-23
 
 ### Added
