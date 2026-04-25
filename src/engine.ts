@@ -13,6 +13,7 @@ import { PartialOverlay } from './partialOverlay';
 import { shouldAutoSubmit } from './autoSubmitRules';
 import { PostProcessingPipeline } from './postProcessingPipeline';
 import { isMultilingualModel, getLanguageName, showLanguageSelector } from './languageSelector';
+import { WakeWordDetector } from './wakeWord';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -48,6 +49,12 @@ export class VoxPilotEngine {
   private currentLanguage: string;
   private currentModelId: string;
   private isDictating = false;
+  private wakeWordDetector: WakeWordDetector;
+  private wakeWordActive = false;
+  private wakeWordBuffer: Buffer[] = [];
+  private wakeWordPendingAudio = Buffer.alloc(0);
+  private wakeWordVad: VoiceActivityDetector;
+  private wakeWordAudio: AudioCapture | null = null;
 
   /** Expose pipeline for settings UI */
   get pipeline(): PostProcessingPipeline { return this._pipeline; }
@@ -82,6 +89,16 @@ export class VoxPilotEngine {
     this.currentLanguage = config.get<string>('language', 'auto');
     this.currentModelId = config.get<string>('model', 'moonshine-base');
     this.vad = new VoiceActivityDetector(sensitivity, silenceTimeout);
+
+    // Wake word detector
+    const wakePhrase = config.get<string>('wakePhrase', 'hey vox');
+    this.wakeWordDetector = new WakeWordDetector(wakePhrase);
+    this.wakeWordVad = new VoiceActivityDetector(0.4, 800);
+    this.wakeWordDetector.onWake(() => this.onWakeWordDetected());
+    const wakeWordEnabled = config.get<boolean>('wakeWord', false);
+    if (wakeWordEnabled) {
+      setTimeout(() => this.startWakeWordListening(), 500);
+    }
 
     // Restore saved audio device preference
     const savedDevice = config.get<string>('audioDevice', '');
@@ -134,6 +151,16 @@ export class VoxPilotEngine {
           this.log(`Model switched: ${oldModel} -> ${newModel}`);
         }
         this._pipeline.reloadConfig();
+
+        // Wake word config changes
+        const wakeEnabled = cfg.get<boolean>('wakeWord', false);
+        const newPhrase = cfg.get<string>('wakePhrase', 'hey vox');
+        this.wakeWordDetector.setWakePhrase(newPhrase);
+        if (wakeEnabled && !this.wakeWordActive && !this.isListening) {
+          this.startWakeWordListening();
+        } else if (!wakeEnabled && this.wakeWordActive) {
+          this.stopWakeWordListening();
+        }
       }
     });
     this.disposables.push(configWatcher);
@@ -273,6 +300,11 @@ export class VoxPilotEngine {
   }
 
   private async startListening(): Promise<void> {
+    // Pause wake word listening while main recording is active
+    if (this.wakeWordActive) {
+      this.stopWakeWordListening();
+    }
+
     try {
       await this.ensureTranscriber();
     } catch (err: any) {
@@ -316,6 +348,12 @@ export class VoxPilotEngine {
     if (this.soundEnabled) { this.sound.playStop(); }
     this.statusBar.setIdle();
     this.log('Listening stopped');
+
+    // Resume wake word listening if enabled
+    const wakeEnabled = vscode.workspace.getConfiguration('voxpilot').get<boolean>('wakeWord', false);
+    if (wakeEnabled) {
+      this.startWakeWordListening();
+    }
   }
 
   private onAudioChunk(chunk: Buffer): void {
@@ -1013,7 +1051,117 @@ export class VoxPilotEngine {
     this.log(`Model loaded: ${modelId}`);
   }
 
+  /**
+   * Start always-on wake word listening using a separate audio capture.
+   * Captures short audio windows, runs VAD, and transcribes speech-only
+   * segments to check for the wake phrase.
+   */
+  private startWakeWordListening(): void {
+    if (this.wakeWordActive || this.isListening) { return; }
+
+    this.wakeWordAudio = new AudioCapture();
+    this.wakeWordBuffer = [];
+    this.wakeWordPendingAudio = Buffer.alloc(0);
+    this.wakeWordVad.reset();
+    this.wakeWordDetector.enable();
+    this.wakeWordDetector.resetCooldown();
+
+    this.wakeWordAudio.on('audio', (chunk: Buffer) => this.onWakeWordAudioChunk(chunk));
+    this.wakeWordAudio.on('error', (err: Error) => {
+      this.log(`Wake word audio error: ${err.message}`);
+      this.stopWakeWordListening();
+    });
+
+    // Use same device as main audio
+    const config = vscode.workspace.getConfiguration('voxpilot');
+    const savedDevice = config.get<string>('audioDevice', '');
+    if (savedDevice) {
+      this.wakeWordAudio.setDevice(savedDevice);
+    }
+
+    this.wakeWordAudio.start();
+    this.wakeWordActive = true;
+    this.log(`Wake word listening started (phrase: "${this.wakeWordDetector.wakePhrase}")`);
+  }
+
+  /** Stop wake word listening and clean up the separate audio capture. */
+  private stopWakeWordListening(): void {
+    if (!this.wakeWordActive) { return; }
+
+    this.wakeWordDetector.disable();
+    if (this.wakeWordAudio) {
+      this.wakeWordAudio.stop();
+      this.wakeWordAudio.dispose();
+      this.wakeWordAudio = null;
+    }
+    this.wakeWordBuffer = [];
+    this.wakeWordPendingAudio = Buffer.alloc(0);
+    this.wakeWordActive = false;
+    this.log('Wake word listening stopped');
+  }
+
+  /** Process audio chunks from the wake word audio capture. */
+  private onWakeWordAudioChunk(chunk: Buffer): void {
+    this.wakeWordPendingAudio = Buffer.concat([this.wakeWordPendingAudio, chunk]);
+
+    while (this.wakeWordPendingAudio.length >= this.FRAME_SIZE) {
+      const frame = this.wakeWordPendingAudio.subarray(0, this.FRAME_SIZE);
+      this.wakeWordPendingAudio = this.wakeWordPendingAudio.subarray(this.FRAME_SIZE);
+      this.processWakeWordFrame(Buffer.from(frame));
+    }
+  }
+
+  /** Run VAD on wake word frames and transcribe when speech ends. */
+  private processWakeWordFrame(frame: Buffer): void {
+    const result = this.wakeWordVad.process(frame);
+
+    if (result.isSpeech || result.speechEnded) {
+      this.wakeWordBuffer.push(frame);
+    }
+
+    // Limit buffer to ~3 seconds to avoid transcribing long audio
+    const totalBytes = this.wakeWordBuffer.reduce((sum, b) => sum + b.length, 0);
+    if (totalBytes > 3 * 16000 * 2) {
+      // Too long for a wake phrase — discard and reset
+      this.wakeWordBuffer = [];
+      this.wakeWordVad.reset();
+      return;
+    }
+
+    if (result.speechEnded && this.wakeWordBuffer.length > 0) {
+      this.transcribeWakeWordBuffer();
+    }
+  }
+
+  /** Transcribe the wake word audio buffer and check for the wake phrase. */
+  private async transcribeWakeWordBuffer(): Promise<void> {
+    if (this.wakeWordBuffer.length === 0) { return; }
+
+    const audioData = Buffer.concat(this.wakeWordBuffer);
+    this.wakeWordBuffer = [];
+
+    try {
+      await this.ensureTranscriber();
+      const result = await this.transcriber!.transcribeStreaming(audioData, {}, this.currentLanguage);
+      const text = result.text.trim();
+      if (text) {
+        this.log(`Wake word heard: "${text}"`);
+        this.wakeWordDetector.checkTranscript(text);
+      }
+    } catch (err: any) {
+      this.log(`Wake word transcription error: ${err.message}`);
+    }
+  }
+
+  /** Called when the wake word is detected — start full recording. */
+  private async onWakeWordDetected(): Promise<void> {
+    this.log('Wake word detected! Starting recording...');
+    vscode.window.showInformationMessage('🎙️ VoxPilot: Wake word detected — listening...');
+    await this.startListening();
+  }
+
   dispose(): void {
+    this.stopWakeWordListening();
     void this.stopListening();
     this.audio.dispose();
     this.sound.dispose();

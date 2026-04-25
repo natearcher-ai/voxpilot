@@ -2,6 +2,17 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.41] - 2026-04-25
+
+### Added
+- Wake word detection — say "hey vox" to start recording hands-free without clicking the button
+- Always-on lightweight listening loop captures short audio windows, runs VAD, and only transcribes when speech is detected
+- Fuzzy matching handles common ASR misrecognitions: "hey box", "hey fox", "hey vocs", etc.
+- Custom wake phrase via `voxpilot.wakePhrase` setting (default: "hey vox")
+- 3-second cooldown after trigger prevents double-activation
+- Automatically pauses during active recording and resumes when recording stops
+- New `voxpilot.wakeWord` setting (default: `false`) to enable/disable wake word detection
+
 ## [0.7.40] - 2026-04-24
 
 ### Added
