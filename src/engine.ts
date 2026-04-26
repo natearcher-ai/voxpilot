@@ -14,6 +14,7 @@ import { shouldAutoSubmit } from './autoSubmitRules';
 import { PostProcessingPipeline } from './postProcessingPipeline';
 import { isMultilingualModel, getLanguageName, showLanguageSelector } from './languageSelector';
 import { WakeWordDetector } from './wakeWord';
+import { StreamingBuffer } from './streamingTranscription';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -55,6 +56,9 @@ export class VoxPilotEngine {
   private wakeWordPendingAudio = Buffer.alloc(0);
   private wakeWordVad: VoiceActivityDetector;
   private wakeWordAudio: AudioCapture | null = null;
+  private streamingEnabled: boolean;
+  private streamingBuffer: StreamingBuffer;
+  private streamingInFlight = false;
 
   /** Expose pipeline for settings UI */
   get pipeline(): PostProcessingPipeline { return this._pipeline; }
@@ -89,6 +93,11 @@ export class VoxPilotEngine {
     this.currentLanguage = config.get<string>('language', 'auto');
     this.currentModelId = config.get<string>('model', 'moonshine-base');
     this.vad = new VoiceActivityDetector(sensitivity, silenceTimeout);
+
+    // Streaming transcription
+    this.streamingEnabled = config.get<boolean>('streamingTranscription', false);
+    const streamingWindowMs = config.get<number>('streamingWindowMs', 2000);
+    this.streamingBuffer = new StreamingBuffer(streamingWindowMs);
 
     // Wake word detector
     const wakePhrase = config.get<string>('wakePhrase', 'hey vox');
@@ -151,6 +160,11 @@ export class VoxPilotEngine {
           this.log(`Model switched: ${oldModel} -> ${newModel}`);
         }
         this._pipeline.reloadConfig();
+
+        // Streaming transcription config changes
+        this.streamingEnabled = cfg.get<boolean>('streamingTranscription', false);
+        const newWindowMs = cfg.get<number>('streamingWindowMs', 2000);
+        this.streamingBuffer = new StreamingBuffer(newWindowMs);
 
         // Wake word config changes
         const wakeEnabled = cfg.get<boolean>('wakeWord', false);
@@ -320,6 +334,8 @@ export class VoxPilotEngine {
     this.vad.reset();
     this.noiseGate.reset();
     if (this.adaptiveNR) { this.adaptiveNR.reset(); }
+    this.streamingBuffer.reset();
+    this.streamingInFlight = false;
     this.audio.start();
     this.isListening = true;
     if (this.isDictating) {
@@ -383,12 +399,23 @@ export class VoxPilotEngine {
 
     if (result.isSpeech || result.speechEnded) {
       this.speechBuffer.push(frame);
+
+      // Feed streaming buffer for real-time partial transcription
+      if (this.streamingEnabled && result.isSpeech) {
+        const ready = this.streamingBuffer.addFrame(frame);
+        if (ready && !this.streamingInFlight) {
+          this.triggerStreamingTranscription();
+        }
+      }
     }
 
     if (result.speechStarted) {
       this.statusBar.setSpeechDetected();
       this.log('Speech detected');
       this.resetIdleTimer();
+      if (this.streamingEnabled) {
+        this.streamingBuffer.reset();
+      }
     }
 
     // Update voice level indicator in status bar
@@ -430,6 +457,10 @@ export class VoxPilotEngine {
     }
 
     if (result.speechEnded) {
+      // Reset streaming buffer — final transcription will handle the full audio
+      if (this.streamingEnabled) {
+        this.streamingBuffer.reset();
+      }
       if (this.isDictating) {
         // Dictation mode: transcribe segment but keep listening
         this.log(`Speech ended (dictation), transcribing segment ${this.segmentTranscripts.length + 1}...`);
@@ -454,6 +485,33 @@ export class VoxPilotEngine {
   /** Append a log line with timestamp and model name prefix. */
   private log(message: string): void {
     this.outputChannel.appendLine(`[${new Date().toISOString()}] ${this.currentModelId}: ${message}`);
+  }
+
+  /**
+   * Trigger an intermediate streaming transcription from the rolling buffer.
+   * Runs async without blocking the audio pipeline. Shows partial results
+   * in the overlay and status bar as the user speaks.
+   */
+  private async triggerStreamingTranscription(): Promise<void> {
+    if (this.streamingInFlight || !this.streamingEnabled) { return; }
+    this.streamingInFlight = true;
+
+    try {
+      await this.ensureTranscriber();
+      const audio = this.streamingBuffer.getAudio();
+      const result = await this.transcriber!.transcribeStreaming(audio, {}, this.currentLanguage);
+      const text = result.text.trim();
+      if (text) {
+        this.streamingBuffer.setPartialText(text);
+        this.partialOverlay.show(text);
+        this.statusBar.setStreamingPartial(text);
+        this.log(`Streaming partial [${this.streamingBuffer.windowCount}]: "${text}"`);
+      }
+    } catch (err: any) {
+      this.log(`Streaming transcription error: ${err.message}`);
+    } finally {
+      this.streamingInFlight = false;
+    }
   }
 
   /**

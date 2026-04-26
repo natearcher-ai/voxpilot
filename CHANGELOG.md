@@ -2,6 +2,16 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.42] - 2026-04-26
+
+### Added
+- Streaming transcription — show partial results in real-time as you speak instead of waiting for silence
+- Rolling audio buffer processes speech in configurable windows (default 2s) and displays intermediate transcriptions via the partial overlay and status bar
+- Partial results update live as recognition improves, giving immediate visual feedback while speaking
+- Final transcription on speech end replaces all partials for accuracy
+- New `voxpilot.streamingTranscription` setting (default: `false`) to enable streaming mode
+- New `voxpilot.streamingWindowMs` setting (default: `2000`, range 500–5000) to control how often partial results update — lower values give faster feedback at higher CPU cost
+
 ## [0.7.41] - 2026-04-25
 
 ### Added
