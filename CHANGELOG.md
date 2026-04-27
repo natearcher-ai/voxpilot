@@ -2,6 +2,19 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.43] - 2026-04-27
+
+### Added
+- Multi-language support — add Whisper backend option for 99-language transcription alongside Moonshine
+- Language profiles — save preferred language+model combos (e.g. "Spanish dictation") for quick switching via `VoxPilot: Apply Language Profile` command
+- Quick language toggle — switch between your two most recent languages with `VoxPilot: Quick Toggle Language` command
+- Auto-model suggestion — when selecting a non-English language with an English-only model, VoxPilot offers to switch to the right Whisper model automatically
+- Language detection history — detected languages from Whisper auto-detect are tracked for quick toggle
+- Model compatibility checks — warns when language/model mismatch is detected and suggests the optimal Whisper model size (base for European, medium for CJK/complex scripts)
+- Flag emoji display for detected languages in status bar
+- New commands: `Quick Toggle Language`, `Apply Language Profile`, `Save Language Profile`
+- Existing `voxpilot.multiLanguage` and `voxpilot.languageProfiles` settings are now fully wired into the engine
+
 ## [0.7.42] - 2026-04-26
 
 ### Added

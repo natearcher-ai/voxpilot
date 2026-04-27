@@ -13,6 +13,7 @@ import { PartialOverlay } from './partialOverlay';
 import { shouldAutoSubmit } from './autoSubmitRules';
 import { PostProcessingPipeline } from './postProcessingPipeline';
 import { isMultilingualModel, getLanguageName, showLanguageSelector } from './languageSelector';
+import { LanguageHistory, LanguageProfileManager, checkLanguageModelCompat, suggestModelForLanguage, formatLanguageDisplay } from './multiLanguage';
 import { WakeWordDetector } from './wakeWord';
 import { StreamingBuffer } from './streamingTranscription';
 
@@ -59,6 +60,9 @@ export class VoxPilotEngine {
   private streamingEnabled: boolean;
   private streamingBuffer: StreamingBuffer;
   private streamingInFlight = false;
+  private languageHistory: LanguageHistory;
+  private languageProfiles: LanguageProfileManager;
+  private multiLanguageEnabled: boolean;
 
   /** Expose pipeline for settings UI */
   get pipeline(): PostProcessingPipeline { return this._pipeline; }
@@ -98,6 +102,15 @@ export class VoxPilotEngine {
     this.streamingEnabled = config.get<boolean>('streamingTranscription', false);
     const streamingWindowMs = config.get<number>('streamingWindowMs', 2000);
     this.streamingBuffer = new StreamingBuffer(streamingWindowMs);
+
+    // Multi-language support
+    this.multiLanguageEnabled = config.get<boolean>('multiLanguage', true);
+    this.languageHistory = new LanguageHistory(5);
+    this.languageProfiles = new LanguageProfileManager();
+    // Seed history with current language
+    if (this.currentLanguage !== 'auto') {
+      this.languageHistory.push(this.currentLanguage);
+    }
 
     // Wake word detector
     const wakePhrase = config.get<string>('wakePhrase', 'hey vox');
@@ -160,6 +173,10 @@ export class VoxPilotEngine {
           this.log(`Model switched: ${oldModel} -> ${newModel}`);
         }
         this._pipeline.reloadConfig();
+
+        // Multi-language config changes
+        this.multiLanguageEnabled = cfg.get<boolean>('multiLanguage', true);
+        this.languageProfiles.reload();
 
         // Streaming transcription config changes
         this.streamingEnabled = cfg.get<boolean>('streamingTranscription', false);
@@ -272,8 +289,101 @@ export class VoxPilotEngine {
     const code = await showLanguageSelector();
     if (code) {
       this.currentLanguage = code;
+      if (code !== 'auto') {
+        this.languageHistory.push(code);
+      }
       this.log(`Language set: ${code} (${getLanguageName(code)})`);
+
+      // Check model compatibility when multi-language is enabled
+      if (this.multiLanguageEnabled) {
+        const compat = checkLanguageModelCompat(code, this.currentModelId);
+        if (!compat.compatible && compat.suggestion) {
+          const suggested = suggestModelForLanguage(code);
+          const action = await vscode.window.showWarningMessage(
+            compat.suggestion,
+            `Switch to ${suggested}`,
+            'Keep current',
+          );
+          if (action === `Switch to ${suggested}`) {
+            await vscode.workspace.getConfiguration('voxpilot').update('model', suggested, true);
+            this.log(`Auto-switched model to ${suggested} for ${getLanguageName(code)}`);
+          }
+        }
+      }
     }
+  }
+
+  /** Quick toggle between the two most recent languages. */
+  async quickToggleLanguage(): Promise<void> {
+    if (!this.multiLanguageEnabled) {
+      vscode.window.showInformationMessage('VoxPilot: Enable multiLanguage setting to use quick toggle.');
+      return;
+    }
+    const prev = this.languageHistory.previous;
+    if (!prev) {
+      vscode.window.showInformationMessage('VoxPilot: No previous language to toggle to. Select a language first.');
+      return;
+    }
+    this.currentLanguage = prev;
+    this.languageHistory.push(prev);
+    await vscode.workspace.getConfiguration('voxpilot').update('language', prev, true);
+    const display = formatLanguageDisplay(prev);
+    this.statusBar.setDetectedLanguage(prev, getLanguageName(prev));
+    this.log(`Quick toggle language: ${display}`);
+    vscode.window.showInformationMessage(`VoxPilot: Switched to ${display}`);
+  }
+
+  /** Apply a saved language profile (language + model combo). */
+  async applyLanguageProfile(): Promise<void> {
+    if (!this.multiLanguageEnabled) {
+      vscode.window.showInformationMessage('VoxPilot: Enable multiLanguage setting to use profiles.');
+      return;
+    }
+    this.languageProfiles.reload();
+    const profiles = this.languageProfiles.getAll();
+    if (profiles.length === 0) {
+      vscode.window.showInformationMessage('VoxPilot: No language profiles saved. Use "Save Language Profile" to create one.');
+      return;
+    }
+    const items = profiles.map(p => ({
+      label: p.name,
+      description: `${formatLanguageDisplay(p.language)} · ${p.model}`,
+      profile: p,
+    }));
+    const pick = await vscode.window.showQuickPick(items, {
+      placeHolder: 'Select a language profile to apply',
+    });
+    if (pick) {
+      const config = vscode.workspace.getConfiguration('voxpilot');
+      await config.update('language', pick.profile.language, true);
+      await config.update('model', pick.profile.model, true);
+      this.currentLanguage = pick.profile.language;
+      if (pick.profile.language !== 'auto') {
+        this.languageHistory.push(pick.profile.language);
+      }
+      this.log(`Applied language profile: ${pick.profile.name} (${pick.profile.language} + ${pick.profile.model})`);
+      vscode.window.showInformationMessage(`VoxPilot: Applied profile "${pick.profile.name}"`);
+    }
+  }
+
+  /** Save the current language + model as a named profile. */
+  async saveLanguageProfile(): Promise<void> {
+    if (!this.multiLanguageEnabled) {
+      vscode.window.showInformationMessage('VoxPilot: Enable multiLanguage setting to use profiles.');
+      return;
+    }
+    const name = await vscode.window.showInputBox({
+      prompt: 'Profile name',
+      placeHolder: 'e.g. Spanish dictation',
+    });
+    if (!name) { return; }
+    await this.languageProfiles.add({
+      name,
+      language: this.currentLanguage,
+      model: this.currentModelId,
+    });
+    this.log(`Saved language profile: ${name} (${this.currentLanguage} + ${this.currentModelId})`);
+    vscode.window.showInformationMessage(`VoxPilot: Saved profile "${name}"`);
   }
 
   async selectModel(): Promise<void> {
@@ -1086,6 +1196,11 @@ export class VoxPilotEngine {
     const langName = getLanguageName(language);
     this.statusBar.setDetectedLanguage(language, langName);
     this.log(`Detected language: ${langName} (${language})`);
+
+    // Track detected languages in history for quick toggle
+    if (this.multiLanguageEnabled && language !== 'auto') {
+      this.languageHistory.push(language);
+    }
   }
 
   private async ensureTranscriber(): Promise<void> {
