@@ -2,7 +2,7 @@
   "name": "voxpilot",
   "displayName": "VoxPilot — Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
-  "version": "0.7.44",
+  "version": "0.7.45",
   "publisher": "natearcher-ai",
   "license": "MIT",
   "repository": {
@@ -165,6 +165,11 @@
       {
         "command": "voxpilot.saveLanguageProfile",
         "title": "VoxPilot: Save Language Profile"
+      },
+      {
+        "command": "voxpilot.openHistoryPanel",
+        "title": "VoxPilot: Open History Panel",
+        "icon": "$(history)"
       }
     ],
     "keybindings": [

@@ -6,6 +6,7 @@ import { Transcriber, StreamingCallbacks, TranscriptionResult } from './transcri
 import { ModelManager } from './modelManager';
 import { StatusBarManager } from './statusBar';
 import { TranscriptHistory } from './transcriptHistory';
+import { HistoryStore, HistoryPanelView } from './historyPanel';
 import { SoundFeedback } from './soundFeedback';
 import { NoiseGate } from './noiseGate';
 import { AdaptiveNoiseReduction } from './adaptiveNoiseReduction';
@@ -38,6 +39,8 @@ export class VoxPilotEngine {
   private idleAutoStopMs: number;
   private outputChannel: vscode.OutputChannel;
   private history: TranscriptHistory;
+  private historyStore: HistoryStore;
+  private historyPanelView: HistoryPanelView | undefined;
   private sound: SoundFeedback;
   private soundEnabled: boolean;
   private inlineMode: boolean;
@@ -73,6 +76,8 @@ export class VoxPilotEngine {
     this.modelManager = new ModelManager(context);
     this.outputChannel = vscode.window.createOutputChannel('VoxPilot');
     this.history = new TranscriptHistory(context);
+    const maxEntries = vscode.workspace.getConfiguration('voxpilot').get<number>('historyMaxEntries', 100);
+    this.historyStore = new HistoryStore(context, maxEntries);
     this.sound = new SoundFeedback(context.globalStorageUri.fsPath);
 
     const config = vscode.workspace.getConfiguration('voxpilot');
@@ -415,6 +420,25 @@ export class VoxPilotEngine {
     }
   }
 
+  /** Open the searchable history webview panel */
+  openHistoryPanel(): void {
+    const enabled = vscode.workspace.getConfiguration('voxpilot').get<boolean>('historyPanel', true);
+    if (!enabled) {
+      vscode.window.showInformationMessage('VoxPilot: History panel is disabled. Enable via voxpilot.historyPanel setting.');
+      return;
+    }
+    if (!this.historyPanelView) {
+      this.historyPanelView = HistoryPanelView.create(this.context, this.historyStore);
+      this.historyPanelView.onInsert(async (text) => {
+        const editor = vscode.window.activeTextEditor;
+        if (editor) {
+          await editor.edit(eb => eb.insert(editor.selection.active, text));
+        }
+      });
+    }
+    this.historyPanelView.show();
+  }
+
   async sendLastToChat(): Promise<void> {
     if (!this.lastTranscript) {
       vscode.window.showWarningMessage('VoxPilot: No transcript to send.');
@@ -746,6 +770,10 @@ export class VoxPilotEngine {
     if (text) {
       this.lastTranscript = text;
       this.history.add(this.lastTranscript);
+      this.historyStore.add(this.lastTranscript, {
+        language: this.currentLanguage !== 'auto' ? this.currentLanguage : undefined,
+        model: this.currentModelId,
+      });
       this.log(`Transcript: ${this.lastTranscript}`);
 
       const config = vscode.workspace.getConfiguration('voxpilot');

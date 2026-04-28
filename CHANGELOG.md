@@ -2,6 +2,18 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.45] - 2026-04-28
+
+### Added
+- History panel — searchable transcript history webview with timestamps, search/filter, and click-to-insert
+- Rich metadata per entry: language, model, audio duration alongside transcript text
+- Relative time display ("just now", "2 min ago", "yesterday") for each transcript
+- Click to insert at cursor, copy to clipboard, or delete individual entries
+- Export history as JSON or plain text
+- Configurable max entries via `voxpilot.historyMaxEntries` (default 100, range 10–1000)
+- New `VoxPilot: Open History Panel` command with `$(history)` icon
+- Enable/disable via `voxpilot.historyPanel` setting (default: true)
+
 ## [0.7.43] - 2026-04-27
 
 ### Added
