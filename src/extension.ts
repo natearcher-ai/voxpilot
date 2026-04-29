@@ -48,6 +48,8 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('voxpilot.inlineVoiceInput', () => engine?.inlineVoiceInput()),
     vscode.commands.registerCommand('voxpilot.transcriptHistory', () => engine?.showTranscriptHistory()),
     vscode.commands.registerCommand('voxpilot.openHistoryPanel', () => engine?.openHistoryPanel()),
+    vscode.commands.registerCommand('voxpilot.recordMacro', () => engine?.recordMacro()),
+    vscode.commands.registerCommand('voxpilot.listMacros', () => engine?.listMacros()),
     vscode.commands.registerCommand('voxpilot.sendToChat', () => engine?.sendLastToChat()),
     vscode.commands.registerCommand('voxpilot.selectLanguage', () => engine?.selectLanguage()),
     vscode.commands.registerCommand('voxpilot.quickToggleLanguage', () => engine?.quickToggleLanguage()),

@@ -2,6 +2,18 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.47] - 2026-04-29
+
+### Added
+- Voice macros — record and replay custom voice-triggered code snippets and multi-step editor actions
+- Define macros that map a spoken phrase to a sequence of actions: insert text, insert snippet (with tab stops), execute VS Code command, send terminal command, or wrap selection
+- Macro matching intercepts transcripts before normal delivery — say the trigger phrase and the macro runs instantly
+- Greedy longest-phrase-first matching prevents short phrases from shadowing longer ones
+- New `VoxPilot: Record Voice Macro` command — interactive wizard to define phrase, description, and action sequence
+- New `VoxPilot: Manage Voice Macros` command — list, test, or delete existing macros
+- Macros stored in `voxpilot.voiceMacroDefinitions` setting for easy export and sharing
+- Enable/disable via `voxpilot.voiceMacros` setting (default: true)
+
 ## [0.7.45] - 2026-04-28
 
 ### Added

@@ -17,6 +17,7 @@ import { isMultilingualModel, getLanguageName, showLanguageSelector } from './la
 import { LanguageHistory, LanguageProfileManager, checkLanguageModelCompat, suggestModelForLanguage, formatLanguageDisplay } from './multiLanguage';
 import { WakeWordDetector } from './wakeWord';
 import { StreamingBuffer } from './streamingTranscription';
+import { tryExecuteMacro, VoiceMacroManager } from './voiceMacros';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -66,6 +67,7 @@ export class VoxPilotEngine {
   private languageHistory: LanguageHistory;
   private languageProfiles: LanguageProfileManager;
   private multiLanguageEnabled: boolean;
+  private voiceMacroManager: VoiceMacroManager;
 
   /** Expose pipeline for settings UI */
   get pipeline(): PostProcessingPipeline { return this._pipeline; }
@@ -107,6 +109,9 @@ export class VoxPilotEngine {
     this.streamingEnabled = config.get<boolean>('streamingTranscription', false);
     const streamingWindowMs = config.get<number>('streamingWindowMs', 2000);
     this.streamingBuffer = new StreamingBuffer(streamingWindowMs);
+
+    // Voice macros
+    this.voiceMacroManager = new VoiceMacroManager();
 
     // Multi-language support
     this.multiLanguageEnabled = config.get<boolean>('multiLanguage', true);
@@ -389,6 +394,16 @@ export class VoxPilotEngine {
     });
     this.log(`Saved language profile: ${name} (${this.currentLanguage} + ${this.currentModelId})`);
     vscode.window.showInformationMessage(`VoxPilot: Saved profile "${name}"`);
+  }
+
+  /** Record a new voice macro via interactive prompts. */
+  async recordMacro(): Promise<void> {
+    await this.voiceMacroManager.recordMacro();
+  }
+
+  /** List and manage voice macros. */
+  async listMacros(): Promise<void> {
+    await this.voiceMacroManager.listMacros();
   }
 
   async selectModel(): Promise<void> {
@@ -768,6 +783,23 @@ export class VoxPilotEngine {
     }
 
     if (text) {
+      // Check for voice macro match before normal delivery
+      try {
+        const macroExecuted = await tryExecuteMacro(text);
+        if (macroExecuted) {
+          this.log(`Voice macro executed for: "${text}"`);
+          this.statusBar.setSent(`⚡ ${text}`);
+          if (this.isListening) {
+            this.statusBar.setListening();
+          } else {
+            this.statusBar.setIdle();
+          }
+          return;
+        }
+      } catch (err: any) {
+        this.log(`Voice macro error: ${err.message}`);
+      }
+
       this.lastTranscript = text;
       this.history.add(this.lastTranscript);
       this.historyStore.add(this.lastTranscript, {
