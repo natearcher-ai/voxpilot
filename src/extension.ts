@@ -43,6 +43,8 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('voxpilot.toggleListening', () => engine?.toggle()),
     vscode.commands.registerCommand('voxpilot.toggleDictation', () => engine?.toggleDictation()),
     vscode.commands.registerCommand('voxpilot.pushToTalk', () => engine?.quickCapture()),
+    vscode.commands.registerCommand('voxpilot.pushToTalkKeyDown', () => engine?.walkyTalkyKeyDown()),
+    vscode.commands.registerCommand('voxpilot.pushToTalkKeyUp', () => engine?.walkyTalkyKeyUp()),
     vscode.commands.registerCommand('voxpilot.selectModel', () => engine?.selectModel()),
     vscode.commands.registerCommand('voxpilot.selectAudioDevice', () => engine?.selectAudioDevice()),
     vscode.commands.registerCommand('voxpilot.inlineVoiceInput', () => engine?.inlineVoiceInput()),

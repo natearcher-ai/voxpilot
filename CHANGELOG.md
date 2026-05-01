@@ -2,6 +2,18 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.48] - 2026-05-01
+
+### Added
+- Walky-talky mode — press and hold the push-to-talk keybinding to record, release to stop and transcribe (like VS Code Speech)
+- Hold detection with configurable threshold (default 300ms) distinguishes tap (toggle) from hold (walky-talky)
+- Quick tap on the keybinding still works as a toggle for quick capture mode
+- Automatic cleanup on key release: finalizes speech and delivers transcript immediately
+- Reset on focus loss prevents stuck recording state
+- New `voxpilot.walkyTalky` setting to enable/disable (default: true)
+- New `voxpilot.walkyTalkyThresholdMs` setting to tune hold detection (100–1000ms, default: 300)
+- New `pushToTalkKeyDown` and `pushToTalkKeyUp` commands for programmatic walky-talky control
+
 ## [0.7.47] - 2026-04-29
 
 ### Added

@@ -18,6 +18,7 @@ import { LanguageHistory, LanguageProfileManager, checkLanguageModelCompat, sugg
 import { WakeWordDetector } from './wakeWord';
 import { StreamingBuffer } from './streamingTranscription';
 import { tryExecuteMacro, VoiceMacroManager } from './voiceMacros';
+import { WalkyTalkyDetector } from './walkyTalky';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -68,6 +69,8 @@ export class VoxPilotEngine {
   private languageProfiles: LanguageProfileManager;
   private multiLanguageEnabled: boolean;
   private voiceMacroManager: VoiceMacroManager;
+  private walkyTalkyDetector: WalkyTalkyDetector | null = null;
+  private walkyTalkyEnabled: boolean;
 
   /** Expose pipeline for settings UI */
   get pipeline(): PostProcessingPipeline { return this._pipeline; }
@@ -112,6 +115,26 @@ export class VoxPilotEngine {
 
     // Voice macros
     this.voiceMacroManager = new VoiceMacroManager();
+
+    // Walky-talky mode
+    this.walkyTalkyEnabled = config.get<boolean>('walkyTalky', true);
+    if (this.walkyTalkyEnabled) {
+      const wtThreshold = config.get<number>('walkyTalkyThresholdMs', 300);
+      this.walkyTalkyDetector = new WalkyTalkyDetector(wtThreshold, {
+        onHoldStart: () => {
+          this.isQuickCapture = true;
+          this.startListening();
+        },
+        onHoldEnd: () => {
+          if (this.isListening) {
+            this.finalizeSpeech().then(() => this.stopListening());
+          }
+        },
+        onTap: () => {
+          this.quickCapture();
+        },
+      });
+    }
 
     // Multi-language support
     this.multiLanguageEnabled = config.get<boolean>('multiLanguage', true);
@@ -193,6 +216,36 @@ export class VoxPilotEngine {
         const newWindowMs = cfg.get<number>('streamingWindowMs', 2000);
         this.streamingBuffer = new StreamingBuffer(newWindowMs);
 
+        // Walky-talky config changes
+        const wtEnabled = cfg.get<boolean>('walkyTalky', true);
+        this.walkyTalkyEnabled = wtEnabled;
+        if (wtEnabled) {
+          const wtThreshold = cfg.get<number>('walkyTalkyThresholdMs', 300);
+          if (this.walkyTalkyDetector) {
+            this.walkyTalkyDetector.setThreshold(wtThreshold);
+          } else {
+            this.walkyTalkyDetector = new WalkyTalkyDetector(wtThreshold, {
+              onHoldStart: () => {
+                this.isQuickCapture = true;
+                this.startListening();
+              },
+              onHoldEnd: () => {
+                if (this.isListening) {
+                  this.finalizeSpeech().then(() => this.stopListening());
+                }
+              },
+              onTap: () => {
+                this.quickCapture();
+              },
+            });
+          }
+        } else {
+          if (this.walkyTalkyDetector) {
+            this.walkyTalkyDetector.reset();
+          }
+          this.walkyTalkyDetector = null;
+        }
+
         // Wake word config changes
         const wakeEnabled = cfg.get<boolean>('wakeWord', false);
         const newPhrase = cfg.get<string>('wakePhrase', 'hey vox');
@@ -236,6 +289,27 @@ export class VoxPilotEngine {
    * Quick capture: start listening, auto-send on silence, then stop.
    * Second press while active cancels.
    */
+  /**
+   * Walky-talky key down — called when the push-to-talk keybinding is pressed.
+   * If walky-talky is enabled, delegates to the detector; otherwise falls through to quickCapture.
+   */
+  walkyTalkyKeyDown(): void {
+    if (this.walkyTalkyEnabled && this.walkyTalkyDetector) {
+      this.walkyTalkyDetector.onKeyDown();
+    } else {
+      this.quickCapture();
+    }
+  }
+
+  /**
+   * Walky-talky key up — called when the push-to-talk keybinding is released.
+   */
+  walkyTalkyKeyUp(): void {
+    if (this.walkyTalkyEnabled && this.walkyTalkyDetector) {
+      this.walkyTalkyDetector.onKeyUp();
+    }
+  }
+
   async quickCapture(): Promise<void> {
     if (this.isListening) {
       this.isQuickCapture = false;
@@ -1395,6 +1469,7 @@ export class VoxPilotEngine {
 
   dispose(): void {
     this.stopWakeWordListening();
+    if (this.walkyTalkyDetector) { this.walkyTalkyDetector.reset(); }
     void this.stopListening();
     this.audio.dispose();
     this.sound.dispose();

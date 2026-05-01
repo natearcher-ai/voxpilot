@@ -99,6 +99,14 @@
         "title": "VoxPilot: Quick Voice Capture (Toggle)"
       },
       {
+        "command": "voxpilot.pushToTalkKeyDown",
+        "title": "VoxPilot: Push-to-Talk Key Down (Walky-Talky)"
+      },
+      {
+        "command": "voxpilot.pushToTalkKeyUp",
+        "title": "VoxPilot: Push-to-Talk Key Up (Walky-Talky)"
+      },
+      {
         "command": "voxpilot.selectModel",
         "title": "VoxPilot: Select ASR Model"
       },
