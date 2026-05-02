@@ -2,6 +2,18 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.49] - 2026-05-02
+
+### Added
+- Text-to-speech readback — hear your transcription read back aloud for verification before inserting
+- Four readback modes: `off` (default), `always`, `on-error` (low confidence only), `on-demand` (button in notification)
+- Cross-platform TTS via Web Speech API in a lightweight hidden webview
+- Configurable speech rate via `voxpilot.readbackRate` (0.5–2.0, default: 1.2)
+- Voice selection via `voxpilot.readbackVoice` (platform-dependent, defaults to system voice)
+- Smart text formatting for natural speech: expands code abbreviations (fn → function, ctx → context, etc.) and adds pauses at punctuation
+- Confidence-based triggering in `on-error` mode — only reads back when transcription confidence drops below 70%
+- Stop readback at any time by triggering a new transcription or toggling recording
+
 ## [0.7.48] - 2026-05-01
 
 ### Added
