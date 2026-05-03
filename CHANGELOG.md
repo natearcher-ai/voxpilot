@@ -2,6 +2,18 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.50] - 2026-05-03
+
+### Added
+- Custom vocabulary boost — weight domain-specific terms (1.0–10.0) for better recognition accuracy
+- Define boosted terms with optional phoneme hints for unusual pronunciations (e.g. "kubectl" → phoneme "cube-control")
+- Higher boost factors match first, giving priority to your most important terms
+- Phoneme hints generate additional matching patterns — hyphenated and spaced variants are both recognized
+- Up to 200 entries supported for fast, low-overhead matching
+- Integrated into the post-processing pipeline after code vocabulary, before smart insert
+- New `voxpilot.vocabularyBoostEnabled` setting (default: true) to toggle the feature
+- New `voxpilot.vocabularyBoost` array setting to define boosted terms with term, boost, and phoneme fields
+
 ## [0.7.49] - 2026-05-02
 
 ### Added
