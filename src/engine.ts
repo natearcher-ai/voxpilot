@@ -19,6 +19,7 @@ import { WakeWordDetector } from './wakeWord';
 import { StreamingBuffer } from './streamingTranscription';
 import { tryExecuteMacro, VoiceMacroManager } from './voiceMacros';
 import { WalkyTalkyDetector } from './walkyTalky';
+import { LiveRewritingZone } from './liveRewriting';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -71,6 +72,8 @@ export class VoxPilotEngine {
   private voiceMacroManager: VoiceMacroManager;
   private walkyTalkyDetector: WalkyTalkyDetector | null = null;
   private walkyTalkyEnabled: boolean;
+  private liveRewritingZone: LiveRewritingZone;
+  private liveRewritingEnabled: boolean;
 
   /** Expose pipeline for settings UI */
   get pipeline(): PostProcessingPipeline { return this._pipeline; }
@@ -115,6 +118,10 @@ export class VoxPilotEngine {
 
     // Voice macros
     this.voiceMacroManager = new VoiceMacroManager();
+
+    // Live rewriting zone
+    this.liveRewritingEnabled = config.get<boolean>('liveRewriting', true);
+    this.liveRewritingZone = new LiveRewritingZone();
 
     // Walky-talky mode
     this.walkyTalkyEnabled = config.get<boolean>('walkyTalky', true);
@@ -210,6 +217,9 @@ export class VoxPilotEngine {
         // Multi-language config changes
         this.multiLanguageEnabled = cfg.get<boolean>('multiLanguage', true);
         this.languageProfiles.reload();
+
+        // Live rewriting config changes
+        this.liveRewritingEnabled = cfg.get<boolean>('liveRewriting', true);
 
         // Streaming transcription config changes
         this.streamingEnabled = cfg.get<boolean>('streamingTranscription', false);
@@ -584,6 +594,10 @@ export class VoxPilotEngine {
     this.isQuickCapture = false;
     this.isDictating = false;
     this.audioChunkCount = 0;
+    // Cancel live rewriting zone if still active (e.g. user stopped mid-speech)
+    if (this.liveRewritingZone.isActive) {
+      await this.liveRewritingZone.cancel();
+    }
     if (this.soundEnabled) { this.sound.playStop(); }
     this.statusBar.setIdle();
     this.log('Listening stopped');
@@ -638,6 +652,11 @@ export class VoxPilotEngine {
       this.resetIdleTimer();
       if (this.streamingEnabled) {
         this.streamingBuffer.reset();
+      }
+      // Start live rewriting zone at cursor when streaming + live rewriting are both on
+      if (this.liveRewritingEnabled && this.streamingEnabled && this.inlineMode) {
+        this.liveRewritingZone.start();
+        this.log('Live rewriting zone started');
       }
     }
 
@@ -728,6 +747,10 @@ export class VoxPilotEngine {
         this.streamingBuffer.setPartialText(text);
         this.partialOverlay.show(text);
         this.statusBar.setStreamingPartial(text);
+        // Update live rewriting zone with partial text
+        if (this.liveRewritingEnabled && this.liveRewritingZone.isActive) {
+          await this.liveRewritingZone.update(text);
+        }
         this.log(`Streaming partial [${this.streamingBuffer.windowCount}]: "${text}"`);
       }
     } catch (err: any) {
@@ -814,6 +837,15 @@ export class VoxPilotEngine {
 
     // Hide the partial overlay now that speech is finalized
     this.partialOverlay.hide();
+
+    // Finalize live rewriting zone with the final text
+    if (this.liveRewritingZone.isActive) {
+      const allSegments = [...this.segmentTranscripts];
+      if (finalSegment) { allSegments.push(finalSegment); }
+      const finalZoneText = allSegments.join(' ').trim();
+      await this.liveRewritingZone.finalize(finalZoneText || undefined);
+      this.log('Live rewriting zone finalized');
+    }
 
     // Stitch all segments together
     if (finalSegment) {

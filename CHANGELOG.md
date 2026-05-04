@@ -2,6 +2,18 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.51] - 2026-05-04
+
+### Added
+- Live rewriting zone — show partial transcript with dotted underline that updates in real-time as recognition improves
+- When streaming transcription is active in inline mode, partial text is inserted at the cursor with a dotted underline and ◉ indicator
+- Text updates in-place as the ASR model refines its output, replacing previous partial results smoothly
+- On speech end, the live zone decoration is removed and final text replaces the partial — no jarring text jumps
+- Cancel mid-speech (stop recording) cleanly removes partial text and decoration
+- Diff-based update logic (`findTextDiff`) minimizes editor churn by only replacing changed portions
+- New `voxpilot.liveRewriting` setting (default: true) to toggle the feature
+- Works alongside the existing partial overlay — overlay shows floating caption, live zone writes directly into the editor
+
 ## [0.7.50] - 2026-05-03
 
 ### Added
