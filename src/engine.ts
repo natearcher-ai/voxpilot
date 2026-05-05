@@ -20,6 +20,7 @@ import { StreamingBuffer } from './streamingTranscription';
 import { tryExecuteMacro, VoiceMacroManager } from './voiceMacros';
 import { WalkyTalkyDetector } from './walkyTalky';
 import { LiveRewritingZone } from './liveRewriting';
+import { matchRefactorCommand, executeRefactorCommand } from './voiceRefactoring';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -904,6 +905,25 @@ export class VoxPilotEngine {
         }
       } catch (err: any) {
         this.log(`Voice macro error: ${err.message}`);
+      }
+
+      // Check for voice-driven refactoring commands
+      const refactorConfig = vscode.workspace.getConfiguration('voxpilot');
+      if (refactorConfig.get<boolean>('voiceRefactoring', true)) {
+        const refactorMatch = matchRefactorCommand(text);
+        if (refactorMatch) {
+          this.log(`Voice refactoring: "${refactorMatch.phrase}"${refactorMatch.argument ? ` → "${refactorMatch.argument}"` : ''}`);
+          const success = await executeRefactorCommand(refactorMatch);
+          if (success) {
+            this.statusBar.setSent(`🔧 ${refactorMatch.phrase}${refactorMatch.argument ? ' ' + refactorMatch.argument : ''}`);
+          }
+          if (this.isListening) {
+            this.statusBar.setListening();
+          } else {
+            this.statusBar.setIdle();
+          }
+          return;
+        }
       }
 
       this.lastTranscript = text;

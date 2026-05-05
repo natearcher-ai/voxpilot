@@ -2,6 +2,18 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.53] - 2026-05-05
+
+### Added
+- Voice-driven refactoring — say "rename", "extract function", "extract variable" to trigger VS Code refactoring actions by voice
+- Supported commands: rename (with argument), extract function, extract variable, extract constant, extract method, inline variable, move to file, organize imports, add import, quick fix, refactor, format document, format selection
+- "Rename to <name>" triggers the rename widget and types the new name automatically
+- Extract/inline commands pass the correct CodeAction kind for precise refactoring without menu navigation
+- Greedy longest-phrase-first matching prevents short phrases from shadowing longer ones
+- Integrates after voice macros in the transcript pipeline — refactoring commands are intercepted before normal text delivery
+- Status bar shows 🔧 indicator when a refactoring command is executed
+- New `voxpilot.voiceRefactoring` setting (default: true) to toggle the feature
+
 ## [0.7.51] - 2026-05-04
 
 ### Added
