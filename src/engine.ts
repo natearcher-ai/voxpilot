@@ -21,6 +21,7 @@ import { tryExecuteMacro, VoiceMacroManager } from './voiceMacros';
 import { WalkyTalkyDetector } from './walkyTalky';
 import { LiveRewritingZone } from './liveRewriting';
 import { matchRefactorCommand, executeRefactorCommand } from './voiceRefactoring';
+import { NeuralNoiseReduction, RNNoiseModule } from './neuralNoiseReduction';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -75,6 +76,8 @@ export class VoxPilotEngine {
   private walkyTalkyEnabled: boolean;
   private liveRewritingZone: LiveRewritingZone;
   private liveRewritingEnabled: boolean;
+  private neuralNR: NeuralNoiseReduction | null = null;
+  private neuralNREnabled: boolean = false;
 
   /** Expose pipeline for settings UI */
   get pipeline(): PostProcessingPipeline { return this._pipeline; }
@@ -103,6 +106,11 @@ export class VoxPilotEngine {
     if (this.noiseReductionEnabled) {
       const nrSensitivity = config.get<number>('noiseReductionSensitivity', 3);
       this.adaptiveNR = new AdaptiveNoiseReduction(nrSensitivity);
+    }
+    // Neural noise reduction (RNNoise WASM)
+    this.neuralNREnabled = config.get<boolean>('neuralNoiseReduction', false);
+    if (this.neuralNREnabled) {
+      this.initNeuralNoiseReduction(context);
     }
     this.partialOverlay = new PartialOverlay();
     this._pipeline = new PostProcessingPipeline();
@@ -199,6 +207,15 @@ export class VoxPilotEngine {
           this.adaptiveNR = null;
         }
         this.noiseReductionEnabled = nrEnabled;
+        // Neural noise reduction config change
+        const neuralNREnabled = cfg.get<boolean>('neuralNoiseReduction', false);
+        if (neuralNREnabled && !this.neuralNREnabled) {
+          this.neuralNREnabled = true;
+          this.initNeuralNoiseReduction(this.context);
+        } else if (!neuralNREnabled && this.neuralNREnabled) {
+          this.neuralNREnabled = false;
+          if (this.neuralNR) { this.neuralNR.dispose(); this.neuralNR = null; }
+        }
         this.vad = new VoiceActivityDetector(sens, silence);
         this.voiceLevelEnabled = cfg.get<boolean>('voiceLevelIndicator', true);
         this.waveformEnabled = cfg.get<boolean>('waveformVisualization', true);
@@ -568,6 +585,7 @@ export class VoxPilotEngine {
     this.vad.reset();
     this.noiseGate.reset();
     if (this.adaptiveNR) { this.adaptiveNR.reset(); }
+    if (this.neuralNR) { this.neuralNR.reset(); }
     this.streamingBuffer.reset();
     this.streamingInFlight = false;
     this.audio.start();
@@ -622,10 +640,14 @@ export class VoxPilotEngine {
   }
 
   private processFrame(frame: Buffer): void {
-    // Apply noise reduction before VAD — adaptive NR auto-calibrates, falls back to static gate
+    // Apply neural noise reduction first (if enabled and loaded), then adaptive NR / static gate
+    let processedFrame = frame;
+    if (this.neuralNREnabled && this.neuralNR?.isLoaded) {
+      processedFrame = this.neuralNR.process(processedFrame);
+    }
     const gatedFrame = this.adaptiveNR
-      ? this.adaptiveNR.process(frame)
-      : this.noiseGate.process(frame);
+      ? this.adaptiveNR.process(processedFrame)
+      : this.noiseGate.process(processedFrame);
     const result = this.vad.process(gatedFrame);
 
     this.audioChunkCount++;
@@ -728,6 +750,77 @@ export class VoxPilotEngine {
   /** Append a log line with timestamp and model name prefix. */
   private log(message: string): void {
     this.outputChannel.appendLine(`[${new Date().toISOString()}] ${this.currentModelId}: ${message}`);
+  }
+
+  /**
+   * Initialize RNNoise WASM neural noise reduction.
+   * Loads the WASM module lazily from extension assets.
+   * Falls back gracefully if loading fails.
+   */
+  private async initNeuralNoiseReduction(context: vscode.ExtensionContext): Promise<void> {
+    try {
+      const wasmPath = path.join(context.extensionPath, 'assets', 'rnnoise.wasm');
+      const fs = await import('fs');
+      if (!fs.existsSync(wasmPath)) {
+        this.log('Neural NR: WASM file not found, downloading on first use...');
+        // Create assets dir if needed
+        const assetsDir = path.join(context.extensionPath, 'assets');
+        if (!fs.existsSync(assetsDir)) {
+          fs.mkdirSync(assetsDir, { recursive: true });
+        }
+        // Download RNNoise WASM (~200KB)
+        const https = await import('https');
+        const wasmUrl = 'https://cdn.jsdelivr.net/npm/rnnoise-wasm@0.2.0/dist/rnnoise.wasm';
+        await new Promise<void>((resolve, reject) => {
+          const file = fs.createWriteStream(wasmPath);
+          https.get(wasmUrl, (response: any) => {
+            if (response.statusCode === 301 || response.statusCode === 302) {
+              https.get(response.headers.location, (res2: any) => {
+                res2.pipe(file);
+                file.on('finish', () => { file.close(); resolve(); });
+              }).on('error', reject);
+            } else {
+              response.pipe(file);
+              file.on('finish', () => { file.close(); resolve(); });
+            }
+          }).on('error', reject);
+        });
+        this.log('Neural NR: WASM downloaded successfully');
+      }
+
+      // Load WASM and create RNNoise module wrapper
+      const wasmBuffer = fs.readFileSync(wasmPath);
+      const wasmModule = await WebAssembly.instantiate(wasmBuffer, {
+        env: {
+          memory: new WebAssembly.Memory({ initial: 256 }),
+          emscripten_memcpy_js: () => {},
+        },
+      });
+
+      const exports = wasmModule.instance.exports as any;
+      const rnnoiseModule: RNNoiseModule = {
+        createState: () => exports.rnnoise_create ? exports.rnnoise_create() : 0,
+        destroyState: (state: number) => exports.rnnoise_destroy?.(state),
+        processFrame: (state: number, buffer: Float32Array) => {
+          // Copy float32 data into WASM memory, process, copy back
+          const ptr = exports.malloc?.(buffer.length * 4) ?? 0;
+          if (!ptr || !exports.rnnoise_process_frame) { return 0; }
+          const heap = new Float32Array(exports.memory.buffer, ptr, buffer.length);
+          heap.set(buffer);
+          const vad = exports.rnnoise_process_frame(state, ptr, ptr);
+          buffer.set(new Float32Array(exports.memory.buffer, ptr, buffer.length));
+          exports.free?.(ptr);
+          return vad;
+        },
+      };
+
+      this.neuralNR = new NeuralNoiseReduction();
+      this.neuralNR.initialize(rnnoiseModule);
+      this.log('Neural NR: RNNoise WASM initialized successfully');
+    } catch (err: any) {
+      this.log(`Neural NR: Failed to load (${err.message}), falling back to adaptive noise gate`);
+      this.neuralNR = null;
+    }
   }
 
   /**
@@ -1526,6 +1619,7 @@ export class VoxPilotEngine {
     this.audio.dispose();
     this.sound.dispose();
     this.partialOverlay.dispose();
+    if (this.neuralNR) { this.neuralNR.dispose(); this.neuralNR = null; }
     this.disposables.forEach(d => d.dispose());
     this.disposables = [];
     // Fire-and-forget async cleanup

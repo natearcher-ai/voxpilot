@@ -2,6 +2,20 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.55] - 2026-05-06
+
+### Added
+- Neural noise reduction — RNNoise WASM denoiser for superior background noise filtering beyond the adaptive noise gate
+- Uses a lightweight recurrent neural network (RNNoise) compiled to WebAssembly for real-time spectral-level noise suppression
+- Separates speech from noise at the frequency domain level, preserving speech quality even in noisy environments (cafés, open offices, fans)
+- ~200KB WASM module downloaded automatically on first use from CDN
+- Processes audio at RNNoise native 48kHz with automatic resampling from/to 16kHz ASR pipeline
+- Returns per-frame VAD probability as a bonus signal for improved speech detection
+- Chains before the adaptive noise gate — neural denoising cleans the signal, then adaptive gate handles residual
+- Falls back gracefully to adaptive noise gate if WASM fails to load or is unavailable
+- New `voxpilot.neuralNoiseReduction` setting (default: false) — opt-in to avoid unexpected downloads
+- Reset state automatically between recording sessions for clean denoising
+
 ## [0.7.53] - 2026-05-05
 
 ### Added
