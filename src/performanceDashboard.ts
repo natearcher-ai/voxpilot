@@ -15,6 +15,8 @@
  * Enable via `voxpilot.performanceDashboard` setting (default: true).
  */
 
+import * as vscode from 'vscode';
+
 export interface TranscriptionMetric {
   /** Unique ID */
   id: string;
@@ -186,4 +188,164 @@ export function formatRTF(rtf: number): string {
   if (rtf === 0) { return 'N/A'; }
   if (rtf < 1.0) { return `${rtf.toFixed(2)}x (faster than real-time)`; }
   return `${rtf.toFixed(2)}x`;
+}
+
+/**
+ * Webview panel that renders the performance dashboard UI.
+ */
+export class PerformanceDashboardPanel {
+  private static instance: PerformanceDashboardPanel | undefined;
+  private panel: vscode.WebviewPanel | undefined;
+  private collector: PerformanceCollector;
+
+  private constructor(private context: vscode.ExtensionContext, collector: PerformanceCollector) {
+    this.collector = collector;
+  }
+
+  static create(context: vscode.ExtensionContext, collector: PerformanceCollector): PerformanceDashboardPanel {
+    if (!PerformanceDashboardPanel.instance) {
+      PerformanceDashboardPanel.instance = new PerformanceDashboardPanel(context, collector);
+    }
+    return PerformanceDashboardPanel.instance;
+  }
+
+  show(): void {
+    if (this.panel) {
+      this.panel.reveal();
+      this.refresh();
+      return;
+    }
+
+    this.panel = vscode.window.createWebviewPanel(
+      'voxpilot.performanceDashboard',
+      'VoxPilot Performance',
+      vscode.ViewColumn.Two,
+      { enableScripts: true, retainContextWhenHidden: true },
+    );
+
+    this.panel.onDidDispose(() => { this.panel = undefined; });
+
+    this.panel.webview.onDidReceiveMessage((msg: { type: string; hours?: number }) => {
+      switch (msg.type) {
+        case 'refresh':
+          this.refresh();
+          break;
+        case 'clear':
+          this.collector.clear();
+          this.refresh();
+          break;
+        case 'filter':
+          this.refresh(msg.hours);
+          break;
+        case 'export': {
+          const data = JSON.stringify(this.collector.toJSON(), null, 2);
+          const uri = vscode.Uri.parse('untitled:voxpilot-performance.json');
+          vscode.workspace.openTextDocument(uri).then(doc => vscode.window.showTextDocument(doc)).then(editor => {
+            editor.edit(eb => eb.insert(new vscode.Position(0, 0), data));
+          });
+          break;
+        }
+      }
+    });
+
+    this.refresh();
+  }
+
+  refresh(hours?: number): void {
+    if (!this.panel) { return; }
+    const metrics = hours ? this.collector.getRecent(hours) : this.collector.getAll();
+    const stats = this.collector.getStats(metrics);
+    this.panel.webview.html = this.getHtml(stats, metrics);
+  }
+
+  dispose(): void {
+    this.panel?.dispose();
+    PerformanceDashboardPanel.instance = undefined;
+  }
+
+  private getHtml(stats: PerformanceStats, metrics: TranscriptionMetric[]): string {
+    const modelRows = Object.entries(stats.byModel).map(([model, s]) =>
+      `<tr><td>${esc(model)}</td><td>${s.count}</td><td>${s.avgLatencyMs}ms</td><td>${s.avgRtf.toFixed(3)}x</td></tr>`
+    ).join('');
+
+    const recentRows = metrics.slice(0, 50).map(m => {
+      const date = new Date(m.timestamp);
+      const time = date.toLocaleTimeString();
+      const status = m.success ? '✅' : '❌';
+      const latency = m.success ? `${m.processingTimeMs}ms` : (m.error || 'error');
+      return `<tr><td>${status}</td><td>${time}</td><td>${esc(m.model)}</td><td>${m.audioDuration.toFixed(1)}s</td><td>${latency}</td><td>${m.transcriptLength}</td></tr>`;
+    }).join('');
+
+    const errorRate = stats.totalTranscriptions > 0
+      ? ((stats.errorCount / stats.totalTranscriptions) * 100).toFixed(1)
+      : '0.0';
+
+    return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<style>
+  body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); padding: 12px; }
+  h2 { margin: 16px 0 8px; font-size: 14px; font-weight: 600; border-bottom: 1px solid var(--vscode-panel-border); padding-bottom: 4px; }
+  .toolbar { display: flex; gap: 6px; margin-bottom: 12px; align-items: center; }
+  .toolbar button, .toolbar select { padding: 4px 10px; background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); border: none; border-radius: 3px; cursor: pointer; font-size: 12px; }
+  .toolbar button:hover { background: var(--vscode-button-hoverBackground); color: var(--vscode-button-foreground); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .card { background: var(--vscode-editor-background); border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 10px; text-align: center; }
+  .card .value { font-size: 20px; font-weight: 700; color: var(--vscode-textLink-foreground); }
+  .card .label { font-size: 11px; color: var(--vscode-descriptionForeground); margin-top: 2px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { padding: 5px 8px; text-align: left; border-bottom: 1px solid var(--vscode-panel-border); }
+  th { font-weight: 600; background: var(--vscode-editor-background); position: sticky; top: 0; }
+  .empty { text-align: center; padding: 40px; color: var(--vscode-descriptionForeground); }
+  .section { margin-bottom: 20px; }
+</style></head><body>
+<div class="toolbar">
+  <select id="timeFilter" aria-label="Time range filter">
+    <option value="0">All time</option>
+    <option value="1">Last hour</option>
+    <option value="6">Last 6 hours</option>
+    <option value="24">Last 24 hours</option>
+    <option value="168">Last 7 days</option>
+  </select>
+  <button id="refreshBtn" aria-label="Refresh dashboard">↻ Refresh</button>
+  <button id="exportBtn" aria-label="Export metrics as JSON">Export JSON</button>
+  <button id="clearBtn" aria-label="Clear all metrics">Clear</button>
+</div>
+
+<div class="cards">
+  <div class="card"><div class="value">${stats.totalTranscriptions}</div><div class="label">Total Transcriptions</div></div>
+  <div class="card"><div class="value">${stats.avgLatencyMs}ms</div><div class="label">Avg Latency</div></div>
+  <div class="card"><div class="value">${stats.p50LatencyMs}ms</div><div class="label">P50 Latency</div></div>
+  <div class="card"><div class="value">${stats.p95LatencyMs}ms</div><div class="label">P95 Latency</div></div>
+  <div class="card"><div class="value">${stats.p99LatencyMs}ms</div><div class="label">P99 Latency</div></div>
+  <div class="card"><div class="value">${formatRTF(stats.avgRealTimeFactor)}</div><div class="label">Avg RTF</div></div>
+  <div class="card"><div class="value">${stats.totalAudioSeconds.toFixed(0)}s</div><div class="label">Total Audio</div></div>
+  <div class="card"><div class="value">${errorRate}%</div><div class="label">Error Rate</div></div>
+</div>
+
+<div class="section">
+<h2>Model Benchmarks</h2>
+${modelRows ? `<table><thead><tr><th>Model</th><th>Count</th><th>Avg Latency</th><th>Avg RTF</th></tr></thead><tbody>${modelRows}</tbody></table>` : '<div class="empty">No model data yet</div>'}
+</div>
+
+<div class="section">
+<h2>Recent Transcriptions</h2>
+${recentRows ? `<table><thead><tr><th></th><th>Time</th><th>Model</th><th>Audio</th><th>Latency</th><th>Chars</th></tr></thead><tbody>${recentRows}</tbody></table>` : '<div class="empty">No transcriptions recorded yet. Start talking!</div>'}
+</div>
+
+<script>
+  const vscode = acquireVsCodeApi();
+  document.getElementById('refreshBtn').onclick = () => vscode.postMessage({type:'refresh'});
+  document.getElementById('exportBtn').onclick = () => vscode.postMessage({type:'export'});
+  document.getElementById('clearBtn').onclick = () => { if (confirm('Clear all performance metrics?')) vscode.postMessage({type:'clear'}); };
+  document.getElementById('timeFilter').onchange = (e) => {
+    const hours = parseInt(e.target.value);
+    vscode.postMessage({type:'filter', hours: hours || undefined});
+  };
+</script>
+</body></html>`;
+  }
+}
+
+function esc(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

@@ -2,6 +2,19 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.57] - 2026-05-07
+
+### Added
+- Performance dashboard — webview panel showing transcription latency, accuracy stats, model benchmarks, and session history
+- Tracks per-transcription metrics: processing time, audio duration, model used, language, success/failure
+- Aggregate statistics: average latency, P50/P95/P99 percentiles, real-time factor, error rate
+- Model comparison benchmarks — see which ASR model performs best in your environment
+- Recent transcriptions table with status, timing, and character count
+- Time range filter (last hour, 6h, 24h, 7 days, all time)
+- Export metrics as JSON for external analysis
+- Data collected passively during normal use, displayed on demand via "VoxPilot: Show Performance Dashboard" command
+- New `voxpilot.performanceDashboard` setting (default: true) to toggle metrics collection
+
 ## [0.7.55] - 2026-05-06
 
 ### Added

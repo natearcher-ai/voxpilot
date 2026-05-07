@@ -22,6 +22,7 @@ import { WalkyTalkyDetector } from './walkyTalky';
 import { LiveRewritingZone } from './liveRewriting';
 import { matchRefactorCommand, executeRefactorCommand } from './voiceRefactoring';
 import { NeuralNoiseReduction, RNNoiseModule } from './neuralNoiseReduction';
+import { PerformanceCollector, PerformanceDashboardPanel } from './performanceDashboard';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -78,6 +79,8 @@ export class VoxPilotEngine {
   private liveRewritingEnabled: boolean;
   private neuralNR: NeuralNoiseReduction | null = null;
   private neuralNREnabled: boolean = false;
+  private perfCollector: PerformanceCollector;
+  private perfDashboardPanel: PerformanceDashboardPanel | undefined;
 
   /** Expose pipeline for settings UI */
   get pipeline(): PostProcessingPipeline { return this._pipeline; }
@@ -112,6 +115,8 @@ export class VoxPilotEngine {
     if (this.neuralNREnabled) {
       this.initNeuralNoiseReduction(context);
     }
+    // Performance metrics collector
+    this.perfCollector = new PerformanceCollector();
     this.partialOverlay = new PartialOverlay();
     this._pipeline = new PostProcessingPipeline();
     this.voiceLevelEnabled = config.get<boolean>('voiceLevelIndicator', true);
@@ -556,6 +561,19 @@ export class VoxPilotEngine {
     this.historyPanelView.show();
   }
 
+  /** Open the performance dashboard webview panel */
+  showPerformanceDashboard(): void {
+    const enabled = vscode.workspace.getConfiguration('voxpilot').get<boolean>('performanceDashboard', true);
+    if (!enabled) {
+      vscode.window.showInformationMessage('VoxPilot: Performance dashboard is disabled. Enable via voxpilot.performanceDashboard setting.');
+      return;
+    }
+    if (!this.perfDashboardPanel) {
+      this.perfDashboardPanel = PerformanceDashboardPanel.create(this.context, this.perfCollector);
+    }
+    this.perfDashboardPanel.show();
+  }
+
   async sendLastToChat(): Promise<void> {
     if (!this.lastTranscript) {
       vscode.window.showWarningMessage('VoxPilot: No transcript to send.');
@@ -909,6 +927,8 @@ export class VoxPilotEngine {
 
       this.log(`Final segment: ${chunkCount} chunks (${audioData.length} bytes, ~${(audioData.length / 32000).toFixed(1)}s audio)`);
 
+      const audioDurationSec = audioData.length / 32000;
+      const transcribeStart = Date.now();
       try {
         const callbacks: StreamingCallbacks = {
           onPartial: (text: string) => {
@@ -921,9 +941,32 @@ export class VoxPilotEngine {
         this.log(`Raw transcript: "${result.text}"`);
         finalSegment = result.text.trim();
         this.handleDetectedLanguage(result.language);
+
+        // Record performance metric
+        this.perfCollector.record({
+          timestamp: Date.now(),
+          audioDuration: audioDurationSec,
+          processingTimeMs: Date.now() - transcribeStart,
+          model: this.currentModelId,
+          language: this.currentLanguage,
+          transcriptLength: finalSegment.length,
+          success: true,
+        });
       } catch (err: any) {
         this.log(`Transcription error: ${err.message}`);
         vscode.window.showErrorMessage(`VoxPilot transcription error: ${err.message}`);
+
+        // Record failed metric
+        this.perfCollector.record({
+          timestamp: Date.now(),
+          audioDuration: audioDurationSec,
+          processingTimeMs: Date.now() - transcribeStart,
+          model: this.currentModelId,
+          language: this.currentLanguage,
+          transcriptLength: 0,
+          success: false,
+          error: err.message,
+        });
       }
     } else {
       this.statusBar.setProcessing();

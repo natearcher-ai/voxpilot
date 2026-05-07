@@ -2,7 +2,7 @@
   "name": "voxpilot",
   "displayName": "VoxPilot — Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
-  "version": "0.7.56",
+  "version": "0.7.57",
   "publisher": "natearcher-ai",
   "license": "MIT",
   "repository": {
@@ -188,6 +188,11 @@
         "command": "voxpilot.listMacros",
         "title": "VoxPilot: Manage Voice Macros",
         "icon": "$(list-unordered)"
+      },
+      {
+        "command": "voxpilot.showPerformanceDashboard",
+        "title": "VoxPilot: Show Performance Dashboard",
+        "icon": "$(dashboard)"
       }
     ],
     "keybindings": [
