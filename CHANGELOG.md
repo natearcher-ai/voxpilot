@@ -2,6 +2,19 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.59] - 2026-05-08
+
+### Added
+- Voice annotations — add inline comments by voice without moving the cursor
+- Say "annotate <text>" to append a comment at the end of the current line
+- Say "annotate above <text>" or "annotate below <text>" to place comments on adjacent lines
+- Say "note <text>" as a shorthand for annotate
+- Say "bookmark <text>" to insert a BOOKMARK: prefixed comment for easy searching
+- Comment style auto-adapts to file language: // for JS/TS/Go, # for Python/Ruby/Shell, <!-- --> for HTML, -- for SQL/Lua
+- Cursor position is preserved — annotations are inserted without disrupting your editing flow
+- Integrates into the voice command pipeline after macros and refactoring
+- New `voxpilot.voiceAnnotations` setting (default: true) to enable/disable
+
 ## [0.7.57] - 2026-05-07
 
 ### Added
