@@ -21,6 +21,7 @@ import { tryExecuteMacro, VoiceMacroManager } from './voiceMacros';
 import { WalkyTalkyDetector } from './walkyTalky';
 import { LiveRewritingZone } from './liveRewriting';
 import { matchRefactorCommand, executeRefactorCommand } from './voiceRefactoring';
+import { matchNavigation, executeNavigation } from './voiceNavigation';
 import { NeuralNoiseReduction, RNNoiseModule } from './neuralNoiseReduction';
 import { PerformanceCollector, PerformanceDashboardPanel } from './performanceDashboard';
 
@@ -1052,6 +1053,25 @@ export class VoxPilotEngine {
           const success = await executeRefactorCommand(refactorMatch);
           if (success) {
             this.statusBar.setSent(`🔧 ${refactorMatch.phrase}${refactorMatch.argument ? ' ' + refactorMatch.argument : ''}`);
+          }
+          if (this.isListening) {
+            this.statusBar.setListening();
+          } else {
+            this.statusBar.setIdle();
+          }
+          return;
+        }
+      }
+
+      // Check for multi-file voice navigation commands
+      const navConfig = vscode.workspace.getConfiguration('voxpilot');
+      if (navConfig.get<boolean>('voiceNavigation', true)) {
+        const navMatch = matchNavigation(text);
+        if (navMatch) {
+          this.log(`Voice navigation: "${navMatch.trigger}"${navMatch.argument ? ` → "${navMatch.argument}"` : ''}`);
+          const success = await executeNavigation(navMatch);
+          if (success) {
+            this.statusBar.setSent(`🧭 ${navMatch.trigger}${navMatch.argument ? ' ' + navMatch.argument : ''}`);
           }
           if (this.isListening) {
             this.statusBar.setListening();

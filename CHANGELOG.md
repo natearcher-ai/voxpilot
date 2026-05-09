@@ -2,6 +2,23 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.61] - 2026-05-09
+
+### Added
+- Multi-file voice navigation — navigate across workspace files by voice without touching the keyboard
+- Say "go to file <name>" or "open file <name>" to open any file by name via quick-open
+- Say "find function <name>" or "go to function <name>" to jump to a function definition via workspace symbols
+- Say "find class <name>" to navigate to a class definition
+- Say "find symbol <name>" for general workspace symbol search
+- Say "open test" to open the corresponding test file (supports .test, .spec, __tests__, and Python test_ conventions)
+- Say "switch to previous", "go back", or "last file" to return to the previously edited file
+- Say "go to line <number>" to jump to a specific line (supports spoken numbers like "forty two")
+- Say "open recent" to show the recent files picker
+- Greedy longest-phrase-first matching prevents short triggers from shadowing longer ones
+- Integrates into the voice command pipeline after refactoring commands
+- Status bar shows 🧭 indicator when a navigation command is executed
+- New `voxpilot.voiceNavigation` setting (default: true) to enable/disable
+
 ## [0.7.59] - 2026-05-08
 
 ### Added
