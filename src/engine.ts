@@ -22,6 +22,7 @@ import { WalkyTalkyDetector } from './walkyTalky';
 import { LiveRewritingZone } from './liveRewriting';
 import { matchRefactorCommand, executeRefactorCommand } from './voiceRefactoring';
 import { matchNavigation, executeNavigation } from './voiceNavigation';
+import { matchGitCommand, executeGitCommand } from './voiceGit';
 import { NeuralNoiseReduction, RNNoiseModule } from './neuralNoiseReduction';
 import { PerformanceCollector, PerformanceDashboardPanel } from './performanceDashboard';
 
@@ -1072,6 +1073,25 @@ export class VoxPilotEngine {
           const success = await executeNavigation(navMatch);
           if (success) {
             this.statusBar.setSent(`🧭 ${navMatch.trigger}${navMatch.argument ? ' ' + navMatch.argument : ''}`);
+          }
+          if (this.isListening) {
+            this.statusBar.setListening();
+          } else {
+            this.statusBar.setIdle();
+          }
+          return;
+        }
+      }
+
+      // Check for voice-driven git commands
+      const gitConfig = vscode.workspace.getConfiguration('voxpilot');
+      if (gitConfig.get<boolean>('voiceGit', true)) {
+        const gitMatch = matchGitCommand(text);
+        if (gitMatch) {
+          this.log(`Voice git: "${gitMatch.trigger}"${gitMatch.argument ? ` → "${gitMatch.argument}"` : ''}`);
+          const success = await executeGitCommand(gitMatch);
+          if (success) {
+            this.statusBar.setSent(`🔀 ${gitMatch.trigger}${gitMatch.argument ? ' ' + gitMatch.argument : ''}`);
           }
           if (this.isListening) {
             this.statusBar.setListening();

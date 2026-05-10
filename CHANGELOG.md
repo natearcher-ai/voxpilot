@@ -2,6 +2,28 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.63] - 2026-05-10
+
+### Added
+- Voice-driven git — execute git operations by voice without leaving the editor
+- Say "commit <message>" to stage and commit with a message
+- Say "push" or "pull" to sync with remote
+- Say "stash" / "stash pop" to manage work-in-progress
+- Say "checkout <branch>" or "switch to branch <name>" to change branches
+- Say "create branch <name>" to create and switch to a new branch
+- Say "merge <branch>" to merge a branch into current
+- Say "status" to show git status in the output channel
+- Say "diff" to open the diff view for all changes
+- Say "log" to show recent commit history (last 10)
+- Say "stage all" / "unstage all" to manage the staging area
+- Say "discard changes" to reset working tree (requires confirmation)
+- Dangerous operations (discard) show a modal confirmation dialog before executing
+- Branch names are auto-sanitized from voice input (spaces → hyphens, invalid chars removed)
+- Uses VS Code's built-in git commands when available, falls back to terminal execution
+- Greedy longest-phrase-first matching prevents short triggers from shadowing longer ones
+- Status bar shows 🔀 indicator when a git command is executed
+- New `voxpilot.voiceGit` setting (default: true) to enable/disable
+
 ## [0.7.61] - 2026-05-09
 
 ### Added
