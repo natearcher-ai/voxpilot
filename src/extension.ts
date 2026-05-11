@@ -64,6 +64,7 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('voxpilot.modelManager.delete', (item: ModelTreeItem) => modelPanel.deleteModel(item)),
     vscode.commands.registerCommand('voxpilot.modelManager.refresh', () => modelPanel.refresh()),
     vscode.commands.registerCommand('voxpilot.showPerformanceDashboard', () => engine?.showPerformanceDashboard()),
+    vscode.commands.registerCommand('voxpilot.browseSnippetMarketplace', () => engine?.browseSnippetMarketplace()),
     treeView,
     configWatcher,
     statusBar,

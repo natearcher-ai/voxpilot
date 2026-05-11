@@ -2,6 +2,20 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.65] - 2026-05-11
+
+### Added
+- Snippet marketplace — browse and install community-shared voice macro packs from a curated registry
+- Browse available packs sorted by popularity, rating, or name
+- Filter packs by category: frameworks, languages, tools, testing, productivity, accessibility
+- One-click install merges pack macros into your voiceMacroDefinitions
+- Uninstall packs to cleanly remove their macros from your configuration
+- View installed packs with version and install date
+- 4 built-in starter packs: React Essentials (12 macros), Python Shortcuts (15 macros), Docker Commands (10 macros), Testing Toolkit (18 macros)
+- Packs include snippets, terminal commands, and insert actions
+- New `voxpilot.snippetMarketplace` setting (default: true) to enable/disable
+- Command: "VoxPilot: Browse Snippet Marketplace"
+
 ## [0.7.63] - 2026-05-10
 
 ### Added

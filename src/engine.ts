@@ -25,6 +25,7 @@ import { matchNavigation, executeNavigation } from './voiceNavigation';
 import { matchGitCommand, executeGitCommand } from './voiceGit';
 import { NeuralNoiseReduction, RNNoiseModule } from './neuralNoiseReduction';
 import { PerformanceCollector, PerformanceDashboardPanel } from './performanceDashboard';
+import { BUILTIN_PACKS, searchPacks, filterByCategory, sortPacks, MacroPack, PackCategory, InstalledPack, getBuiltinPackMacros } from './snippetMarketplace';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -561,6 +562,183 @@ export class VoxPilotEngine {
       });
     }
     this.historyPanelView.show();
+  }
+
+  /** Browse the snippet marketplace — pick and install community voice macro packs */
+  async browseSnippetMarketplace(): Promise<void> {
+    const enabled = vscode.workspace.getConfiguration('voxpilot').get<boolean>('snippetMarketplace', true);
+    if (!enabled) {
+      vscode.window.showInformationMessage('VoxPilot: Snippet marketplace is disabled. Enable via voxpilot.snippetMarketplace setting.');
+      return;
+    }
+
+    const installedPacks = this.context.globalState.get<InstalledPack[]>('voxpilot.installedPacks', []);
+
+    // Top-level action picker
+    const action = await vscode.window.showQuickPick(
+      [
+        { label: '$(search) Browse Packs', description: 'Browse available voice macro packs', action: 'browse' },
+        { label: '$(list-unordered) Installed Packs', description: `${installedPacks.length} pack(s) installed`, action: 'installed' },
+        { label: '$(filter) Browse by Category', description: 'Filter packs by category', action: 'category' },
+      ],
+      { title: 'VoxPilot Snippet Marketplace', placeHolder: 'What would you like to do?' },
+    );
+    if (!action) { return; }
+
+    if (action.action === 'installed') {
+      await this.showInstalledPacks(installedPacks);
+    } else if (action.action === 'category') {
+      await this.browseByCategoryPacks();
+    } else {
+      await this.browseAvailablePacks(installedPacks);
+    }
+  }
+
+  private async browseAvailablePacks(installedPacks: InstalledPack[]): Promise<void> {
+    const sorted = sortPacks(BUILTIN_PACKS, 'popular');
+    const installedNames = new Set(installedPacks.map(p => p.name));
+
+    const items = sorted.map(pack => ({
+      label: `${installedNames.has(pack.name) ? '$(check) ' : '$(package) '}${pack.name}`,
+      description: `v${pack.version} · ${pack.macroCount} macros · ⭐ ${pack.rating ?? '—'}`,
+      detail: pack.description,
+      pack,
+    }));
+
+    const picked = await vscode.window.showQuickPick(items, {
+      title: 'Available Packs',
+      placeHolder: 'Select a pack to install',
+      matchOnDetail: true,
+    });
+    if (!picked) { return; }
+
+    if (installedNames.has(picked.pack.name)) {
+      const uninstall = await vscode.window.showInformationMessage(
+        `"${picked.pack.name}" is already installed. Uninstall it?`,
+        'Uninstall', 'Cancel',
+      );
+      if (uninstall === 'Uninstall') {
+        await this.uninstallPack(picked.pack.name);
+      }
+    } else {
+      await this.installPack(picked.pack);
+    }
+  }
+
+  private async browseByCategoryPacks(): Promise<void> {
+    const categories: { label: string; category: PackCategory }[] = [
+      { label: '$(symbol-class) Frameworks', category: 'frameworks' },
+      { label: '$(code) Languages', category: 'languages' },
+      { label: '$(tools) Tools', category: 'tools' },
+      { label: '$(beaker) Testing', category: 'testing' },
+      { label: '$(rocket) Productivity', category: 'productivity' },
+      { label: '$(accessibility) Accessibility', category: 'accessibility' },
+      { label: '$(ellipsis) Other', category: 'other' },
+    ];
+
+    const picked = await vscode.window.showQuickPick(categories, {
+      title: 'Browse by Category',
+      placeHolder: 'Select a category',
+    });
+    if (!picked) { return; }
+
+    const filtered = filterByCategory(BUILTIN_PACKS, picked.category);
+    if (filtered.length === 0) {
+      vscode.window.showInformationMessage(`No packs available in "${picked.label}" yet.`);
+      return;
+    }
+
+    const installedPacks = this.context.globalState.get<InstalledPack[]>('voxpilot.installedPacks', []);
+    const installedNames = new Set(installedPacks.map(p => p.name));
+
+    const items = filtered.map(pack => ({
+      label: `${installedNames.has(pack.name) ? '$(check) ' : '$(package) '}${pack.name}`,
+      description: `v${pack.version} · ${pack.macroCount} macros`,
+      detail: pack.description,
+      pack,
+    }));
+
+    const selection = await vscode.window.showQuickPick(items, {
+      title: `${picked.label} Packs`,
+      placeHolder: 'Select a pack to install',
+    });
+    if (!selection) { return; }
+
+    if (installedNames.has(selection.pack.name)) {
+      vscode.window.showInformationMessage(`"${selection.pack.name}" is already installed.`);
+    } else {
+      await this.installPack(selection.pack);
+    }
+  }
+
+  private async showInstalledPacks(installedPacks: InstalledPack[]): Promise<void> {
+    if (installedPacks.length === 0) {
+      vscode.window.showInformationMessage('No packs installed yet. Browse the marketplace to get started!');
+      return;
+    }
+
+    const items = installedPacks.map(p => ({
+      label: `$(package) ${p.name}`,
+      description: `v${p.version} · ${p.macroCount} macros · installed ${new Date(p.installedAt).toLocaleDateString()}`,
+      name: p.name,
+    }));
+
+    const picked = await vscode.window.showQuickPick(items, {
+      title: 'Installed Packs',
+      placeHolder: 'Select a pack to uninstall',
+    });
+    if (!picked) { return; }
+
+    const confirm = await vscode.window.showWarningMessage(
+      `Uninstall "${picked.name}"? Its macros will be removed from your configuration.`,
+      { modal: true },
+      'Uninstall',
+    );
+    if (confirm === 'Uninstall') {
+      await this.uninstallPack(picked.name);
+    }
+  }
+
+  private async installPack(pack: MacroPack): Promise<void> {
+    // Get the macro definitions for this built-in pack
+    const macros = getBuiltinPackMacros(pack.name);
+    if (!macros || macros.length === 0) {
+      vscode.window.showErrorMessage(`VoxPilot: Pack "${pack.name}" has no macros to install.`);
+      return;
+    }
+
+    // Merge macros into user's voiceMacroDefinitions
+    const config = vscode.workspace.getConfiguration('voxpilot');
+    const existing = config.get<any[]>('voiceMacroDefinitions', []);
+    const merged = [...existing, ...macros.map(m => ({ ...m, _pack: pack.name }))];
+    await config.update('voiceMacroDefinitions', merged, vscode.ConfigurationTarget.Global);
+
+    // Track installed pack
+    const installedPacks = this.context.globalState.get<InstalledPack[]>('voxpilot.installedPacks', []);
+    installedPacks.push({
+      name: pack.name,
+      version: pack.version,
+      installedAt: new Date().toISOString(),
+      macroCount: macros.length,
+    });
+    await this.context.globalState.update('voxpilot.installedPacks', installedPacks);
+
+    vscode.window.showInformationMessage(`VoxPilot: Installed "${pack.name}" — ${macros.length} voice macros added.`);
+  }
+
+  private async uninstallPack(packName: string): Promise<void> {
+    // Remove macros tagged with this pack
+    const config = vscode.workspace.getConfiguration('voxpilot');
+    const existing = config.get<any[]>('voiceMacroDefinitions', []);
+    const filtered = existing.filter(m => m._pack !== packName);
+    await config.update('voiceMacroDefinitions', filtered, vscode.ConfigurationTarget.Global);
+
+    // Remove from installed list
+    const installedPacks = this.context.globalState.get<InstalledPack[]>('voxpilot.installedPacks', []);
+    const updated = installedPacks.filter(p => p.name !== packName);
+    await this.context.globalState.update('voxpilot.installedPacks', updated);
+
+    vscode.window.showInformationMessage(`VoxPilot: Uninstalled "${packName}".`);
   }
 
   /** Open the performance dashboard webview panel */
