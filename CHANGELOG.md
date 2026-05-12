@@ -2,6 +2,19 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.67] - 2026-05-12
+
+### Added
+- Pair programming mode — distinguish two speakers by voice profile and route to different targets
+- Each speaker records a 5-second calibration sample to build a voice profile
+- Lightweight speaker classification using pitch (ZCR), energy, and spectral brightness
+- Route Speaker A to editor and Speaker B to chat (or terminal/clipboard)
+- Confidence scoring on each classification to handle ambiguous utterances
+- Weighted Euclidean distance with pitch as primary discriminator
+- Works with any ASR backend (Moonshine, Whisper, Parakeet)
+- No cloud required — all voice profiling runs on-device
+- New `voxpilot.pairProgramming` setting (default: false) to enable/disable
+
 ## [0.7.65] - 2026-05-11
 
 ### Added
