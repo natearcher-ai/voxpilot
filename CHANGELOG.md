@@ -2,6 +2,22 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.69] - 2026-05-13
+
+### Added
+- Extension API — public API for other extensions to hook into VoxPilot transcription events and pipeline
+- Other extensions can subscribe to transcription events (start, partial, complete, error)
+- Programmatic control: start/stop recording from any extension
+- Query VoxPilot state: recording status, current model, current language, last transcript
+- Event emitter architecture with proper disposal and error isolation
+- Usage: `const api = vscode.extensions.getExtension('natearcher-ai.voxpilot')?.exports`
+- `api.onTranscript((text, metadata) => { ... })` for transcript callbacks
+- `api.onEvent('recording-start', (event) => { ... })` for lifecycle events
+- `api.startRecording()` / `api.stopRecording()` for programmatic control
+- `api.isRecording`, `api.currentModel`, `api.currentLanguage` state getters
+- Listener errors are swallowed to prevent third-party code from crashing VoxPilot
+- New `voxpilot.extensionApi` setting (default: true) to enable/disable
+
 ## [0.7.67] - 2026-05-12
 
 ### Added

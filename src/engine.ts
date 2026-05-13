@@ -26,6 +26,7 @@ import { matchGitCommand, executeGitCommand } from './voiceGit';
 import { NeuralNoiseReduction, RNNoiseModule } from './neuralNoiseReduction';
 import { PerformanceCollector, PerformanceDashboardPanel } from './performanceDashboard';
 import { BUILTIN_PACKS, searchPacks, filterByCategory, sortPacks, MacroPack, PackCategory, InstalledPack, getBuiltinPackMacros } from './snippetMarketplace';
+import { VoxPilotEventEmitter, VoxPilotEvent, TranscriptEvent } from './extensionApi';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -84,9 +85,31 @@ export class VoxPilotEngine {
   private neuralNREnabled: boolean = false;
   private perfCollector: PerformanceCollector;
   private perfDashboardPanel: PerformanceDashboardPanel | undefined;
+  private _eventEmitter: VoxPilotEventEmitter;
 
   /** Expose pipeline for settings UI */
   get pipeline(): PostProcessingPipeline { return this._pipeline; }
+
+  /** Expose event emitter for extension API */
+  get eventEmitter(): VoxPilotEventEmitter { return this._eventEmitter; }
+
+  /** Expose recording state for extension API */
+  get recording(): boolean { return this.isListening; }
+
+  /** Expose current model for extension API */
+  get model(): string { return this.currentModelId; }
+
+  /** Expose current language for extension API */
+  get language(): string { return this.currentLanguage; }
+
+  /** Expose last transcript for extension API */
+  get transcript(): string | undefined { return this.lastTranscript || undefined; }
+
+  /** Start recording (for extension API) */
+  async apiStartRecording(): Promise<void> { await this.startListening(); }
+
+  /** Stop recording (for extension API) */
+  async apiStopRecording(): Promise<void> { await this.stopListening(); }
 
   constructor(private context: vscode.ExtensionContext, statusBar: StatusBarManager) {
     this.statusBar = statusBar;
@@ -120,6 +143,8 @@ export class VoxPilotEngine {
     }
     // Performance metrics collector
     this.perfCollector = new PerformanceCollector();
+    // Extension API event emitter
+    this._eventEmitter = new VoxPilotEventEmitter();
     this.partialOverlay = new PartialOverlay();
     this._pipeline = new PostProcessingPipeline();
     this.voiceLevelEnabled = config.get<boolean>('voiceLevelIndicator', true);
@@ -795,6 +820,7 @@ export class VoxPilotEngine {
     }
     this.statusBar.resetWaveform();
     if (this.soundEnabled) { this.sound.playStart(); }
+    this._eventEmitter.emit({ type: 'recording-start', timestamp: Date.now() });
     this.log('Listening started');
     this.resetIdleTimer();
   }
@@ -816,6 +842,7 @@ export class VoxPilotEngine {
       await this.liveRewritingZone.cancel();
     }
     if (this.soundEnabled) { this.sound.playStop(); }
+    this._eventEmitter.emit({ type: 'recording-stop', timestamp: Date.now() });
     this.statusBar.setIdle();
     this.log('Listening stopped');
 
@@ -1043,6 +1070,11 @@ export class VoxPilotEngine {
         if (this.liveRewritingEnabled && this.liveRewritingZone.isActive) {
           await this.liveRewritingZone.update(text);
         }
+        this._eventEmitter.emit({
+          type: 'transcript-partial',
+          timestamp: Date.now(),
+          data: { text, language: this.currentLanguage, model: this.currentModelId },
+        } as TranscriptEvent);
         this.log(`Streaming partial [${this.streamingBuffer.windowCount}]: "${text}"`);
       }
     } catch (err: any) {
@@ -1286,6 +1318,15 @@ export class VoxPilotEngine {
         language: this.currentLanguage !== 'auto' ? this.currentLanguage : undefined,
         model: this.currentModelId,
       });
+      this._eventEmitter.emit({
+        type: 'transcript-complete',
+        timestamp: Date.now(),
+        data: {
+          text: this.lastTranscript,
+          language: this.currentLanguage !== 'auto' ? this.currentLanguage : undefined,
+          model: this.currentModelId,
+        },
+      } as TranscriptEvent);
       this.log(`Transcript: ${this.lastTranscript}`);
 
       const config = vscode.workspace.getConfiguration('voxpilot');
@@ -1877,6 +1918,7 @@ export class VoxPilotEngine {
     this.stopWakeWordListening();
     if (this.walkyTalkyDetector) { this.walkyTalkyDetector.reset(); }
     void this.stopListening();
+    this._eventEmitter.removeAll();
     this.audio.dispose();
     this.sound.dispose();
     this.partialOverlay.dispose();

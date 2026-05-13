@@ -7,11 +7,12 @@ import { ModelManager } from './modelManager';
 import { ModelManagerPanel, ModelTreeItem } from './modelManagerPanel';
 import { showPipelineSettings } from './pipelineSettingsUI';
 import { showLanguageSelector } from './languageSelector';
+import { createAPI, VoxPilotAPI } from './extensionApi';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
 
-export async function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext): Promise<VoxPilotAPI | undefined> {
   statusBar = new StatusBarManager();
 
   // Check for audio capture tool early
@@ -74,6 +75,29 @@ export async function activate(context: vscode.ExtensionContext) {
   if (audioCheck.available) {
     statusBar.setIdle();
   }
+
+  // Expose public API for other extensions
+  const config = vscode.workspace.getConfiguration('voxpilot');
+  if (config.get<boolean>('extensionApi', true) && engine) {
+    const pkg = context.extension.packageJSON;
+    const api = createAPI(
+      engine.eventEmitter,
+      () => ({
+        isRecording: engine?.recording ?? false,
+        model: engine?.model ?? 'moonshine-base',
+        language: engine?.language ?? 'auto',
+        lastTranscript: engine?.transcript,
+      }),
+      {
+        start: async () => { await engine?.apiStartRecording(); },
+        stop: async () => { await engine?.apiStopRecording(); },
+      },
+      pkg.version,
+    );
+    return api;
+  }
+
+  return undefined;
 }
 
 async function clearCache(context: vscode.ExtensionContext): Promise<void> {
