@@ -8,6 +8,7 @@ import { ModelManagerPanel, ModelTreeItem } from './modelManagerPanel';
 import { showPipelineSettings } from './pipelineSettingsUI';
 import { showLanguageSelector } from './languageSelector';
 import { createAPI, VoxPilotAPI } from './extensionApi';
+import { OfflineModelManagerPanel } from './offlineModelManagerPanel';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
@@ -66,6 +67,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
     vscode.commands.registerCommand('voxpilot.modelManager.refresh', () => modelPanel.refresh()),
     vscode.commands.registerCommand('voxpilot.showPerformanceDashboard', () => engine?.showPerformanceDashboard()),
     vscode.commands.registerCommand('voxpilot.browseSnippetMarketplace', () => engine?.browseSnippetMarketplace()),
+    vscode.commands.registerCommand('voxpilot.openOfflineModelManager', () => OfflineModelManagerPanel.create(context)),
     treeView,
     configWatcher,
     statusBar,

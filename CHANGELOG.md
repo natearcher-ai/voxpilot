@@ -2,6 +2,20 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.71] - 2026-05-14
+
+### Added
+- Offline model manager — download, cache, and switch between ASR models with progress UI and disk usage tracking
+- Webview panel showing all available models (Moonshine, Whisper, Parakeet) with accuracy/speed meters
+- Download models from Hugging Face with progress indication and cancel support
+- Track total disk usage across all cached models
+- Switch active model directly from the panel
+- Delete unused models to free disk space
+- Visual indicators for active, downloaded, and recommended models
+- Model comparison stats: size, accuracy score, speed score, language support
+- New command: "VoxPilot: Manage Offline Models"
+- New `voxpilot.offlineModelManager` setting (default: true) to enable/disable
+
 ## [0.7.69] - 2026-05-13
 
 ### Added
