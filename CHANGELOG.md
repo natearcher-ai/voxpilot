@@ -2,6 +2,19 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.72] - 2026-05-16
+
+### Added
+- LLM post-correction — optional AI pass to fix transcription errors using surrounding file context
+- Uses VS Code's Language Model API (Copilot or compatible) to correct misrecognized words
+- Sends surrounding editor context (configurable lines) so the LLM can identify technical terms
+- Sanity checks prevent wildly different corrections from being applied
+- Optional diff notification mode: review corrections before they're applied
+- Configurable minimum transcript length to skip correction on short phrases
+- Model family preference setting (e.g. 'copilot', 'gpt-4o', or any available)
+- Graceful fallback: if no LLM is available, transcription works normally
+- New settings: `voxpilot.llmPostCorrection` (default: false), `llmPostCorrectionContextLines`, `llmPostCorrectionMinLength`, `llmPostCorrectionModel`, `llmPostCorrectionShowDiff`
+
 ## [0.7.71] - 2026-05-14
 
 ### Added

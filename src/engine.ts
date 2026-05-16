@@ -27,6 +27,7 @@ import { NeuralNoiseReduction, RNNoiseModule } from './neuralNoiseReduction';
 import { PerformanceCollector, PerformanceDashboardPanel } from './performanceDashboard';
 import { BUILTIN_PACKS, searchPacks, filterByCategory, sortPacks, MacroPack, PackCategory, InstalledPack, getBuiltinPackMacros } from './snippetMarketplace';
 import { VoxPilotEventEmitter, VoxPilotEvent, TranscriptEvent } from './extensionApi';
+import { correctTranscript, getLlmCorrectionConfig, showCorrectionDiff } from './llmPostCorrection';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -1312,7 +1313,32 @@ export class VoxPilotEngine {
         }
       }
 
-      this.lastTranscript = text;
+      // LLM post-correction: optionally fix transcription errors using file context
+      let finalText = text;
+      const llmConfig = getLlmCorrectionConfig();
+      if (llmConfig.enabled) {
+        try {
+          const correction = await correctTranscript(text, llmConfig);
+          if (correction.changed) {
+            if (llmConfig.showDiff) {
+              const accepted = await showCorrectionDiff(correction);
+              if (accepted) {
+                finalText = correction.corrected;
+                this.log(`LLM correction accepted: "${text}" → "${finalText}" (model: ${correction.model})`);
+              } else {
+                this.log(`LLM correction rejected: "${text}" → "${correction.corrected}"`);
+              }
+            } else {
+              finalText = correction.corrected;
+              this.log(`LLM auto-corrected: "${text}" → "${finalText}" (model: ${correction.model})`);
+            }
+          }
+        } catch (err: any) {
+          this.log(`LLM post-correction error: ${err.message}`);
+        }
+      }
+
+      this.lastTranscript = finalText;
       this.history.add(this.lastTranscript);
       this.historyStore.add(this.lastTranscript, {
         language: this.currentLanguage !== 'auto' ? this.currentLanguage : undefined,
