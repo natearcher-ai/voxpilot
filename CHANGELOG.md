@@ -2,6 +2,18 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.74] - 2026-05-17
+
+### Added
+- Dictation profiles — switch between prose/code/command modes with different processing pipelines
+- Three built-in profiles: Prose (natural language), Code (programming), Command (voice control)
+- Each profile enables/disables specific post-processors for optimal results in that context
+- Quick switch via command palette ("VoxPilot: Switch Dictation Profile") or status bar
+- Status bar indicator shows the active profile with icon
+- Voice switching: say "switch to code mode" or "command mode" to change profiles
+- Custom profiles via `voxpilot.dictationProfiles.custom` setting with full processor control
+- Profiles persist across sessions via `voxpilot.dictationProfiles.active` setting
+
 ## [0.7.72] - 2026-05-16
 
 ### Added

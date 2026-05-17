@@ -28,6 +28,7 @@ import { PerformanceCollector, PerformanceDashboardPanel } from './performanceDa
 import { BUILTIN_PACKS, searchPacks, filterByCategory, sortPacks, MacroPack, PackCategory, InstalledPack, getBuiltinPackMacros } from './snippetMarketplace';
 import { VoxPilotEventEmitter, VoxPilotEvent, TranscriptEvent } from './extensionApi';
 import { correctTranscript, getLlmCorrectionConfig, showCorrectionDiff } from './llmPostCorrection';
+import { DictationProfileManager, DictationProfileStatusBar } from './dictationProfiles';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -87,6 +88,8 @@ export class VoxPilotEngine {
   private perfCollector: PerformanceCollector;
   private perfDashboardPanel: PerformanceDashboardPanel | undefined;
   private _eventEmitter: VoxPilotEventEmitter;
+  private dictationProfileManager: DictationProfileManager;
+  private dictationProfileStatusBar: DictationProfileStatusBar | undefined;
 
   /** Expose pipeline for settings UI */
   get pipeline(): PostProcessingPipeline { return this._pipeline; }
@@ -146,8 +149,17 @@ export class VoxPilotEngine {
     this.perfCollector = new PerformanceCollector();
     // Extension API event emitter
     this._eventEmitter = new VoxPilotEventEmitter();
+    // Dictation profiles
+    this.dictationProfileManager = new DictationProfileManager();
+    this.dictationProfileStatusBar = new DictationProfileStatusBar(this.dictationProfileManager);
+    this.dictationProfileManager.onDidChangeProfile(() => {
+      this._pipeline.reloadConfig();
+      this.dictationProfileManager.applyToPipeline(this._pipeline);
+    });
     this.partialOverlay = new PartialOverlay();
     this._pipeline = new PostProcessingPipeline();
+    // Apply active profile on startup
+    this.dictationProfileManager.applyToPipeline(this._pipeline);
     this.voiceLevelEnabled = config.get<boolean>('voiceLevelIndicator', true);
     this.waveformEnabled = config.get<boolean>('waveformVisualization', true);
     this.currentLanguage = config.get<string>('language', 'auto');
@@ -778,6 +790,11 @@ export class VoxPilotEngine {
       this.perfDashboardPanel = PerformanceDashboardPanel.create(this.context, this.perfCollector);
     }
     this.perfDashboardPanel.show();
+  }
+
+  /** Show dictation profile picker */
+  async switchDictationProfile(): Promise<void> {
+    await this.dictationProfileManager.showProfilePicker();
   }
 
   async sendLastToChat(): Promise<void> {
@@ -1949,6 +1966,8 @@ export class VoxPilotEngine {
     this.sound.dispose();
     this.partialOverlay.dispose();
     if (this.neuralNR) { this.neuralNR.dispose(); this.neuralNR = null; }
+    if (this.dictationProfileStatusBar) { this.dictationProfileStatusBar.dispose(); }
+    this.dictationProfileManager.dispose();
     this.disposables.forEach(d => d.dispose());
     this.disposables = [];
     // Fire-and-forget async cleanup

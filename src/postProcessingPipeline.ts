@@ -380,4 +380,14 @@ export class PostProcessingPipeline {
   isEnabled(id: string): boolean {
     return this.processors.has(id) && !this.disabled.has(id);
   }
+
+  /** Programmatically enable or disable a processor (used by dictation profiles) */
+  setProcessorEnabled(id: string, enabled: boolean): void {
+    if (!this.processors.has(id)) { return; }
+    if (enabled) {
+      this.disabled.delete(id);
+    } else {
+      this.disabled.add(id);
+    }
+  }
 }

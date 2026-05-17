@@ -9,6 +9,7 @@ import { showPipelineSettings } from './pipelineSettingsUI';
 import { showLanguageSelector } from './languageSelector';
 import { createAPI, VoxPilotAPI } from './extensionApi';
 import { OfflineModelManagerPanel } from './offlineModelManagerPanel';
+import { DictationProfileManager, DictationProfileStatusBar } from './dictationProfiles';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
@@ -68,6 +69,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
     vscode.commands.registerCommand('voxpilot.showPerformanceDashboard', () => engine?.showPerformanceDashboard()),
     vscode.commands.registerCommand('voxpilot.browseSnippetMarketplace', () => engine?.browseSnippetMarketplace()),
     vscode.commands.registerCommand('voxpilot.openOfflineModelManager', () => OfflineModelManagerPanel.create(context)),
+    vscode.commands.registerCommand('voxpilot.switchDictationProfile', () => engine?.switchDictationProfile()),
     treeView,
     configWatcher,
     statusBar,

@@ -2,7 +2,7 @@
   "name": "voxpilot",
   "displayName": "VoxPilot — Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
-  "version": "0.7.73",
+  "version": "0.7.74",
   "publisher": "natearcher-ai",
   "license": "MIT",
   "repository": {
@@ -203,6 +203,11 @@
         "command": "voxpilot.openOfflineModelManager",
         "title": "VoxPilot: Manage Offline Models",
         "icon": "$(database)"
+      },
+      {
+        "command": "voxpilot.switchDictationProfile",
+        "title": "VoxPilot: Switch Dictation Profile",
+        "icon": "$(list-unordered)"
       }
     ],
     "keybindings": [
@@ -808,6 +813,55 @@
           "type": "boolean",
           "default": false,
           "description": "Show a notification with the original and corrected text before applying. When false, corrections are applied automatically."
+        },
+        "voxpilot.dictationProfiles.active": {
+          "type": "string",
+          "default": "",
+          "description": "Currently active dictation profile ID. Empty string means no profile (use default pipeline settings)."
+        },
+        "voxpilot.dictationProfiles.custom": {
+          "type": "array",
+          "default": [],
+          "description": "Custom dictation profiles with tailored processing pipelines.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique profile identifier"
+              },
+              "name": {
+                "type": "string",
+                "description": "Display name"
+              },
+              "description": {
+                "type": "string",
+                "description": "Short description"
+              },
+              "icon": {
+                "type": "string",
+                "description": "VS Code icon id (e.g. $(gear))"
+              },
+              "enableProcessors": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Processor IDs to enable in this profile"
+              },
+              "disableProcessors": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Processor IDs to disable in this profile"
+              },
+              "settingOverrides": {
+                "type": "object",
+                "description": "Optional setting overrides when profile is active"
+              }
+            }
+          }
         }
       }
     }
