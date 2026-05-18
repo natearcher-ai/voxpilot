@@ -2,6 +2,21 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.76] - 2026-05-18
+
+### Added
+- Voice-driven debugging — control the VS Code debugger entirely by voice
+- Set, remove, toggle, and clear breakpoints by saying "set breakpoint", "remove breakpoint", etc.
+- Conditional breakpoints: say "conditional breakpoint x > 5" to set conditions by voice
+- Log breakpoints (logpoints): say "log breakpoint value is {x}" to add log messages
+- Step through code: "step over", "step into", "step out" for line-by-line debugging
+- Execution control: "continue", "pause", "stop debugging", "restart debugging", "start debugging"
+- "Run to cursor" and "run without debugging" voice commands
+- Variable inspection: say "inspect myVar" to show debug hover, or "add watch expression" for watch panel
+- Panel navigation: "focus call stack", "focus variables", "focus watch", "focus breakpoints"
+- Uses VS Code's built-in debug commands for maximum compatibility across debug adapters
+- New `voxpilot.voiceDebugging` setting (default: true) to enable/disable
+
 ## [0.7.74] - 2026-05-17
 
 ### Added
