@@ -2,6 +2,20 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.78] - 2026-05-19
+
+### Added
+- Confidence indicators — highlight uncertain words with dotted underline, click to see alternatives
+- Words below a configurable confidence threshold (default 70%) get a visual dotted underline decoration
+- Hover over uncertain words to see the confidence score and alternative suggestions
+- Click the lightbulb (Quick Fix) on uncertain words to replace with phonetically similar alternatives
+- Built-in confusion pairs for common homophones (their/there/they're, your/you're, etc.)
+- Programming term confusion pairs (function/junction, class/glass, const/cost, etc.)
+- Heuristic confidence estimation when ASR model doesn't provide word-level scores
+- "Accept" quick fix action to dismiss individual indicators without replacing
+- "VoxPilot: Clear All Confidence Indicators" command to dismiss all at once
+- New settings: `voxpilot.confidenceIndicators` (default: true), `voxpilot.confidenceThreshold` (default: 0.7)
+
 ## [0.7.76] - 2026-05-18
 
 ### Added

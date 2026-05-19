@@ -30,6 +30,7 @@ import { BUILTIN_PACKS, searchPacks, filterByCategory, sortPacks, MacroPack, Pac
 import { VoxPilotEventEmitter, VoxPilotEvent, TranscriptEvent } from './extensionApi';
 import { correctTranscript, getLlmCorrectionConfig, showCorrectionDiff } from './llmPostCorrection';
 import { DictationProfileManager, DictationProfileStatusBar } from './dictationProfiles';
+import { ConfidenceIndicatorManager, analyzeConfidence } from './confidenceIndicators';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -91,6 +92,7 @@ export class VoxPilotEngine {
   private _eventEmitter: VoxPilotEventEmitter;
   private dictationProfileManager: DictationProfileManager;
   private dictationProfileStatusBar: DictationProfileStatusBar | undefined;
+  private confidenceManager: ConfidenceIndicatorManager;
 
   /** Expose pipeline for settings UI */
   get pipeline(): PostProcessingPipeline { return this._pipeline; }
@@ -157,6 +159,8 @@ export class VoxPilotEngine {
       this._pipeline.reloadConfig();
       this.dictationProfileManager.applyToPipeline(this._pipeline);
     });
+    // Confidence indicators
+    this.confidenceManager = new ConfidenceIndicatorManager();
     this.partialOverlay = new PartialOverlay();
     this._pipeline = new PostProcessingPipeline();
     // Apply active profile on startup
@@ -798,6 +802,16 @@ export class VoxPilotEngine {
     await this.dictationProfileManager.showProfilePicker();
   }
 
+  /** Dismiss a single confidence indicator */
+  dismissConfidenceIndicator(docUri: string, index: number): void {
+    this.confidenceManager.dismissIndicator(docUri, index);
+  }
+
+  /** Clear all confidence indicators */
+  clearConfidenceIndicators(): void {
+    this.confidenceManager.clearAll();
+  }
+
   async sendLastToChat(): Promise<void> {
     if (!this.lastTranscript) {
       vscode.window.showWarningMessage('VoxPilot: No transcript to send.');
@@ -1396,12 +1410,23 @@ export class VoxPilotEngine {
       const outputAction = config.get<string>('outputAction', 'ask');
 
       if (this.inlineMode || outputAction === 'cursor') {
+        const editor = vscode.window.activeTextEditor;
+        const insertOffset = editor ? editor.document.offsetAt(editor.selection.active) : undefined;
         await this.insertAtCursor(this.lastTranscript);
         if (shouldAutoSubmit('cursor')) {
           await this.insertAtCursor('\n');
         }
         this.statusBar.setSent(this.lastTranscript);
         this.log(`Inserted at cursor (autoSubmit=${shouldAutoSubmit('cursor')})`);
+
+        // Apply confidence indicators to the inserted text
+        if (this.confidenceManager.enabled && editor && insertOffset !== undefined) {
+          const confidenceResult = analyzeConfidence(this.lastTranscript, undefined, this.confidenceManager.threshold);
+          if (confidenceResult.uncertainWords.length > 0) {
+            this.confidenceManager.applyForRange(editor, insertOffset, confidenceResult);
+            this.log(`Confidence indicators: ${confidenceResult.uncertainWords.length} uncertain word(s) marked`);
+          }
+        }
       } else if (outputAction === 'chat' || config.get<boolean>('autoSendToChat', false)) {
         await this.sendToChat(this.lastTranscript);
         this.statusBar.setSent(this.lastTranscript);
@@ -1988,6 +2013,7 @@ export class VoxPilotEngine {
     if (this.neuralNR) { this.neuralNR.dispose(); this.neuralNR = null; }
     if (this.dictationProfileStatusBar) { this.dictationProfileStatusBar.dispose(); }
     this.dictationProfileManager.dispose();
+    this.confidenceManager.dispose();
     this.disposables.forEach(d => d.dispose());
     this.disposables = [];
     // Fire-and-forget async cleanup

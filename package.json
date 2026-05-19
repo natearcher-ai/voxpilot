@@ -2,7 +2,7 @@
   "name": "voxpilot",
   "displayName": "VoxPilot — Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
-  "version": "0.7.77",
+  "version": "0.7.78",
   "publisher": "natearcher-ai",
   "license": "MIT",
   "repository": {
@@ -208,6 +208,14 @@
         "command": "voxpilot.switchDictationProfile",
         "title": "VoxPilot: Switch Dictation Profile",
         "icon": "$(list-unordered)"
+      },
+      {
+        "command": "voxpilot.dismissConfidenceIndicator",
+        "title": "VoxPilot: Dismiss Confidence Indicator"
+      },
+      {
+        "command": "voxpilot.clearConfidenceIndicators",
+        "title": "VoxPilot: Clear All Confidence Indicators"
       }
     ],
     "keybindings": [
@@ -813,6 +821,18 @@
           "type": "boolean",
           "default": false,
           "description": "Show a notification with the original and corrected text before applying. When false, corrections are applied automatically."
+        },
+        "voxpilot.confidenceIndicators": {
+          "type": "boolean",
+          "default": true,
+          "description": "Highlight uncertain words with a dotted underline after transcription. Click the lightbulb or use Quick Fix to see alternative word suggestions."
+        },
+        "voxpilot.confidenceThreshold": {
+          "type": "number",
+          "default": 0.7,
+          "minimum": 0.1,
+          "maximum": 0.99,
+          "description": "Confidence threshold (0.1–0.99). Words below this score are marked as uncertain. Lower values show fewer indicators."
         },
         "voxpilot.voiceDebugging": {
           "type": "boolean",

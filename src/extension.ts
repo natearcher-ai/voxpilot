@@ -10,6 +10,7 @@ import { showLanguageSelector } from './languageSelector';
 import { createAPI, VoxPilotAPI } from './extensionApi';
 import { OfflineModelManagerPanel } from './offlineModelManagerPanel';
 import { DictationProfileManager, DictationProfileStatusBar } from './dictationProfiles';
+import { ConfidenceIndicatorManager } from './confidenceIndicators';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
@@ -70,6 +71,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
     vscode.commands.registerCommand('voxpilot.browseSnippetMarketplace', () => engine?.browseSnippetMarketplace()),
     vscode.commands.registerCommand('voxpilot.openOfflineModelManager', () => OfflineModelManagerPanel.create(context)),
     vscode.commands.registerCommand('voxpilot.switchDictationProfile', () => engine?.switchDictationProfile()),
+    vscode.commands.registerCommand('voxpilot.dismissConfidenceIndicator', (docUri: string, index: number) => engine?.dismissConfidenceIndicator(docUri, index)),
+    vscode.commands.registerCommand('voxpilot.clearConfidenceIndicators', () => engine?.clearConfidenceIndicators()),
     treeView,
     configWatcher,
     statusBar,
