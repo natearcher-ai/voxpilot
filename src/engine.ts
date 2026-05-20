@@ -24,6 +24,7 @@ import { matchRefactorCommand, executeRefactorCommand } from './voiceRefactoring
 import { matchNavigation, executeNavigation } from './voiceNavigation';
 import { matchGitCommand, executeGitCommand } from './voiceGit';
 import { matchDebugCommand, executeDebugCommand } from './voiceDebugging';
+import { matchTestCommand, executeTestCommand } from './voiceTestRunner';
 import { NeuralNoiseReduction, RNNoiseModule } from './neuralNoiseReduction';
 import { PerformanceCollector, PerformanceDashboardPanel } from './performanceDashboard';
 import { BUILTIN_PACKS, searchPacks, filterByCategory, sortPacks, MacroPack, PackCategory, InstalledPack, getBuiltinPackMacros } from './snippetMarketplace';
@@ -1354,6 +1355,25 @@ export class VoxPilotEngine {
           const success = await executeDebugCommand(debugMatch);
           if (success) {
             this.statusBar.setSent(`🐛 ${debugMatch.trigger}${debugMatch.argument ? ' ' + debugMatch.argument : ''}`);
+          }
+          if (this.isListening) {
+            this.statusBar.setListening();
+          } else {
+            this.statusBar.setIdle();
+          }
+          return;
+        }
+      }
+
+      // Check for voice-driven test runner commands
+      const testConfig = vscode.workspace.getConfiguration('voxpilot');
+      if (testConfig.get<boolean>('voiceTestRunner', true)) {
+        const testMatch = matchTestCommand(text);
+        if (testMatch) {
+          this.log(`Voice test: "${testMatch.trigger}"${testMatch.argument ? ` → "${testMatch.argument}"` : ''}`);
+          const success = await executeTestCommand(testMatch);
+          if (success) {
+            this.statusBar.setSent(`🧪 ${testMatch.trigger}${testMatch.argument ? ' ' + testMatch.argument : ''}`);
           }
           if (this.isListening) {
             this.statusBar.setListening();

@@ -2,6 +2,21 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.80] - 2026-05-20
+
+### Added
+- Voice-driven test runner — control VS Code test execution entirely by voice
+- Run tests: say "run tests", "run all tests", "run current test", "run test file"
+- Re-run failures: say "run failing tests" or "run failed tests" to retry only broken tests
+- Debug tests: say "debug test" (at cursor) or "debug all tests"
+- Stop execution: say "stop tests" or "cancel tests" to abort a running test suite
+- Coverage control: "show coverage", "hide coverage", "toggle coverage" for inline coverage overlays
+- Panel navigation: "show test results", "show test explorer" to focus testing panels
+- Test discovery: "refresh tests" to rescan and rediscover workspace tests
+- Navigation: "go to test <name>" to jump to a test by name, "go to test failure" for next failure
+- Uses VS Code's built-in Testing API commands for maximum compatibility across test frameworks
+- New `voxpilot.voiceTestRunner` setting (default: true) to enable/disable
+
 ## [0.7.78] - 2026-05-19
 
 ### Added
