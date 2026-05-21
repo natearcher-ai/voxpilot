@@ -2,6 +2,21 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.82] - 2026-05-21
+
+### Added
+- Adaptive learning — improve transcription accuracy over time from user corrections
+- Automatically tracks when you correct transcription errors (manual edits within 30s of insertion)
+- Builds a local correction database that learns your voice, vocabulary, and speaking patterns
+- Corrections accumulate strength over repeated occurrences — auto-applied once confident
+- Explicit correction command: "VoxPilot: Record Correction" to teach specific patterns
+- Management panel: "VoxPilot: Manage Adaptive Learning" to view, export, import, or clear learned patterns
+- Strength-based system: corrections need 2+ occurrences and sufficient confidence before auto-applying
+- Time-based decay prevents stale corrections from persisting indefinitely
+- All data stays 100% local (VS Code globalState) — no cloud, no telemetry
+- Export/import corrections as JSON for backup or sharing across machines
+- New settings: `voxpilot.adaptiveLearning` (default: true), `voxpilot.adaptiveLearningAutoApply` (default: true)
+
 ## [0.7.80] - 2026-05-20
 
 ### Added

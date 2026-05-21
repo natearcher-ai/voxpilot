@@ -28,6 +28,7 @@ import { matchTestCommand, executeTestCommand } from './voiceTestRunner';
 import { NeuralNoiseReduction, RNNoiseModule } from './neuralNoiseReduction';
 import { PerformanceCollector, PerformanceDashboardPanel } from './performanceDashboard';
 import { BUILTIN_PACKS, searchPacks, filterByCategory, sortPacks, MacroPack, PackCategory, InstalledPack, getBuiltinPackMacros } from './snippetMarketplace';
+import { AdaptiveLearningStore, AdaptiveLearningProcessor, CorrectionTracker, showAdaptiveLearningPanel } from './adaptiveLearning';
 import { VoxPilotEventEmitter, VoxPilotEvent, TranscriptEvent } from './extensionApi';
 import { correctTranscript, getLlmCorrectionConfig, showCorrectionDiff } from './llmPostCorrection';
 import { DictationProfileManager, DictationProfileStatusBar } from './dictationProfiles';
@@ -94,6 +95,8 @@ export class VoxPilotEngine {
   private dictationProfileManager: DictationProfileManager;
   private dictationProfileStatusBar: DictationProfileStatusBar | undefined;
   private confidenceManager: ConfidenceIndicatorManager;
+  private adaptiveLearningStore: AdaptiveLearningStore;
+  private correctionTracker: CorrectionTracker;
 
   /** Expose pipeline for settings UI */
   get pipeline(): PostProcessingPipeline { return this._pipeline; }
@@ -162,8 +165,14 @@ export class VoxPilotEngine {
     });
     // Confidence indicators
     this.confidenceManager = new ConfidenceIndicatorManager();
+    // Adaptive learning
+    this.adaptiveLearningStore = new AdaptiveLearningStore(context);
+    this.correctionTracker = new CorrectionTracker(this.adaptiveLearningStore);
     this.partialOverlay = new PartialOverlay();
     this._pipeline = new PostProcessingPipeline();
+    // Bind adaptive learning store to the pipeline processor
+    const alProcessor = this._pipeline.getProcessor('adaptiveLearning') as AdaptiveLearningProcessor | undefined;
+    if (alProcessor) { alProcessor.setStore(this.adaptiveLearningStore); }
     // Apply active profile on startup
     this.dictationProfileManager.applyToPipeline(this._pipeline);
     this.voiceLevelEnabled = config.get<boolean>('voiceLevelIndicator', true);
@@ -811,6 +820,29 @@ export class VoxPilotEngine {
   /** Clear all confidence indicators */
   clearConfidenceIndicators(): void {
     this.confidenceManager.clearAll();
+  }
+
+  /** Show adaptive learning management panel */
+  async manageAdaptiveLearning(): Promise<void> {
+    await showAdaptiveLearningPanel(this.adaptiveLearningStore);
+  }
+
+  /** Record an explicit correction (from command palette) */
+  async recordCorrection(): Promise<void> {
+    const original = await vscode.window.showInputBox({
+      prompt: 'What was the incorrect transcription?',
+      placeHolder: 'e.g. "cube control"',
+    });
+    if (!original) { return; }
+
+    const corrected = await vscode.window.showInputBox({
+      prompt: 'What should it be?',
+      placeHolder: 'e.g. "kubectl"',
+    });
+    if (!corrected) { return; }
+
+    await this.correctionTracker.recordExplicitCorrection(original, corrected);
+    vscode.window.showInformationMessage(`VoxPilot: Learned "${original}" → "${corrected}"`);
   }
 
   async sendLastToChat(): Promise<void> {
@@ -2034,6 +2066,7 @@ export class VoxPilotEngine {
     if (this.dictationProfileStatusBar) { this.dictationProfileStatusBar.dispose(); }
     this.dictationProfileManager.dispose();
     this.confidenceManager.dispose();
+    this.correctionTracker.dispose();
     this.disposables.forEach(d => d.dispose());
     this.disposables = [];
     // Fire-and-forget async cleanup

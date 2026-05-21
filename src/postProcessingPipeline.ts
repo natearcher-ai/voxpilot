@@ -17,6 +17,7 @@ import { PrefixCommandsProcessor } from './prefixCommands';
 import { AutoVocabularyProcessor } from './autoVocabulary';
 import { SmartInsertProcessor } from './smartInsert';
 import { VocabularyBoostProcessor } from './vocabularyBoost';
+import { AdaptiveLearningProcessor } from './adaptiveLearning';
 
 /**
  * Context passed to each processor — includes raw segments and metadata
@@ -231,6 +232,7 @@ const DEFAULT_ORDER: string[] = [
   'autoVocabulary',
   'codeVocabulary',
   'vocabularyBoost',
+  'adaptiveLearning',
   'smartInsert',
   'autoPunctuation',
   'autoCapitalize',
@@ -250,6 +252,7 @@ const BUILTIN_PROCESSORS: PostProcessor[] = [
   new AutoVocabularyProcessor(),
   new CodeVocabularyProcessor(),
   new VocabularyBoostProcessor(),
+  new AdaptiveLearningProcessor(),
   new SmartInsertProcessor(),
   new AutoPunctuationProcessor(),
   new AutoCapitalizeProcessor(),
@@ -379,6 +382,11 @@ export class PostProcessingPipeline {
   /** Check if a specific processor is enabled */
   isEnabled(id: string): boolean {
     return this.processors.has(id) && !this.disabled.has(id);
+  }
+
+  /** Get a processor by id (for external configuration) */
+  getProcessor(id: string): PostProcessor | undefined {
+    return this.processors.get(id);
   }
 
   /** Programmatically enable or disable a processor (used by dictation profiles) */

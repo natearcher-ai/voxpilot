@@ -73,6 +73,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
     vscode.commands.registerCommand('voxpilot.switchDictationProfile', () => engine?.switchDictationProfile()),
     vscode.commands.registerCommand('voxpilot.dismissConfidenceIndicator', (docUri: string, index: number) => engine?.dismissConfidenceIndicator(docUri, index)),
     vscode.commands.registerCommand('voxpilot.clearConfidenceIndicators', () => engine?.clearConfidenceIndicators()),
+    vscode.commands.registerCommand('voxpilot.manageAdaptiveLearning', () => engine?.manageAdaptiveLearning()),
+    vscode.commands.registerCommand('voxpilot.recordCorrection', () => engine?.recordCorrection()),
     treeView,
     configWatcher,
     statusBar,
