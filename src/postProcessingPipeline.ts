@@ -18,6 +18,7 @@ import { AutoVocabularyProcessor } from './autoVocabulary';
 import { SmartInsertProcessor } from './smartInsert';
 import { VocabularyBoostProcessor } from './vocabularyBoost';
 import { AdaptiveLearningProcessor } from './adaptiveLearning';
+import { TeamVocabularySyncProcessor } from './teamVocabularySync';
 
 /**
  * Context passed to each processor — includes raw segments and metadata
@@ -229,6 +230,7 @@ const DEFAULT_ORDER: string[] = [
   'customVoiceCommands',
   'fixTypos',
   'fillerWordRemoval',
+  'teamVocabularySync',
   'autoVocabulary',
   'codeVocabulary',
   'vocabularyBoost',
@@ -249,6 +251,7 @@ const BUILTIN_PROCESSORS: PostProcessor[] = [
   new CustomVoiceCommandsProcessor(),
   new FixTyposProcessor(),
   new FillerWordRemovalProcessor(),
+  new TeamVocabularySyncProcessor(),
   new AutoVocabularyProcessor(),
   new CodeVocabularyProcessor(),
   new VocabularyBoostProcessor(),

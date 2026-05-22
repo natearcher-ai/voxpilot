@@ -11,6 +11,7 @@ import { createAPI, VoxPilotAPI } from './extensionApi';
 import { OfflineModelManagerPanel } from './offlineModelManagerPanel';
 import { DictationProfileManager, DictationProfileStatusBar } from './dictationProfiles';
 import { ConfidenceIndicatorManager } from './confidenceIndicators';
+import { initializeTeamVocabulary, exportToTeamVocabulary } from './teamVocabularySync';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
@@ -75,6 +76,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
     vscode.commands.registerCommand('voxpilot.clearConfidenceIndicators', () => engine?.clearConfidenceIndicators()),
     vscode.commands.registerCommand('voxpilot.manageAdaptiveLearning', () => engine?.manageAdaptiveLearning()),
     vscode.commands.registerCommand('voxpilot.recordCorrection', () => engine?.recordCorrection()),
+    vscode.commands.registerCommand('voxpilot.initTeamVocabulary', () => initializeTeamVocabulary()),
+    vscode.commands.registerCommand('voxpilot.exportToTeamVocabulary', () => exportToTeamVocabulary()),
     treeView,
     configWatcher,
     statusBar,

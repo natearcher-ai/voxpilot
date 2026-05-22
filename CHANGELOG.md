@@ -2,6 +2,22 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.83] - 2026-05-22
+
+### Added
+- Team vocabulary sync — share custom vocab lists via workspace settings or git
+- Place a `.voxpilot/vocabulary.json` file in your workspace root to define shared vocabulary
+- Corrections: map spoken/misrecognized forms to correct terms (same as customVocabulary but shared)
+- Boost entries: prioritize domain-specific terms with weights and phoneme hints (same as vocabularyBoost but shared)
+- Multi-root workspace support — vocabulary files from all workspace folders are merged
+- File watcher: vocabulary reloads automatically when the JSON file is edited
+- "VoxPilot: Initialize Team Vocabulary" command to scaffold the file with a template
+- "VoxPilot: Export to Team Vocabulary" command to export personal vocab entries to the shared file
+- Validation with clear error messages for malformed vocabulary files
+- User-level settings (customVocabulary, vocabularyBoost) take priority over team vocabulary
+- New `voxpilot.teamVocabularySync` setting (default: true) to enable/disable
+- Commit `.voxpilot/vocabulary.json` to git so the whole team benefits from shared terminology
+
 ## [0.7.82] - 2026-05-21
 
 ### Added
