@@ -160,6 +160,10 @@ Speak these during dictation for hands-free formatting:
 - **Voice refactoring** — Say "rename", "extract function", "organize imports"
 - **Multi-file navigation** — "Go to file auth.ts", "go to function handleLogin"
 - **Voice-driven git** — "Commit", "push", "checkout main" by voice
+- **Voice-driven terminal** — "Run npm test", "cd src", "clear terminal" by voice with safety checks
+- **Voice templates** — "React component UserCard", "express route users" to scaffold code
+- **AI assistant shortcuts** — "Ask Copilot", "Hey Kiro", "explain this" triggers AI assistants
+- **Voice journaling** — "Note", "todo", "bug" to capture dev notes linked to file/branch/commit
 
 ### Audio Processing
 - **Adaptive noise reduction** — Auto-calibrating noise gate with 5 sensitivity presets
@@ -177,8 +181,12 @@ Speak these during dictation for hands-free formatting:
 - **Offline model manager** — Download, cache, and switch ASR models from a built-in panel
 - **Multi-language profiles** — Switch languages with model suggestions per profile
 - **Snippet marketplace** — Community-shared voice macro packs
-- **Extension API** — Public hooks for other extensions to integrate with VoxPilot
-- **Accessibility** — ARIA labels, screen reader support, high contrast mode
+- **Extension API** — Public hooks for other extensions to register processors, commands, and metrics
+- **Privacy dashboard** — See exactly what's processed locally vs cloud, audit trail, data retention controls
+- **Transcription export** — Export sessions as markdown, JSON, SRT subtitles, or plain text
+- **Remote pair voice** — Share voice commands with pair programming partners via Live Share
+- **Custom wake words** — Train personalized wake word detection locally (DTW matching)
+- **Accessibility** — ARIA labels, screen reader support, high contrast mode, voice-triggered audit
 
 ### IDE Support
 - **VS Code** — Full support
