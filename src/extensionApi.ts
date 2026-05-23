@@ -5,14 +5,17 @@
  * Allows third-party extensions to:
  *   - Listen for transcription events (start, partial, complete, error)
  *   - Register custom post-processors in the pipeline
+ *   - Register custom voice commands
  *   - Trigger recording programmatically
  *   - Query VoxPilot state (listening, model, language)
+ *   - Access pipeline diagnostics and metrics
  *
  * Usage by other extensions:
  *   const voxpilot = vscode.extensions.getExtension('natearcher-ai.voxpilot');
  *   const api = voxpilot?.exports;
  *   api.onTranscript((text) => { ... });
- *   api.registerProcessor({ id: 'my-processor', ... });
+ *   api.registerProcessor({ id: 'my-processor', process: (text, ctx) => text.toUpperCase() });
+ *   api.registerCommand({ phrase: 'deploy app', action: 'command', command: 'myext.deploy' });
  *
  * Enable via `voxpilot.extensionApi` setting (default: true).
  */
@@ -58,6 +61,52 @@ export interface ErrorEvent extends VoxPilotEvent {
 /** Callback type for event listeners */
 export type EventListener<T extends VoxPilotEvent = VoxPilotEvent> = (event: T) => void;
 
+/** External processor definition for third-party extensions */
+export interface ExternalProcessor {
+  /** Unique processor ID (must not conflict with built-ins) */
+  id: string;
+  /** Human-readable name */
+  name: string;
+  /** Processing function: receives text and context, returns transformed text */
+  process: (text: string, context: { language?: string; fileType?: string }) => string;
+  /** Optional priority (higher = runs later). Default: 100 */
+  priority?: number;
+  /** Optional description for UI display */
+  description?: string;
+}
+
+/** External voice command definition */
+export interface ExternalVoiceCommand {
+  /** The spoken phrase to match (case-insensitive) */
+  phrase: string;
+  /** Action: "insert" replaces phrase with text, "command" runs a VS Code command, "callback" invokes a function */
+  action: 'insert' | 'command' | 'callback';
+  /** Replacement text for "insert" actions */
+  text?: string;
+  /** VS Code command ID for "command" actions */
+  command?: string;
+  /** Arguments for "command" actions */
+  args?: unknown;
+  /** Callback function for "callback" actions */
+  callback?: () => void | Promise<void>;
+  /** Description for UI display */
+  description?: string;
+}
+
+/** Pipeline metrics snapshot */
+export interface PipelineMetrics {
+  /** Total transcriptions processed */
+  totalProcessed: number;
+  /** Average processing time in ms */
+  avgProcessingMs: number;
+  /** Registered processor count (built-in + external) */
+  processorCount: number;
+  /** External processor count */
+  externalProcessorCount: number;
+  /** Registered external command count */
+  externalCommandCount: number;
+}
+
 /**
  * Public API surface exposed to other extensions via `exports`.
  */
@@ -88,6 +137,38 @@ export interface VoxPilotAPI {
 
   /** Get the last transcript */
   getLastTranscript(): string | undefined;
+
+  /**
+   * Register a custom post-processor in the pipeline.
+   * Returns a Disposable to unregister it.
+   */
+  registerProcessor(processor: ExternalProcessor): vscode.Disposable;
+
+  /**
+   * Register a custom voice command.
+   * Returns a Disposable to unregister it.
+   */
+  registerCommand(command: ExternalVoiceCommand): vscode.Disposable;
+
+  /**
+   * Unregister a previously registered processor by ID.
+   */
+  unregisterProcessor(id: string): void;
+
+  /**
+   * Unregister a previously registered command by phrase.
+   */
+  unregisterCommand(phrase: string): void;
+
+  /**
+   * Get pipeline metrics and diagnostics.
+   */
+  getMetrics(): PipelineMetrics;
+
+  /**
+   * List all registered processors (built-in and external).
+   */
+  listProcessors(): Array<{ id: string; name: string; external: boolean; enabled: boolean }>;
 }
 
 /**
@@ -174,7 +255,18 @@ export function createAPI(
   getState: () => { isRecording: boolean; model: string; language: string; lastTranscript?: string },
   controls: { start: () => Promise<void>; stop: () => Promise<void> },
   version: string,
+  pipeline?: { register: (p: { id: string; name: string; process: (text: string, ctx: unknown) => string }) => void; unregister?: (id: string) => void; getProcessorInfo: () => Array<{ id: string; name?: string; enabled: boolean }> },
 ): VoxPilotAPI {
+  const externalProcessors = new Map<string, ExternalProcessor>();
+  const externalCommands = new Map<string, ExternalVoiceCommand>();
+  let totalProcessed = 0;
+  let totalProcessingMs = 0;
+
+  // Track transcriptions for metrics
+  emitter.on('transcript-complete', () => {
+    totalProcessed++;
+  });
+
   return {
     get version() { return version; },
     get isRecording() { return getState().isRecording; },
@@ -199,6 +291,103 @@ export function createAPI(
 
     getLastTranscript() {
       return getState().lastTranscript;
+    },
+
+    registerProcessor(processor: ExternalProcessor): vscode.Disposable {
+      if (!processor.id || !processor.process) {
+        throw new Error('Processor must have an id and process function');
+      }
+      if (externalProcessors.has(processor.id)) {
+        throw new Error(`Processor "${processor.id}" is already registered`);
+      }
+
+      externalProcessors.set(processor.id, processor);
+
+      // Register in the actual pipeline if available
+      if (pipeline) {
+        const priority = processor.priority ?? 100;
+        pipeline.register({
+          id: processor.id,
+          name: processor.name,
+          process: (text: string, ctx: unknown) => {
+            const start = Date.now();
+            try {
+              const result = processor.process(text, ctx as { language?: string; fileType?: string });
+              totalProcessingMs += Date.now() - start;
+              return result;
+            } catch {
+              // External processor errors should not crash the pipeline
+              return text;
+            }
+          },
+        });
+      }
+
+      return {
+        dispose: () => {
+          externalProcessors.delete(processor.id);
+          if (pipeline?.unregister) {
+            pipeline.unregister(processor.id);
+          }
+        },
+      };
+    },
+
+    registerCommand(command: ExternalVoiceCommand): vscode.Disposable {
+      if (!command.phrase) {
+        throw new Error('Command must have a phrase');
+      }
+      const key = command.phrase.toLowerCase();
+      if (externalCommands.has(key)) {
+        throw new Error(`Command for phrase "${command.phrase}" is already registered`);
+      }
+
+      externalCommands.set(key, command);
+
+      return {
+        dispose: () => {
+          externalCommands.delete(key);
+        },
+      };
+    },
+
+    unregisterProcessor(id: string): void {
+      externalProcessors.delete(id);
+      if (pipeline?.unregister) {
+        pipeline.unregister(id);
+      }
+    },
+
+    unregisterCommand(phrase: string): void {
+      externalCommands.delete(phrase.toLowerCase());
+    },
+
+    getMetrics(): PipelineMetrics {
+      return {
+        totalProcessed,
+        avgProcessingMs: totalProcessed > 0 ? totalProcessingMs / totalProcessed : 0,
+        processorCount: (pipeline?.getProcessorInfo().length ?? 0) + externalProcessors.size,
+        externalProcessorCount: externalProcessors.size,
+        externalCommandCount: externalCommands.size,
+      };
+    },
+
+    listProcessors(): Array<{ id: string; name: string; external: boolean; enabled: boolean }> {
+      const builtIn = pipeline?.getProcessorInfo().map(p => ({
+        id: p.id,
+        name: p.name ?? p.id,
+        external: externalProcessors.has(p.id),
+        enabled: p.enabled,
+      })) ?? [];
+
+      // Add any external processors not yet in pipeline info
+      for (const [id, proc] of externalProcessors) {
+        if (!builtIn.find(b => b.id === id)) {
+          builtIn.push({ id, name: proc.name, external: true, enabled: true });
+        }
+      }
+
+      return builtIn;
     },
   };
 }

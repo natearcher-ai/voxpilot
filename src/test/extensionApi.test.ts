@@ -123,4 +123,152 @@ describe('createAPI', () => {
     await api.startRecording();
     expect(started).toBe(true);
   });
+
+  it('registerProcessor adds external processor and returns disposable', () => {
+    const emitter = new VoxPilotEventEmitter();
+    const registered: Array<{ id: string }> = [];
+    const mockPipeline = {
+      register: (p: { id: string }) => { registered.push(p); },
+      unregister: (id: string) => { registered.splice(registered.findIndex(r => r.id === id), 1); },
+      getProcessorInfo: () => registered.map(r => ({ id: r.id, name: r.id, enabled: true })),
+    };
+    const api = createAPI(
+      emitter,
+      () => ({ isRecording: false, model: 'moonshine-base', language: 'en' }),
+      { start: async () => {}, stop: async () => {} },
+      '0.7.85',
+      mockPipeline,
+    );
+
+    const disposable = api.registerProcessor({
+      id: 'ext-upper',
+      name: 'Uppercase',
+      process: (text) => text.toUpperCase(),
+    });
+
+    expect(registered.length).toBe(1);
+    expect(registered[0].id).toBe('ext-upper');
+
+    disposable.dispose();
+    expect(registered.length).toBe(0);
+  });
+
+  it('registerProcessor throws on duplicate id', () => {
+    const emitter = new VoxPilotEventEmitter();
+    const api = createAPI(
+      emitter,
+      () => ({ isRecording: false, model: 'moonshine-base', language: 'en' }),
+      { start: async () => {}, stop: async () => {} },
+      '0.7.85',
+    );
+
+    api.registerProcessor({ id: 'ext-test', name: 'Test', process: (t) => t });
+    expect(() => api.registerProcessor({ id: 'ext-test', name: 'Test2', process: (t) => t }))
+      .toThrow('already registered');
+  });
+
+  it('registerCommand adds command and unregisterCommand removes it', () => {
+    const emitter = new VoxPilotEventEmitter();
+    const api = createAPI(
+      emitter,
+      () => ({ isRecording: false, model: 'moonshine-base', language: 'en' }),
+      { start: async () => {}, stop: async () => {} },
+      '0.7.85',
+    );
+
+    const disposable = api.registerCommand({
+      phrase: 'deploy app',
+      action: 'command',
+      command: 'myext.deploy',
+      description: 'Deploy the application',
+    });
+
+    expect(api.getMetrics().externalCommandCount).toBe(1);
+
+    disposable.dispose();
+    expect(api.getMetrics().externalCommandCount).toBe(0);
+  });
+
+  it('registerCommand throws on duplicate phrase', () => {
+    const emitter = new VoxPilotEventEmitter();
+    const api = createAPI(
+      emitter,
+      () => ({ isRecording: false, model: 'moonshine-base', language: 'en' }),
+      { start: async () => {}, stop: async () => {} },
+      '0.7.85',
+    );
+
+    api.registerCommand({ phrase: 'hello', action: 'insert', text: 'hi' });
+    expect(() => api.registerCommand({ phrase: 'Hello', action: 'insert', text: 'hey' }))
+      .toThrow('already registered');
+  });
+
+  it('getMetrics returns correct counts', () => {
+    const emitter = new VoxPilotEventEmitter();
+    const mockPipeline = {
+      register: () => {},
+      unregister: () => {},
+      getProcessorInfo: () => [
+        { id: 'builtin1', name: 'Built-in 1', enabled: true },
+        { id: 'builtin2', name: 'Built-in 2', enabled: true },
+      ],
+    };
+    const api = createAPI(
+      emitter,
+      () => ({ isRecording: false, model: 'moonshine-base', language: 'en' }),
+      { start: async () => {}, stop: async () => {} },
+      '0.7.85',
+      mockPipeline,
+    );
+
+    api.registerProcessor({ id: 'ext-1', name: 'Ext 1', process: (t) => t });
+    api.registerCommand({ phrase: 'test cmd', action: 'insert', text: 'x' });
+
+    const metrics = api.getMetrics();
+    expect(metrics.externalProcessorCount).toBe(1);
+    expect(metrics.externalCommandCount).toBe(1);
+    expect(metrics.processorCount).toBe(3); // 2 built-in + 1 external
+  });
+
+  it('listProcessors includes both built-in and external', () => {
+    const emitter = new VoxPilotEventEmitter();
+    const mockPipeline = {
+      register: () => {},
+      unregister: () => {},
+      getProcessorInfo: () => [
+        { id: 'builtin1', name: 'Built-in 1', enabled: true },
+      ],
+    };
+    const api = createAPI(
+      emitter,
+      () => ({ isRecording: false, model: 'moonshine-base', language: 'en' }),
+      { start: async () => {}, stop: async () => {} },
+      '0.7.85',
+      mockPipeline,
+    );
+
+    api.registerProcessor({ id: 'ext-fmt', name: 'Formatter', process: (t) => t });
+
+    const list = api.listProcessors();
+    expect(list.length).toBe(2);
+    expect(list.find(p => p.id === 'builtin1')?.external).toBe(false);
+    expect(list.find(p => p.id === 'ext-fmt')?.external).toBe(true);
+    expect(list.find(p => p.id === 'ext-fmt')?.name).toBe('Formatter');
+  });
+
+  it('unregisterProcessor removes by id', () => {
+    const emitter = new VoxPilotEventEmitter();
+    const api = createAPI(
+      emitter,
+      () => ({ isRecording: false, model: 'moonshine-base', language: 'en' }),
+      { start: async () => {}, stop: async () => {} },
+      '0.7.85',
+    );
+
+    api.registerProcessor({ id: 'ext-rm', name: 'Removable', process: (t) => t });
+    expect(api.getMetrics().externalProcessorCount).toBe(1);
+
+    api.unregisterProcessor('ext-rm');
+    expect(api.getMetrics().externalProcessorCount).toBe(0);
+  });
 });
