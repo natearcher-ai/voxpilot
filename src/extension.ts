@@ -12,6 +12,7 @@ import { OfflineModelManagerPanel } from './offlineModelManagerPanel';
 import { DictationProfileManager, DictationProfileStatusBar } from './dictationProfiles';
 import { ConfidenceIndicatorManager } from './confidenceIndicators';
 import { initializeTeamVocabulary, exportToTeamVocabulary } from './teamVocabularySync';
+import { registerAiCodeGenerationCommand } from './aiCodeGeneration';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
@@ -78,6 +79,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
     vscode.commands.registerCommand('voxpilot.recordCorrection', () => engine?.recordCorrection()),
     vscode.commands.registerCommand('voxpilot.initTeamVocabulary', () => initializeTeamVocabulary()),
     vscode.commands.registerCommand('voxpilot.exportToTeamVocabulary', () => exportToTeamVocabulary()),
+    registerAiCodeGenerationCommand(context),
     treeView,
     configWatcher,
     statusBar,

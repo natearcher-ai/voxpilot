@@ -2,7 +2,7 @@
   "name": "voxpilot",
   "displayName": "VoxPilot — Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
-  "version": "0.7.83",
+  "version": "0.7.84",
   "publisher": "natearcher-ai",
   "license": "MIT",
   "repository": {
@@ -233,6 +233,11 @@
       {
         "command": "voxpilot.exportToTeamVocabulary",
         "title": "VoxPilot: Export to Team Vocabulary"
+      },
+      {
+        "command": "voxpilot.aiCodeGeneration",
+        "title": "VoxPilot: AI Code Generation",
+        "icon": "$(sparkle)"
       }
     ],
     "keybindings": [
@@ -875,6 +880,33 @@
           "type": "boolean",
           "default": true,
           "description": "Enable team vocabulary sync — load shared vocabulary from .voxpilot/vocabulary.json in the workspace root. Commit this file to git to share with your team."
+        },
+        "voxpilot.aiCodeGeneration": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable AI code generation mode — say 'create a function that...' to generate code via Copilot/LLM. Requires VS Code Language Model API (Copilot or compatible extension)."
+        },
+        "voxpilot.aiCodeGenerationContextLines": {
+          "type": "number",
+          "default": 30,
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Number of lines around the cursor to include as context for AI code generation."
+        },
+        "voxpilot.aiCodeGenerationModel": {
+          "type": "string",
+          "default": "",
+          "description": "Preferred language model family for code generation (e.g. 'copilot', 'gpt-4o'). Leave empty to use any available model."
+        },
+        "voxpilot.aiCodeGenerationInsertMode": {
+          "type": "string",
+          "default": "cursor",
+          "enum": ["cursor", "newFile"],
+          "enumDescriptions": [
+            "Insert generated code at the current cursor position",
+            "Open generated code in a new untitled file"
+          ],
+          "description": "Where to place generated code — at the cursor or in a new file."
         },
         "voxpilot.dictationProfiles.active": {
           "type": "string",

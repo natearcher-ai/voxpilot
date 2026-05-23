@@ -2,6 +2,22 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.84] - 2026-05-23
+
+### Added
+- AI code generation mode — say "create a function that..." to generate code via Copilot/LLM
+- Voice-triggered code generation: say "create", "generate", "write", "implement", "scaffold", or "add" followed by a description
+- Supports functions, classes, methods, interfaces, components, and types
+- Uses VS Code's Language Model API (Copilot or compatible extension) for generation
+- Editor context awareness: includes surrounding code and language for better results
+- Automatic markdown fence stripping and code formatting after insertion
+- Progress notification with cancellation support during generation
+- Insert at cursor (default) or open in a new file via `aiCodeGenerationInsertMode`
+- Manual trigger command: "VoxPilot: AI Code Generation" with input box for typed prompts
+- Configurable context window size (`aiCodeGenerationContextLines`, default: 30)
+- Model preference setting (`aiCodeGenerationModel`) for choosing specific LLM families
+- New `voxpilot.aiCodeGeneration` setting (default: false — opt-in to avoid accidental triggers)
+
 ## [0.7.83] - 2026-05-22
 
 ### Added
