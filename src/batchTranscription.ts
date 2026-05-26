@@ -182,7 +182,13 @@ export class BatchTranscriptionManager {
 
     const fileName = filePath.split('/').pop() || filePath;
     const ext = filePath.slice(filePath.lastIndexOf('.'));
-    const fileSizeBytes = 0; // Would be read from fs in production
+    let fileSizeBytes = 0;
+    try {
+      const fs = require('fs');
+      fileSizeBytes = fs.statSync(filePath).size;
+    } catch {
+      // File may not be accessible yet — estimate later
+    }
 
     const job: TranscriptionJob = {
       id: `batch-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,

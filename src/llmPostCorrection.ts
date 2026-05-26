@@ -150,7 +150,13 @@ export async function correctTranscript(
 
     const messages = [vscode.LanguageModelChatMessage.User(prompt)];
 
-    const response = await model.sendRequest(messages, {}, new vscode.CancellationTokenSource().token);
+    const cts = new vscode.CancellationTokenSource();
+    let response;
+    try {
+      response = await model.sendRequest(messages, {}, cts.token);
+    } finally {
+      cts.dispose();
+    }
 
     // Collect the streamed response
     let corrected = '';
@@ -182,9 +188,8 @@ export async function correctTranscript(
     };
   } catch (err) {
     // Silently fall back to original on any error (model unavailable, rate limit, etc.)
-    const outputChannel = vscode.window.createOutputChannel('VoxPilot', { log: true });
-    outputChannel.warn(`LLM post-correction failed: ${err instanceof Error ? err.message : String(err)}`);
-    outputChannel.dispose();
+    // Note: avoid creating an OutputChannel here as it leaks if called frequently.
+    // The engine's own output channel handles logging.
     return { original: transcript, corrected: transcript, changed: false };
   }
 }

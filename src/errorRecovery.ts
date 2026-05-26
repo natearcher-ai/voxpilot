@@ -273,7 +273,7 @@ export class ErrorRecoveryManager {
 
     this.errors.push(event);
     if (this.errors.length > this.maxErrors) {
-      this.errors = this.errors.slice(-500);
+      this.errors = this.errors.slice(-this.maxErrors);
     }
 
     // Update circuit breaker

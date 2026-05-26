@@ -220,19 +220,33 @@ export function applyCase(text: string, style: GrammarRules['identifierCase']): 
   }
 }
 
+/** Precompiled keyword patterns cache (per language) */
+const _keywordPatternCache = new Map<string, { upper: Array<[RegExp, string]>; lower: Array<[RegExp, string]> }>();
+
+function getCompiledKeywords(rules: GrammarRules): { upper: Array<[RegExp, string]>; lower: Array<[RegExp, string]> } {
+  const cached = _keywordPatternCache.get(rules.languageId);
+  if (cached) { return cached; }
+
+  const upper = rules.uppercaseKeywords.map(k => [new RegExp(`\\b${k}\\b`, 'gi'), k] as [RegExp, string]);
+  const lower = rules.lowercaseKeywords.map(k => [new RegExp(`\\b${k}\\b`, 'gi'), k] as [RegExp, string]);
+  const entry = { upper, lower };
+  _keywordPatternCache.set(rules.languageId, entry);
+  return entry;
+}
+
 /**
  * Apply keyword casing rules to text.
+ * Uses precompiled regex patterns for performance.
  */
 export function applyKeywordCasing(text: string, rules: GrammarRules): string {
   let result = text;
+  const { upper, lower } = getCompiledKeywords(rules);
 
-  for (const keyword of rules.uppercaseKeywords) {
-    const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+  for (const [regex, keyword] of upper) {
     result = result.replace(regex, keyword);
   }
 
-  for (const keyword of rules.lowercaseKeywords) {
-    const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+  for (const [regex, keyword] of lower) {
     result = result.replace(regex, keyword);
   }
 

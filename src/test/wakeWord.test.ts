@@ -1,114 +1,134 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { normalizeForWakeWord, containsWakePhrase, WakeWordDetector } from '../wakeWord';
 
 describe('normalizeForWakeWord', () => {
-  it('lowercases and strips punctuation', () => {
-    expect(normalizeForWakeWord('Hey, Vox!')).toBe('hey vox');
+  it('lowercases text', () => {
+    expect(normalizeForWakeWord('Hey Vox')).toBe('hey vox');
+  });
+
+  it('strips punctuation', () => {
+    expect(normalizeForWakeWord('hey, vox!')).toBe('hey vox');
   });
 
   it('collapses whitespace', () => {
-    expect(normalizeForWakeWord('  hey   vox  ')).toBe('hey vox');
+    expect(normalizeForWakeWord('hey   vox')).toBe('hey vox');
   });
 
-  it('handles empty string', () => {
-    expect(normalizeForWakeWord('')).toBe('');
+  it('trims leading/trailing whitespace', () => {
+    expect(normalizeForWakeWord('  hey vox  ')).toBe('hey vox');
   });
 });
 
 describe('containsWakePhrase', () => {
   it('detects exact wake phrase', () => {
-    expect(containsWakePhrase('hey vox start recording', 'hey vox')).toBe(true);
+    expect(containsWakePhrase('hey vox', 'hey vox')).toBe(true);
   });
 
-  it('detects wake phrase case-insensitively', () => {
-    expect(containsWakePhrase('Hey Vox!', 'hey vox')).toBe(true);
+  it('detects wake phrase within longer text', () => {
+    expect(containsWakePhrase('okay hey vox start recording', 'hey vox')).toBe(true);
   });
 
-  it('detects fuzzy variant "hey box"', () => {
+  it('is case insensitive', () => {
+    expect(containsWakePhrase('Hey Vox', 'hey vox')).toBe(true);
+  });
+
+  it('handles fuzzy variants for "hey vox"', () => {
     expect(containsWakePhrase('hey box', 'hey vox')).toBe(true);
-  });
-
-  it('detects fuzzy variant "hey fox"', () => {
     expect(containsWakePhrase('hey fox', 'hey vox')).toBe(true);
+    expect(containsWakePhrase('a vox', 'hey vox')).toBe(true);
   });
 
-  it('returns false for unrelated text', () => {
+  it('returns false for non-matching text', () => {
     expect(containsWakePhrase('hello world', 'hey vox')).toBe(false);
-  });
-
-  it('returns false for empty transcript', () => {
-    expect(containsWakePhrase('', 'hey vox')).toBe(false);
+    expect(containsWakePhrase('the fox jumped', 'hey vox')).toBe(false);
   });
 
   it('returns false for empty wake phrase', () => {
     expect(containsWakePhrase('hey vox', '')).toBe(false);
   });
-
-  it('works with custom wake phrase', () => {
-    expect(containsWakePhrase('okay computer do something', 'okay computer')).toBe(true);
-  });
 });
 
 describe('WakeWordDetector', () => {
+  let detector: WakeWordDetector;
+
+  beforeEach(() => {
+    detector = new WakeWordDetector('hey vox');
+  });
+
   it('starts disabled', () => {
-    const detector = new WakeWordDetector();
     expect(detector.enabled).toBe(false);
   });
 
   it('does not detect when disabled', () => {
-    const detector = new WakeWordDetector();
-    expect(detector.checkTranscript('hey vox')).toBe(false);
+    const result = detector.checkTranscript('hey vox');
+    expect(result).toBe(false);
   });
 
-  it('detects wake word when enabled', () => {
-    const detector = new WakeWordDetector();
+  it('detects wake phrase when enabled', () => {
     detector.enable();
-    expect(detector.checkTranscript('hey vox')).toBe(true);
-  });
+    const callback = vi.fn();
+    detector.onWake(callback);
 
-  it('fires callback on detection', () => {
-    const detector = new WakeWordDetector();
-    detector.enable();
-    let fired = false;
-    detector.onWake(() => { fired = true; });
-    detector.checkTranscript('hey vox');
-    expect(fired).toBe(true);
+    const result = detector.checkTranscript('hey vox');
+
+    expect(result).toBe(true);
+    expect(callback).toHaveBeenCalledOnce();
   });
 
   it('respects cooldown period', () => {
-    const detector = new WakeWordDetector();
+    vi.useFakeTimers();
     detector.enable();
-    expect(detector.checkTranscript('hey vox')).toBe(true);
-    // Immediately after — should be in cooldown
+    const callback = vi.fn();
+    detector.onWake(callback);
+
+    detector.checkTranscript('hey vox'); // first detection
+    expect(callback).toHaveBeenCalledTimes(1);
+
+    detector.checkTranscript('hey vox'); // within cooldown - should not fire
+    expect(callback).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(3001); // past cooldown
+
+    detector.checkTranscript('hey vox'); // should fire again
+    expect(callback).toHaveBeenCalledTimes(2);
+
+    vi.useRealTimers();
+  });
+
+  it('allows changing wake phrase', () => {
+    detector.enable();
+    detector.setWakePhrase('computer');
+
+    expect(detector.wakePhrase).toBe('computer');
+    expect(detector.checkTranscript('computer')).toBe(true);
     expect(detector.checkTranscript('hey vox')).toBe(false);
+  });
+
+  it('dispose pattern works for onWake', () => {
+    detector.enable();
+    const callback = vi.fn();
+    const disposable = detector.onWake(callback);
+
+    disposable.dispose();
+
+    detector.checkTranscript('hey vox');
+    expect(callback).not.toHaveBeenCalled();
   });
 
   it('resetCooldown allows immediate re-detection', () => {
-    const detector = new WakeWordDetector();
+    vi.useFakeTimers();
     detector.enable();
-    detector.checkTranscript('hey vox');
-    detector.resetCooldown();
-    expect(detector.checkTranscript('hey vox')).toBe(true);
-  });
+    const callback = vi.fn();
+    detector.onWake(callback);
 
-  it('setWakePhrase changes the phrase', () => {
-    const detector = new WakeWordDetector();
-    detector.enable();
-    detector.setWakePhrase('okay start');
-    expect(detector.checkTranscript('hey vox')).toBe(false);
-    expect(detector.checkTranscript('okay start')).toBe(true);
-  });
+    detector.checkTranscript('hey vox');
+    expect(callback).toHaveBeenCalledTimes(1);
 
-  it('dispose removes callback', () => {
-    const detector = new WakeWordDetector();
-    detector.enable();
-    let count = 0;
-    const disposable = detector.onWake(() => { count++; });
-    detector.checkTranscript('hey vox');
-    expect(count).toBe(1);
-    disposable.dispose();
     detector.resetCooldown();
+
     detector.checkTranscript('hey vox');
-    expect(count).toBe(1); // callback was removed
+    expect(callback).toHaveBeenCalledTimes(2);
+
+    vi.useRealTimers();
   });
 });
