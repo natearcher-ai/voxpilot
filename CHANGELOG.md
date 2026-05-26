@@ -2,6 +2,19 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.119] - 2026-05-26
+
+### Added
+- Privacy dashboard — see exactly what data is processed locally vs sent to the cloud
+- Visual breakdown of all features by privacy classification (local/cloud/hybrid)
+- Data retention controls: auto-delete transcripts and audit logs after configurable days
+- Cloud interaction audit log: tracks what was sent, where, when, and how much
+- One-click purge of all stored transcripts and audit data
+- Export full privacy report as JSON for compliance or personal review
+- Privacy ratio stats: see your local vs cloud processing percentage at a glance
+- New settings: `voxpilot.privacyDashboard`, `voxpilot.privacy.transcriptRetentionDays`, `voxpilot.privacy.auditRetentionDays`, `voxpilot.privacy.maxStoredTranscripts`, `voxpilot.privacy.storeTranscripts`
+- Command: "VoxPilot: Privacy Dashboard" to open the panel
+
 ## [0.7.84] - 2026-05-23
 
 ### Added

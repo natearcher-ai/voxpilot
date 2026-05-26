@@ -13,6 +13,7 @@ import { DictationProfileManager, DictationProfileStatusBar } from './dictationP
 import { ConfidenceIndicatorManager } from './confidenceIndicators';
 import { initializeTeamVocabulary, exportToTeamVocabulary } from './teamVocabularySync';
 import { registerAiCodeGenerationCommand } from './aiCodeGeneration';
+import { privacyDashboard } from './privacyDashboard';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
@@ -30,6 +31,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
   }
 
   engine = new VoxPilotEngine(context, statusBar);
+  privacyDashboard.init(context);
 
   // Model manager sidebar panel
   const modelPanel = new ModelManagerPanel(context);
@@ -79,6 +81,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
     vscode.commands.registerCommand('voxpilot.recordCorrection', () => engine?.recordCorrection()),
     vscode.commands.registerCommand('voxpilot.initTeamVocabulary', () => initializeTeamVocabulary()),
     vscode.commands.registerCommand('voxpilot.exportToTeamVocabulary', () => exportToTeamVocabulary()),
+    vscode.commands.registerCommand('voxpilot.showPrivacyDashboard', () => privacyDashboard.show()),
     registerAiCodeGenerationCommand(context),
     treeView,
     configWatcher,
