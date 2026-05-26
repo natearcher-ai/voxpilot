@@ -121,8 +121,10 @@ const TYPO_FIXES: Array<[RegExp, string]> = [
 /**
  * Filler words to strip from transcriptions.
  * Matches whole words only, case-insensitive.
+ * Only includes words/phrases that are almost always filler — avoids
+ * removing legitimate content words like "like", "actually", "literally".
  */
-const FILLER_WORDS = ['um', 'uh', 'uhh', 'umm', 'hmm', 'hm', 'mhm', 'uh huh', 'like', 'you know', 'I mean', 'sort of', 'kind of', 'basically', 'actually', 'literally'];
+const FILLER_WORDS = ['um', 'uh', 'uhh', 'umm', 'hmm', 'hm', 'mhm', 'uh huh'];
 
 /** Build a single regex that matches any filler word/phrase as a whole word */
 const FILLER_REGEX = new RegExp(

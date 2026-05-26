@@ -949,11 +949,11 @@ export class VoxPilotEngine {
     }
 
     if (result.isSpeech || result.speechEnded) {
-      this.speechBuffer.push(frame);
+      this.speechBuffer.push(gatedFrame);
 
       // Feed streaming buffer for real-time partial transcription
       if (this.streamingEnabled && result.isSpeech) {
-        const ready = this.streamingBuffer.addFrame(frame);
+        const ready = this.streamingBuffer.addFrame(gatedFrame);
         if (ready && !this.streamingInFlight) {
           this.triggerStreamingTranscription();
         }
@@ -1514,8 +1514,8 @@ export class VoxPilotEngine {
       'Insert at Cursor',
       'Send to Terminal',
     ).then(async action => {
-      if (action === 'Send to Chat') { this.sendToChat(text); }
-      else if (action === 'Copy') { vscode.env.clipboard.writeText(text); }
+      if (action === 'Send to Chat') { await this.sendToChat(text); }
+      else if (action === 'Copy') { await vscode.env.clipboard.writeText(text); }
       else if (action === 'Insert at Cursor') { await this.insertAtCursor(text); }
       else if (action === 'Send to Terminal') { await this.sendToTerminal(text); }
     });
@@ -1830,7 +1830,7 @@ export class VoxPilotEngine {
   private async insertAtCursor(text: string): Promise<void> {
     const editor = vscode.window.activeTextEditor;
     if (editor) {
-      editor.edit(editBuilder => {
+      await editor.edit(editBuilder => {
         editBuilder.insert(editor.selection.active, text);
       });
       this.log('Inserted at cursor (editor)');

@@ -39,7 +39,7 @@ export class WalkyTalkyDetector {
   private state: WalkyTalkyState = 'idle';
   private pressTime = 0;
   private holdTimer: ReturnType<typeof setTimeout> | null = null;
-  private readonly thresholdMs: number;
+  private thresholdMs: number;
   private callbacks: WalkyTalkyCallbacks;
 
   /**
@@ -125,6 +125,6 @@ export class WalkyTalkyDetector {
    * Update the hold threshold dynamically.
    */
   setThreshold(ms: number): void {
-    (this as any).thresholdMs = Math.max(100, ms);
+    this.thresholdMs = Math.max(100, ms);
   }
 }

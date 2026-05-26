@@ -1012,8 +1012,12 @@
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
     "@vscode/vsce": "^2.24.0",
     "esbuild": "^0.20.0",
+    "eslint": "^8.57.0",
+    "ovsx": "^0.9.0",
     "typescript": "^5.4.0",
     "vitest": "^4.1.0"
   }
