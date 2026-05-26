@@ -200,13 +200,13 @@ export class HistoryPanelView {
   .count { font-size:11px; color:var(--vscode-descriptionForeground); }
 </style></head><body>
 <div class="toolbar">
-  <input id="search" type="text" placeholder="Search transcripts..." />
+  <input id="search" type="text" placeholder="Search transcripts..." aria-label="Search transcript history" />
   <span class="count" id="count">${entries.length} entries</span>
-  <button id="exportTxt">Export TXT</button>
-  <button id="exportJson">Export JSON</button>
-  <button id="clearAll">Clear All</button>
+  <button id="exportTxt" aria-label="Export history as text">Export TXT</button>
+  <button id="exportJson" aria-label="Export history as JSON">Export JSON</button>
+  <button id="clearAll" aria-label="Clear all transcript history">Clear All</button>
 </div>
-<div id="list">${rows || '<div class="empty">No transcripts yet. Start talking!</div>'}</div>
+<div id="list" role="list" aria-label="Transcript history">${rows || '<div class="empty">No transcripts yet. Start talking!</div>'}</div>
 <script>
   const vscode = acquireVsCodeApi();
   const search = document.getElementById('search');
