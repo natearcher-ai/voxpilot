@@ -2,15 +2,21 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { WalkyTalkyDetector } from '../walkyTalky';
 
 describe('WalkyTalkyDetector', () => {
-  let callbacks: { onHoldStart: ReturnType<typeof vi.fn>; onHoldEnd: ReturnType<typeof vi.fn>; onTap: ReturnType<typeof vi.fn> };
+  let callbacks: { onHoldStart: () => void; onHoldEnd: () => void; onTap: () => void };
+  let onHoldStart: ReturnType<typeof vi.fn>;
+  let onHoldEnd: ReturnType<typeof vi.fn>;
+  let onTap: ReturnType<typeof vi.fn>;
   let detector: WalkyTalkyDetector;
 
   beforeEach(() => {
     vi.useFakeTimers();
+    onHoldStart = vi.fn();
+    onHoldEnd = vi.fn();
+    onTap = vi.fn();
     callbacks = {
-      onHoldStart: vi.fn(),
-      onHoldEnd: vi.fn(),
-      onTap: vi.fn(),
+      onHoldStart: onHoldStart as unknown as () => void,
+      onHoldEnd: onHoldEnd as unknown as () => void,
+      onTap: onTap as unknown as () => void,
     };
     detector = new WalkyTalkyDetector(300, callbacks);
   });
@@ -28,8 +34,8 @@ describe('WalkyTalkyDetector', () => {
     vi.advanceTimersByTime(100);
     detector.onKeyUp();
 
-    expect(callbacks.onTap).toHaveBeenCalledOnce();
-    expect(callbacks.onHoldStart).not.toHaveBeenCalled();
+    expect(onTap).toHaveBeenCalledOnce();
+    expect(onHoldStart).not.toHaveBeenCalled();
     expect(detector.currentState).toBe('idle');
   });
 
@@ -39,7 +45,7 @@ describe('WalkyTalkyDetector', () => {
     // Advance past threshold
     vi.advanceTimersByTime(300);
 
-    expect(callbacks.onHoldStart).toHaveBeenCalledOnce();
+    expect(onHoldStart).toHaveBeenCalledOnce();
     expect(detector.currentState).toBe('holding');
     expect(detector.isHolding).toBe(true);
   });
@@ -51,7 +57,7 @@ describe('WalkyTalkyDetector', () => {
 
     detector.onKeyUp();
 
-    expect(callbacks.onHoldEnd).toHaveBeenCalledOnce();
+    expect(onHoldEnd).toHaveBeenCalledOnce();
     expect(detector.currentState).toBe('idle');
   });
 
@@ -60,9 +66,9 @@ describe('WalkyTalkyDetector', () => {
     vi.advanceTimersByTime(300);
     detector.onKeyUp();
 
-    expect(callbacks.onTap).not.toHaveBeenCalled();
-    expect(callbacks.onHoldStart).toHaveBeenCalledOnce();
-    expect(callbacks.onHoldEnd).toHaveBeenCalledOnce();
+    expect(onTap).not.toHaveBeenCalled();
+    expect(onHoldStart).toHaveBeenCalledOnce();
+    expect(onHoldEnd).toHaveBeenCalledOnce();
   });
 
   it('ignores repeated onKeyDown while not idle', () => {
@@ -71,7 +77,7 @@ describe('WalkyTalkyDetector', () => {
     detector.onKeyDown(); // should be ignored
 
     vi.advanceTimersByTime(300);
-    expect(callbacks.onHoldStart).toHaveBeenCalledTimes(1);
+    expect(onHoldStart).toHaveBeenCalledTimes(1);
   });
 
   it('reset() calls onHoldEnd if holding', () => {
@@ -81,7 +87,7 @@ describe('WalkyTalkyDetector', () => {
 
     detector.reset();
 
-    expect(callbacks.onHoldEnd).toHaveBeenCalledOnce();
+    expect(onHoldEnd).toHaveBeenCalledOnce();
     expect(detector.currentState).toBe('idle');
   });
 
@@ -91,7 +97,7 @@ describe('WalkyTalkyDetector', () => {
 
     detector.reset();
 
-    expect(callbacks.onHoldEnd).not.toHaveBeenCalled();
+    expect(onHoldEnd).not.toHaveBeenCalled();
     expect(detector.currentState).toBe('idle');
   });
 
