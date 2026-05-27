@@ -19,6 +19,7 @@ import { SmartInsertProcessor } from './smartInsert';
 import { VocabularyBoostProcessor } from './vocabularyBoost';
 import { AdaptiveLearningProcessor } from './adaptiveLearning';
 import { TeamVocabularySyncProcessor } from './teamVocabularySync';
+import { AIVoiceShortcutsProcessor } from './aiVoiceShortcuts';
 
 /**
  * Context passed to each processor — includes raw segments and metadata
@@ -263,6 +264,7 @@ const BUILTIN_PROCESSORS: PostProcessor[] = [
   new SmartInsertProcessor(),
   new AutoPunctuationProcessor(),
   new AutoCapitalizeProcessor(),
+  new AIVoiceShortcutsProcessor(),
 ];
 
 export class PostProcessingPipeline {

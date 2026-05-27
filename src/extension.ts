@@ -14,6 +14,7 @@ import { ConfidenceIndicatorManager } from './confidenceIndicators';
 import { initializeTeamVocabulary, exportToTeamVocabulary } from './teamVocabularySync';
 import { registerAiCodeGenerationCommand } from './aiCodeGeneration';
 import { privacyDashboard } from './privacyDashboard';
+import { aiVoiceShortcuts } from './aiVoiceShortcuts';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;

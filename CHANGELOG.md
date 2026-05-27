@@ -2,6 +2,14 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.124] - 2026-05-27
+
+### Added
+- Voice shortcuts for AI assistants — say "ask copilot", "ask kiro", "inline fix", "explain this", "refactor this", "add tests", "document this", or "open chat" to trigger AI assistant commands by voice
+- Auto-detects installed AI provider (Copilot, Kiro, Cody, Continue) and routes to the correct commands
+- Supports passing questions/prompts directly: "ask copilot how do I parse JSON in Rust"
+- New setting: `voxpilot.aiVoiceShortcuts` (default: true)
+
 ## [0.7.119] - 2026-05-26
 
 ### Added
