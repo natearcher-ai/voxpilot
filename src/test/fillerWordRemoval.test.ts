@@ -21,6 +21,7 @@ describe('FillerWordRemovalProcessor', () => {
 
   it('removes multi-word fillers', () => {
     expect(processor.process('mhm the function is broken', makeContext())).toBe('the function is broken');
+    expect(processor.process('uh huh the function is broken', makeContext())).toBe('the function is broken');
   });
 
   it('is case-insensitive', () => {

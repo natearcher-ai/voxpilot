@@ -126,9 +126,11 @@ const TYPO_FIXES: Array<[RegExp, string]> = [
  */
 const FILLER_WORDS = ['um', 'uh', 'uhh', 'umm', 'hmm', 'hm', 'mhm', 'uh huh'];
 
-/** Build a single regex that matches any filler word/phrase as a whole word */
+/** Build a single regex that matches any filler word/phrase as a whole word.
+ * Sort longest-first so multi-word fillers (e.g. "uh huh") match before
+ * their prefixes (e.g. "uh") consume part of the input. */
 const FILLER_REGEX = new RegExp(
-  '\\b(' + FILLER_WORDS.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')\\b',
+  '\\b(' + [...FILLER_WORDS].sort((a, b) => b.length - a.length).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')\\b',
   'gi',
 );
 
