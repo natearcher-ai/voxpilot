@@ -72,17 +72,38 @@ export function computeEnergy(samples: Float32Array): number {
 /**
  * Compute spectral centroid (brightness) from audio samples.
  * Higher values = brighter/higher-frequency content.
- * Uses a simple DFT approximation for efficiency.
+ * Uses band-pass energy ratio: ratio of high-frequency energy (>2kHz) to
+ * total energy. This is more stable than ZCR*energy and normalizes to 0–1.
  */
 export function computeBrightness(samples: Float32Array, sampleRate: number): number {
   if (samples.length === 0) { return 0; }
 
-  // Simple energy-weighted frequency estimate using ZCR + energy distribution
-  const zcr = estimatePitchFromZCR(samples, sampleRate) * 2; // Back to ZCR
-  const energy = computeEnergy(samples);
+  // Split into low-band and high-band using a simple first-order high-pass filter
+  // High-pass cutoff ~2000Hz using a leaky integrator:
+  // y[n] = alpha * (y[n-1] + x[n] - x[n-1])
+  const cutoffHz = 2000;
+  const rc = 1 / (2 * Math.PI * cutoffHz);
+  const dt = 1 / sampleRate;
+  const alpha = rc / (rc + dt);
 
-  // Brightness correlates with ZCR and high-frequency energy
-  return zcr * energy * 1000; // Normalized arbitrary scale
+  let prevX = samples[0];
+  let prevY = 0;
+  let highBandEnergy = 0;
+  let totalEnergy = 0;
+
+  for (let i = 1; i < samples.length; i++) {
+    const x = samples[i];
+    prevY = alpha * (prevY + x - prevX);
+    prevX = x;
+
+    highBandEnergy += prevY * prevY;
+    totalEnergy += x * x;
+  }
+
+  if (totalEnergy === 0) { return 0; }
+
+  // Ratio of high-frequency energy to total energy (0–1 range)
+  return highBandEnergy / totalEnergy;
 }
 
 /**

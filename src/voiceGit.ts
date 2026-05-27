@@ -92,9 +92,10 @@ export function buildGitCommand(match: GitMatch): string | null {
   switch (match.type) {
     case 'commit':
       if (!match.argument) { return null; }
-      // Sanitize commit message (escape quotes)
-      const msg = match.argument.replace(/"/g, '\\"');
-      return `git commit -m "${msg}"`;
+      // Sanitize commit message: use single quotes to prevent shell interpretation,
+      // and escape any embedded single quotes
+      const msg = match.argument.replace(/'/g, "'\\''");
+      return `git commit -m '${msg}'`;
 
     case 'push':
       return 'git push';

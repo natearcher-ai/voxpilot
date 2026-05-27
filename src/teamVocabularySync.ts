@@ -30,7 +30,6 @@
  */
 
 import * as vscode from 'vscode';
-import * as path from 'path';
 import { PostProcessor, ProcessorContext } from './postProcessingPipeline';
 
 /** Schema version for the team vocabulary file */
@@ -282,17 +281,25 @@ export class TeamVocabularySyncProcessor implements PostProcessor {
 
   /**
    * Load vocabulary from a specific file URI.
+   * Uses async workspace.fs API to avoid blocking extension activation.
    */
   private loadFromUri(uri: vscode.Uri, folderName: string): void {
+    // Load asynchronously to avoid blocking the extension host
+    this.loadFromUriAsync(uri, folderName).catch(() => {
+      // Silently ignore — file may not exist
+    });
+  }
+
+  private async loadFromUriAsync(uri: vscode.Uri, folderName: string): Promise<void> {
     try {
-      // Use synchronous-style read via workspace.fs would be async,
-      // but we need sync for constructor. Use require('fs') as fallback.
-      const fs = require('fs');
-      const filePath = uri.fsPath;
-
-      if (!fs.existsSync(filePath)) { return; }
-
-      const content = fs.readFileSync(filePath, 'utf-8');
+      let content: string;
+      try {
+        const bytes = await vscode.workspace.fs.readFile(uri);
+        content = Buffer.from(bytes).toString('utf-8');
+      } catch {
+        // File doesn't exist — silently skip
+        return;
+      }
       let data: unknown;
 
       try {
@@ -326,7 +333,7 @@ export class TeamVocabularySyncProcessor implements PostProcessor {
         }
       }
     } catch {
-      // File doesn't exist or can't be read — silently skip
+      // Parse or compile error — silently skip
     }
   }
 

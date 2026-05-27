@@ -142,6 +142,8 @@ export class AutoVocabularyProcessor implements PostProcessor {
   private entries: AutoVocabEntry[] = [];
   private disposables: vscode.Disposable[] = [];
   private refreshTimer: ReturnType<typeof setTimeout> | null = null;
+  private lastRefreshTime = 0;
+  private readonly minRefreshIntervalMs = 5000; // Don't refresh more than once per 5s
 
   constructor() {
     this.scheduleRefresh();
@@ -159,10 +161,21 @@ export class AutoVocabularyProcessor implements PostProcessor {
     }
   }
 
-  /** Debounced refresh — avoids thrashing when many files open at once */
+  /**
+   * Debounced + throttled refresh — avoids thrashing when many files open at once.
+   * Debounce: waits 1s after the last trigger before refreshing.
+   * Throttle: won't refresh again within 5s of the last completed refresh.
+   */
   private scheduleRefresh(): void {
     if (this.refreshTimer) { clearTimeout(this.refreshTimer); }
-    this.refreshTimer = setTimeout(() => this.refresh(), 1000);
+
+    const timeSinceLastRefresh = Date.now() - this.lastRefreshTime;
+    const delay = Math.max(1000, this.minRefreshIntervalMs - timeSinceLastRefresh);
+
+    this.refreshTimer = setTimeout(() => {
+      this.refresh();
+      this.lastRefreshTime = Date.now();
+    }, delay);
   }
 
   /** Scan open documents and rebuild vocabulary */

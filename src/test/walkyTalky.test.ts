@@ -1,105 +1,125 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { WalkyTalkyDetector, WalkyTalkyCallbacks } from '../walkyTalky';
-
-function makeCallbacks(): WalkyTalkyCallbacks & { calls: string[] } {
-  const calls: string[] = [];
-  return {
-    calls,
-    onHoldStart: () => calls.push('holdStart'),
-    onHoldEnd: () => calls.push('holdEnd'),
-    onTap: () => calls.push('tap'),
-  };
-}
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { WalkyTalkyDetector } from '../walkyTalky';
 
 describe('WalkyTalkyDetector', () => {
+  let callbacks: { onHoldStart: () => void; onHoldEnd: () => void; onTap: () => void };
+  let onHoldStart: ReturnType<typeof vi.fn>;
+  let onHoldEnd: ReturnType<typeof vi.fn>;
+  let onTap: ReturnType<typeof vi.fn>;
+  let detector: WalkyTalkyDetector;
+
   beforeEach(() => {
     vi.useFakeTimers();
-  });
-  afterEach(() => {
-    vi.useRealTimers();
+    onHoldStart = vi.fn();
+    onHoldEnd = vi.fn();
+    onTap = vi.fn();
+    callbacks = {
+      onHoldStart: onHoldStart as unknown as () => void,
+      onHoldEnd: onHoldEnd as unknown as () => void,
+      onTap: onTap as unknown as () => void,
+    };
+    detector = new WalkyTalkyDetector(300, callbacks);
   });
 
   it('starts in idle state', () => {
-    const cb = makeCallbacks();
-    const detector = new WalkyTalkyDetector(300, cb);
     expect(detector.currentState).toBe('idle');
     expect(detector.isHolding).toBe(false);
   });
 
-  it('detects quick tap (release before threshold)', () => {
-    const cb = makeCallbacks();
-    const detector = new WalkyTalkyDetector(300, cb);
-
+  it('triggers onTap for quick press and release', () => {
     detector.onKeyDown();
     expect(detector.currentState).toBe('pressed');
 
-    vi.advanceTimersByTime(100); // Before threshold
+    // Release before threshold
+    vi.advanceTimersByTime(100);
     detector.onKeyUp();
 
-    expect(cb.calls).toEqual(['tap']);
+    expect(onTap).toHaveBeenCalledOnce();
+    expect(onHoldStart).not.toHaveBeenCalled();
     expect(detector.currentState).toBe('idle');
   });
 
-  it('detects hold (release after threshold)', () => {
-    const cb = makeCallbacks();
-    const detector = new WalkyTalkyDetector(300, cb);
-
+  it('triggers onHoldStart after threshold', () => {
     detector.onKeyDown();
-    vi.advanceTimersByTime(350); // Past threshold
 
-    expect(cb.calls).toEqual(['holdStart']);
+    // Advance past threshold
+    vi.advanceTimersByTime(300);
+
+    expect(onHoldStart).toHaveBeenCalledOnce();
+    expect(detector.currentState).toBe('holding');
     expect(detector.isHolding).toBe(true);
+  });
+
+  it('triggers onHoldEnd when key released after hold', () => {
+    detector.onKeyDown();
+    vi.advanceTimersByTime(300);
+    expect(detector.currentState).toBe('holding');
 
     detector.onKeyUp();
-    expect(cb.calls).toEqual(['holdStart', 'holdEnd']);
+
+    expect(onHoldEnd).toHaveBeenCalledOnce();
     expect(detector.currentState).toBe('idle');
   });
 
-  it('ignores duplicate keyDown while pressed', () => {
-    const cb = makeCallbacks();
-    const detector = new WalkyTalkyDetector(300, cb);
-
+  it('does not trigger onTap when held long enough', () => {
     detector.onKeyDown();
-    detector.onKeyDown(); // duplicate
-    vi.advanceTimersByTime(350);
+    vi.advanceTimersByTime(300);
+    detector.onKeyUp();
 
-    expect(cb.calls).toEqual(['holdStart']); // Only one holdStart
+    expect(onTap).not.toHaveBeenCalled();
+    expect(onHoldStart).toHaveBeenCalledOnce();
+    expect(onHoldEnd).toHaveBeenCalledOnce();
   });
 
-  it('reset cancels hold and returns to idle', () => {
-    const cb = makeCallbacks();
-    const detector = new WalkyTalkyDetector(300, cb);
-
+  it('ignores repeated onKeyDown while not idle', () => {
     detector.onKeyDown();
-    vi.advanceTimersByTime(350);
-    expect(detector.isHolding).toBe(true);
+    detector.onKeyDown(); // should be ignored
+    detector.onKeyDown(); // should be ignored
+
+    vi.advanceTimersByTime(300);
+    expect(onHoldStart).toHaveBeenCalledTimes(1);
+  });
+
+  it('reset() calls onHoldEnd if holding', () => {
+    detector.onKeyDown();
+    vi.advanceTimersByTime(300);
+    expect(detector.currentState).toBe('holding');
 
     detector.reset();
+
+    expect(onHoldEnd).toHaveBeenCalledOnce();
     expect(detector.currentState).toBe('idle');
-    expect(cb.calls).toEqual(['holdStart', 'holdEnd']);
   });
 
-  it('reset from pressed state does not fire callbacks', () => {
-    const cb = makeCallbacks();
-    const detector = new WalkyTalkyDetector(300, cb);
-
+  it('reset() does not call onHoldEnd if not holding', () => {
     detector.onKeyDown();
+    vi.advanceTimersByTime(100); // still pressed, not holding
+
     detector.reset();
 
-    expect(cb.calls).toEqual([]);
+    expect(onHoldEnd).not.toHaveBeenCalled();
     expect(detector.currentState).toBe('idle');
   });
 
-  it('enforces minimum threshold of 100ms', () => {
-    const cb = makeCallbacks();
-    const detector = new WalkyTalkyDetector(10, cb); // Below minimum
+  it('setThreshold() updates the threshold', () => {
+    detector.setThreshold(500);
 
     detector.onKeyDown();
-    vi.advanceTimersByTime(50); // Should still be below 100ms minimum
-    // Timer fires at 100ms (clamped minimum)
+    vi.advanceTimersByTime(300); // old threshold
+    expect(detector.currentState).toBe('pressed'); // not holding yet
+
+    vi.advanceTimersByTime(200); // now at 500ms
+    expect(detector.currentState).toBe('holding');
+  });
+
+  it('setThreshold() enforces minimum of 100ms', () => {
+    detector.setThreshold(50); // should clamp to 100
+
+    detector.onKeyDown();
+    vi.advanceTimersByTime(99);
     expect(detector.currentState).toBe('pressed');
 
-    vi.advanceTimersByTime(60); // Now past 100ms
-    expect(cb.calls).toEqual(['holdStart']);
+    vi.advanceTimersByTime(1);
+    expect(detector.currentState).toBe('holding');
   });
 });

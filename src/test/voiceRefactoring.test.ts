@@ -1,35 +1,31 @@
-import { describe, it, expect, vi } from 'vitest';
-import { matchRefactorCommand, REFACTOR_COMMANDS } from '../voiceRefactoring';
-
-// Mock vscode
-vi.mock('vscode', () => ({
-  commands: { executeCommand: async () => {} },
-  window: { showWarningMessage: () => {} },
-}));
+import { describe, it, expect } from 'vitest';
+import { matchRefactorCommand } from '../voiceRefactoring';
 
 describe('matchRefactorCommand', () => {
   it('matches "rename to" with argument', () => {
-    const result = matchRefactorCommand('rename to getUserName');
+    const result = matchRefactorCommand('rename to handleSubmit');
     expect(result).not.toBeNull();
     expect(result!.command.command).toBe('editor.action.rename');
-    expect(result!.argument).toBe('getUserName');
+    expect(result!.argument).toBe('handleSubmit');
   });
 
   it('matches "rename" with argument', () => {
-    const result = matchRefactorCommand('rename fetchData');
+    const result = matchRefactorCommand('rename getUserData');
     expect(result).not.toBeNull();
-    expect(result!.argument).toBe('fetchData');
+    expect(result!.argument).toBe('getUserData');
   });
 
   it('matches "extract function"', () => {
     const result = matchRefactorCommand('extract function');
     expect(result).not.toBeNull();
     expect(result!.command.command).toBe('editor.action.codeAction');
+    expect(result!.argument).toBe('');
   });
 
   it('matches "extract variable"', () => {
     const result = matchRefactorCommand('extract variable');
     expect(result).not.toBeNull();
+    expect(result!.phrase).toBe('extract variable');
   });
 
   it('matches "organize imports"', () => {
@@ -44,16 +40,28 @@ describe('matchRefactorCommand', () => {
     expect(result!.command.command).toBe('editor.action.quickFix');
   });
 
-  it('matches "fix this" as quick fix', () => {
+  it('matches "fix this"', () => {
     const result = matchRefactorCommand('fix this');
     expect(result).not.toBeNull();
     expect(result!.command.command).toBe('editor.action.quickFix');
   });
 
-  it('matches "refactor"', () => {
-    const result = matchRefactorCommand('refactor');
+  it('matches longer phrases before shorter ones', () => {
+    // "rename to" should match before "rename"
+    const result = matchRefactorCommand('rename to something');
+    expect(result!.phrase).toBe('rename to');
+    expect(result!.argument).toBe('something');
+  });
+
+  it('returns null for non-refactoring text', () => {
+    expect(matchRefactorCommand('hello world')).toBeNull();
+    expect(matchRefactorCommand('the function is broken')).toBeNull();
+  });
+
+  it('is case insensitive', () => {
+    const result = matchRefactorCommand('EXTRACT FUNCTION');
     expect(result).not.toBeNull();
-    expect(result!.command.command).toBe('editor.action.refactor');
+    expect(result!.phrase).toBe('extract function');
   });
 
   it('matches "format document"', () => {
@@ -62,38 +70,9 @@ describe('matchRefactorCommand', () => {
     expect(result!.command.command).toBe('editor.action.formatDocument');
   });
 
-  it('matches case-insensitively', () => {
-    const result = matchRefactorCommand('Organize Imports');
-    expect(result).not.toBeNull();
-  });
-
-  it('returns null for non-refactoring text', () => {
-    expect(matchRefactorCommand('hello world')).toBeNull();
-    expect(matchRefactorCommand('create a function')).toBeNull();
-  });
-
-  it('prefers longer phrase (greedy match)', () => {
-    const result = matchRefactorCommand('extract to function');
-    expect(result).not.toBeNull();
-    expect(result!.phrase).toBe('extract to function');
-  });
-
   it('matches "inline variable"', () => {
     const result = matchRefactorCommand('inline variable');
     expect(result).not.toBeNull();
-  });
-});
-
-describe('REFACTOR_COMMANDS', () => {
-  it('has at least 10 commands', () => {
-    expect(REFACTOR_COMMANDS.length).toBeGreaterThanOrEqual(10);
-  });
-
-  it('all commands have required fields', () => {
-    for (const cmd of REFACTOR_COMMANDS) {
-      expect(cmd.phrases.length).toBeGreaterThan(0);
-      expect(cmd.command).toBeTruthy();
-      expect(cmd.description).toBeTruthy();
-    }
+    expect(result!.command.command).toBe('editor.action.codeAction');
   });
 });

@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { WaveformVisualizer } from './waveformVisualizer';
+import { ARIA_LABELS } from './accessibility';
 
 export class StatusBarManager implements vscode.Disposable {
   private item: vscode.StatusBarItem;
@@ -17,24 +18,28 @@ export class StatusBarManager implements vscode.Disposable {
     this.clearSentTimeout();
     this.item.text = '$(mic) VoxPilot';
     this.item.tooltip = 'Click to start voice input';
+    this.item.accessibilityInformation = { label: ARIA_LABELS.idle, role: 'button' };
     this.item.backgroundColor = undefined;
   }
 
   setCalibrating() {
     this.item.text = '$(pulse) Calibrating...';
     this.item.tooltip = 'Measuring ambient noise level';
+    this.item.accessibilityInformation = { label: ARIA_LABELS.calibrating };
     this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
   }
 
   setDictating() {
     this.item.text = '$(notebook) Dictation mode';
     this.item.tooltip = 'Dictation mode — speak freely, click to stop and deliver';
+    this.item.accessibilityInformation = { label: ARIA_LABELS.dictating };
     this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
   }
 
   setListening() {
     this.item.text = '$(mic-filled) Listening...';
     this.item.tooltip = 'Speak now — click to stop';
+    this.item.accessibilityInformation = { label: ARIA_LABELS.listening };
     this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
   }
 
@@ -55,6 +60,7 @@ export class StatusBarManager implements vscode.Disposable {
   setSpeechDetected() {
     this.item.text = '$(record) Speaking...';
     this.item.tooltip = 'Speech detected — recording';
+    this.item.accessibilityInformation = { label: ARIA_LABELS.speechDetected };
     this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
   }
 
@@ -80,6 +86,7 @@ export class StatusBarManager implements vscode.Disposable {
   setProcessing() {
     this.item.text = '$(loading~spin) Transcribing...';
     this.item.tooltip = 'Processing speech';
+    this.item.accessibilityInformation = { label: ARIA_LABELS.processing };
     this.item.backgroundColor = undefined;
   }
 
@@ -118,6 +125,7 @@ export class StatusBarManager implements vscode.Disposable {
   setError(msg: string) {
     this.item.text = '$(error) VoxPilot';
     this.item.tooltip = msg;
+    this.item.accessibilityInformation = { label: ARIA_LABELS.error(msg) };
     this.item.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
   }
 

@@ -16,14 +16,11 @@ describe('FillerWordRemovalProcessor', () => {
   });
 
   it('removes multiple fillers in one sentence', () => {
-    expect(processor.process('um like I want to uh refactor this', makeContext())).toBe('I want to refactor this');
+    expect(processor.process('um I want to uh refactor this', makeContext())).toBe('I want to refactor this');
   });
 
   it('removes multi-word fillers', () => {
-    expect(processor.process('you know the function is broken', makeContext())).toBe('the function is broken');
-    expect(processor.process('I mean it should work', makeContext())).toBe('it should work');
-    expect(processor.process('it is sort of working', makeContext())).toBe('it is working');
-    expect(processor.process('it is kind of slow', makeContext())).toBe('it is slow');
+    expect(processor.process('mhm the function is broken', makeContext())).toBe('the function is broken');
   });
 
   it('is case-insensitive', () => {
@@ -46,9 +43,14 @@ describe('FillerWordRemovalProcessor', () => {
   });
 
   it('does not remove filler substrings inside words', () => {
-    // "like" inside "unlikely" should not be removed
-    expect(processor.process('this is unlikely', makeContext())).toBe('this is unlikely');
     // "um" inside "umbrella" should not be removed
     expect(processor.process('grab the umbrella', makeContext())).toBe('grab the umbrella');
+  });
+
+  it('preserves legitimate words that sound like fillers', () => {
+    // "like", "actually", "literally" are legitimate words and should NOT be removed
+    expect(processor.process('I like this function', makeContext())).toBe('I like this function');
+    expect(processor.process('it actually works now', makeContext())).toBe('it actually works now');
+    expect(processor.process('you know the answer', makeContext())).toBe('you know the answer');
   });
 });

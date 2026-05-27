@@ -87,10 +87,14 @@ function applyDeleteThat(text: string): { text: string; count: number } {
 
   // Process iteratively since each delete changes the text
   let result = text;
-  let match: RegExpExecArray | null;
 
-  // Reset and find all occurrences
-  while ((match = deletePattern.exec(result)) !== null) {
+  // Find all occurrences, process one at a time from the first match
+  while (deletePattern.test(result)) {
+    // Reset and find the first occurrence
+    deletePattern.lastIndex = 0;
+    const match = deletePattern.exec(result);
+    if (!match) { break; }
+
     const before = result.slice(0, match.index);
     const after = result.slice(match.index + match[0].length);
 
