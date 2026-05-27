@@ -235,7 +235,7 @@ export class AIVoiceShortcutsProcessor implements PostProcessor {
           }
         }, 200);
       }
-    }).catch((err: any) => {
+    }).catch(() => {
       // Open chat failed — silently degrade (engine logs via output channel)
     });
   }
@@ -245,7 +245,7 @@ export class AIVoiceShortcutsProcessor implements PostProcessor {
     (args
       ? vscode.commands.executeCommand(commandId, args)
       : vscode.commands.executeCommand(commandId)
-    ).catch((err: any) => {
+    ).catch(() => {
       // Command execution failed — silently degrade
       // The user sees the transcript stripped of the trigger phrase regardless
     });

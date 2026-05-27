@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { resample, pcm16ToFloat32, float32ToPcm16, NeuralNoiseReduction } from '../neuralNoiseReduction';
 
 describe('resample', () => {
@@ -151,6 +151,3 @@ describe('NeuralNoiseReduction', () => {
     expect(createFn).toHaveBeenCalledTimes(2);
   });
 });
-
-// Need to import vi for mocks
-import { vi } from 'vitest';

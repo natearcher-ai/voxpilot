@@ -30,7 +30,6 @@
  */
 
 import * as vscode from 'vscode';
-import * as path from 'path';
 import { PostProcessor, ProcessorContext } from './postProcessingPipeline';
 
 /** Schema version for the team vocabulary file */

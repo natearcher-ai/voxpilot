@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   calculateBackoff,
   isRetryable,
@@ -173,5 +173,3 @@ describe('ErrorRecoveryManager', () => {
     expect(manager.isAvailable('unknown-subsystem')).toBe(true);
   });
 });
-
-import { vi } from 'vitest';
