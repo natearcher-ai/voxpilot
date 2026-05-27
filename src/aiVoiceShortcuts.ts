@@ -226,19 +226,29 @@ export class AIVoiceShortcutsProcessor implements PostProcessor {
     vscode.commands.executeCommand(commandId).then(() => {
       if (prompt) {
         // Small delay to let the chat panel open, then type
-        setTimeout(() => {
-          vscode.commands.executeCommand('workbench.action.chat.insertIntoInput', prompt);
+        setTimeout(async () => {
+          try {
+            await vscode.commands.executeCommand('workbench.action.chat.insertIntoInput', prompt);
+          } catch (err: any) {
+            // Chat input command not available — fall back to clipboard
+            await vscode.env.clipboard.writeText(prompt);
+          }
         }, 200);
       }
+    }).catch((err: any) => {
+      // Open chat failed — silently degrade (engine logs via output channel)
     });
   }
 
   private executeCommand(commandId: string, prompt?: string): void {
-    if (prompt) {
-      vscode.commands.executeCommand(commandId, { prompt });
-    } else {
-      vscode.commands.executeCommand(commandId);
-    }
+    const args = prompt ? { prompt } : undefined;
+    (args
+      ? vscode.commands.executeCommand(commandId, args)
+      : vscode.commands.executeCommand(commandId)
+    ).catch((err: any) => {
+      // Command execution failed — silently degrade
+      // The user sees the transcript stripped of the trigger phrase regardless
+    });
   }
 }
 
