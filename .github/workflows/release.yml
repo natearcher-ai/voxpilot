@@ -55,10 +55,9 @@ jobs:
 
       - run: npx @vscode/vsce package --allow-missing-repository
 
-      - name: Publish to VS Code Marketplace
-        if: ${{ secrets.VSCE_PAT != '' }}
-        continue-on-error: true
-        run: npx @vscode/vsce publish --allow-missing-repository -p ${{ secrets.VSCE_PAT }}
+      # TODO: Enable when VSCE_PAT secret is configured
+      # - name: Publish to VS Code Marketplace
+      #   run: npx @vscode/vsce publish --allow-missing-repository -p ${{ secrets.VSCE_PAT }}
 
       - name: Publish to Open VSX
         run: npx ovsx publish *.vsix -p ${{ secrets.OVSX_TOKEN }}
