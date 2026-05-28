@@ -2,7 +2,7 @@
   "name": "voxpilot",
   "displayName": "VoxPilot \u2014 Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
-  "version": "0.7.124",
+  "version": "0.7.125",
   "publisher": "natearcher-ai",
   "license": "MIT",
   "repository": {
@@ -243,6 +243,19 @@
         "command": "voxpilot.showPrivacyDashboard",
         "title": "VoxPilot: Privacy Dashboard",
         "icon": "$(shield)"
+      },
+      {
+        "command": "voxpilot.togglePairVoice",
+        "title": "VoxPilot: Toggle Remote Pair Voice",
+        "icon": "$(broadcast)"
+      },
+      {
+        "command": "voxpilot.mutePairVoice",
+        "title": "VoxPilot: Mute Pair Voice Broadcast"
+      },
+      {
+        "command": "voxpilot.unmutePairVoice",
+        "title": "VoxPilot: Unmute Pair Voice Broadcast"
       }
     ],
     "keybindings": [
@@ -999,6 +1012,11 @@
           "type": "boolean",
           "default": true,
           "description": "Whether to store transcripts locally for history and audit purposes."
+        },
+        "voxpilot.remotePairVoice": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable remote pair voice — share voice commands and transcripts over VS Code Live Share sessions. Requires the Live Share extension."
         }
       }
     }

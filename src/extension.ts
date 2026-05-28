@@ -15,6 +15,7 @@ import { initializeTeamVocabulary, exportToTeamVocabulary } from './teamVocabula
 import { registerAiCodeGenerationCommand } from './aiCodeGeneration';
 import { privacyDashboard } from './privacyDashboard';
 import { aiVoiceShortcuts } from './aiVoiceShortcuts';
+import { remotePairVoice } from './remotePairVoice';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
@@ -33,6 +34,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
 
   engine = new VoxPilotEngine(context, statusBar);
   privacyDashboard.init(context);
+  remotePairVoice.init(context);
 
   // Model manager sidebar panel
   const modelPanel = new ModelManagerPanel(context);

@@ -2,6 +2,20 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.125] - 2026-05-28
+
+### Added
+- Remote pair voice — share voice commands and transcripts over VS Code Live Share sessions
+- Broadcast transcripts to all Live Share participants in real-time as you speak
+- Share voice command execution so your pair partner sees what you're doing
+- Receive and display partner's voice transcripts via status bar notifications
+- Sync custom vocabulary between participants for consistent recognition
+- Speaker indicator shows who is currently speaking
+- Privacy-first: opt-in per session, mute broadcast without stopping local transcription, no remote transcript persistence
+- Commands: "Toggle Remote Pair Voice", "Mute Pair Voice Broadcast", "Unmute Pair Voice Broadcast"
+- New setting: `voxpilot.remotePairVoice` (default: true)
+- Requires VS Code Live Share extension to be installed and active
+
 ## [0.7.124] - 2026-05-27
 
 ### Added
