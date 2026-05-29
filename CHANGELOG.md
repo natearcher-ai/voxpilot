@@ -2,6 +2,18 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.122] - 2026-05-29
+
+### Added
+- Voice templates — say "react component", "express route", "test suite", or other trigger phrases to scaffold boilerplate code at the cursor
+- 17 built-in templates: React component, React hook, Express route, Express middleware, test suite, test case, class, interface, enum, function, async function, arrow function, try-catch, Python class, Python function, Docker Compose, GitHub Action
+- Templates are language-aware — only trigger when the current file matches the template's target languages
+- Captures a name argument after the phrase (e.g., "react component UserProfile" → scaffolds a UserProfile component)
+- Adapts to editor settings: indentation style, semicolons, quote style
+- Custom templates via `voxpilot.voiceTemplates.custom` setting — define your own trigger phrases and template bodies
+- Command: "VoxPilot: List Voice Templates" to browse all available templates
+- New setting: `voxpilot.voiceTemplates.enabled` (default: true)
+
 ## [0.7.125] - 2026-05-28
 
 ### Added

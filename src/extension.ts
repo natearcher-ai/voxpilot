@@ -16,6 +16,7 @@ import { registerAiCodeGenerationCommand } from './aiCodeGeneration';
 import { privacyDashboard } from './privacyDashboard';
 import { aiVoiceShortcuts } from './aiVoiceShortcuts';
 import { remotePairVoice } from './remotePairVoice';
+import { voiceTemplates } from './voiceTemplates';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
@@ -85,6 +86,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
     vscode.commands.registerCommand('voxpilot.initTeamVocabulary', () => initializeTeamVocabulary()),
     vscode.commands.registerCommand('voxpilot.exportToTeamVocabulary', () => exportToTeamVocabulary()),
     vscode.commands.registerCommand('voxpilot.showPrivacyDashboard', () => privacyDashboard.show()),
+    vscode.commands.registerCommand('voxpilot.listVoiceTemplates', () => listVoiceTemplates()),
     registerAiCodeGenerationCommand(context),
     treeView,
     configWatcher,
@@ -118,6 +120,23 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
   }
 
   return undefined;
+}
+
+async function listVoiceTemplates(): Promise<void> {
+  const templates = voiceTemplates.getTemplates();
+  const items = templates.map(t => ({
+    label: t.phrases[0],
+    description: t.description,
+    detail: t.languages.length > 0 ? `Languages: ${t.languages.join(', ')}` : 'All languages',
+  }));
+  const picked = await vscode.window.showQuickPick(items, {
+    placeHolder: 'Available voice templates — say the phrase to scaffold code',
+    matchOnDescription: true,
+    matchOnDetail: true,
+  });
+  if (picked) {
+    vscode.window.showInformationMessage(`Say "${picked.label} <name>" to scaffold: ${picked.description}`);
+  }
 }
 
 async function clearCache(context: vscode.ExtensionContext): Promise<void> {

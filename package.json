@@ -2,7 +2,7 @@
   "name": "voxpilot",
   "displayName": "VoxPilot \u2014 Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
-  "version": "0.7.125",
+  "version": "0.7.122",
   "publisher": "natearcher-ai",
   "license": "MIT",
   "repository": {
@@ -243,6 +243,11 @@
         "command": "voxpilot.showPrivacyDashboard",
         "title": "VoxPilot: Privacy Dashboard",
         "icon": "$(shield)"
+      },
+      {
+        "command": "voxpilot.listVoiceTemplates",
+        "title": "VoxPilot: List Voice Templates",
+        "icon": "$(file-code)"
       },
       {
         "command": "voxpilot.togglePairVoice",
@@ -1017,6 +1022,38 @@
           "type": "boolean",
           "default": true,
           "description": "Enable remote pair voice — share voice commands and transcripts over VS Code Live Share sessions. Requires the Live Share extension."
+        },
+        "voxpilot.voiceTemplates.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable voice templates — say template trigger phrases like 'react component' or 'express route' to scaffold boilerplate code at the cursor."
+        },
+        "voxpilot.voiceTemplates.custom": {
+          "type": "array",
+          "default": [],
+          "description": "Custom voice template definitions. Each entry should have: phrase (trigger), language (target language IDs), and body (template string with ${name} placeholder).",
+          "items": {
+            "type": "object",
+            "properties": {
+              "phrase": {
+                "type": "string",
+                "description": "Trigger phrase to activate this template"
+              },
+              "language": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Language IDs this template applies to (empty for all)"
+              },
+              "body": {
+                "type": "string",
+                "description": "Template body. Use ${name} for the captured argument."
+              },
+              "description": {
+                "type": "string",
+                "description": "Human-readable description of what this template generates"
+              }
+            }
+          }
         }
       }
     }
