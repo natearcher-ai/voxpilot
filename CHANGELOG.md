@@ -2,6 +2,19 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.126] - 2026-05-30
+
+### Added
+- Transcription export — export session transcripts as markdown, JSON, SRT subtitles, or plain text
+- Markdown format: timestamps, speaker labels, optional confidence scores, group by file
+- JSON format: structured data with metadata for programmatic use
+- SRT format: subtitle timecodes for syncing with screen recordings or videos
+- Plain text format: simple one-entry-per-line dump
+- Export options: date range filtering, language filtering, include/exclude timestamps and confidence
+- Commands: "Export Transcript" (markdown), "Export Transcript As..." (pick format), "Export Transcript to Clipboard"
+- Voice command: say "export transcript" or "export transcript as srt" to trigger export
+- New setting: `voxpilot.transcriptionExport` (default: true)
+
 ## [0.7.122] - 2026-05-29
 
 ### Added

@@ -17,6 +17,7 @@ import { privacyDashboard } from './privacyDashboard';
 import { aiVoiceShortcuts } from './aiVoiceShortcuts';
 import { remotePairVoice } from './remotePairVoice';
 import { voiceTemplates } from './voiceTemplates';
+import { transcriptionExporter, ExportFormat, TranscriptEntry } from './transcriptionExport';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
@@ -86,6 +87,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
     vscode.commands.registerCommand('voxpilot.initTeamVocabulary', () => initializeTeamVocabulary()),
     vscode.commands.registerCommand('voxpilot.exportToTeamVocabulary', () => exportToTeamVocabulary()),
     vscode.commands.registerCommand('voxpilot.showPrivacyDashboard', () => privacyDashboard.show()),
+    vscode.commands.registerCommand('voxpilot.exportTranscript', () => exportTranscript(context)),
+    vscode.commands.registerCommand('voxpilot.exportTranscriptAs', () => exportTranscriptAs(context)),
+    vscode.commands.registerCommand('voxpilot.exportTranscriptToClipboard', () => exportTranscriptToClipboard(context)),
     vscode.commands.registerCommand('voxpilot.listVoiceTemplates', () => listVoiceTemplates()),
     registerAiCodeGenerationCommand(context),
     treeView,
@@ -120,6 +124,79 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
   }
 
   return undefined;
+}
+
+function getTranscriptEntries(context: vscode.ExtensionContext): TranscriptEntry[] {
+  const history = context.globalState.get<Array<{ text: string; timestamp: number }>>('voxpilot.transcriptHistory', []);
+  return history.map(e => ({
+    text: e.text,
+    timestamp: e.timestamp,
+  }));
+}
+
+async function exportTranscript(context: vscode.ExtensionContext): Promise<void> {
+  const entries = getTranscriptEntries(context);
+  if (entries.length === 0) {
+    vscode.window.showInformationMessage('VoxPilot: No transcripts to export.');
+    return;
+  }
+  await transcriptionExporter.exportToFile(entries, { format: 'markdown', includeTimestamps: true, includeConfidence: false, includeFileInfo: true, groupByFile: false, fromDate: 0, toDate: 0, languageFilter: '' });
+}
+
+async function exportTranscriptAs(context: vscode.ExtensionContext): Promise<void> {
+  const entries = getTranscriptEntries(context);
+  if (entries.length === 0) {
+    vscode.window.showInformationMessage('VoxPilot: No transcripts to export.');
+    return;
+  }
+
+  const formats = transcriptionExporter.getFormats();
+  const picked = await vscode.window.showQuickPick(
+    formats.map(f => ({ label: f.label, description: f.description, format: f.format })),
+    { placeHolder: 'Select export format' },
+  );
+  if (!picked) return;
+
+  const config = {
+    format: picked.format as ExportFormat,
+    includeTimestamps: true,
+    includeConfidence: false,
+    includeFileInfo: true,
+    groupByFile: false,
+    fromDate: 0,
+    toDate: 0,
+    languageFilter: '',
+  };
+
+  await transcriptionExporter.exportToFile(entries, config);
+}
+
+async function exportTranscriptToClipboard(context: vscode.ExtensionContext): Promise<void> {
+  const entries = getTranscriptEntries(context);
+  if (entries.length === 0) {
+    vscode.window.showInformationMessage('VoxPilot: No transcripts to export.');
+    return;
+  }
+
+  const formats = transcriptionExporter.getFormats();
+  const picked = await vscode.window.showQuickPick(
+    formats.map(f => ({ label: f.label, description: f.description, format: f.format })),
+    { placeHolder: 'Select export format for clipboard' },
+  );
+  if (!picked) return;
+
+  const config = {
+    format: picked.format as ExportFormat,
+    includeTimestamps: true,
+    includeConfidence: false,
+    includeFileInfo: true,
+    groupByFile: false,
+    fromDate: 0,
+    toDate: 0,
+    languageFilter: '',
+  };
+
+  await transcriptionExporter.exportToClipboard(entries, config);
 }
 
 async function listVoiceTemplates(): Promise<void> {

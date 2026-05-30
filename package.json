@@ -2,7 +2,7 @@
   "name": "voxpilot",
   "displayName": "VoxPilot — Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
-  "version": "0.7.123",
+  "version": "0.7.126",
   "publisher": "natearcher-ai",
   "license": "MIT",
   "repository": {
@@ -261,6 +261,21 @@
       {
         "command": "voxpilot.unmutePairVoice",
         "title": "VoxPilot: Unmute Pair Voice Broadcast"
+      },
+      {
+        "command": "voxpilot.exportTranscript",
+        "title": "VoxPilot: Export Transcript",
+        "icon": "$(export)"
+      },
+      {
+        "command": "voxpilot.exportTranscriptAs",
+        "title": "VoxPilot: Export Transcript As...",
+        "icon": "$(export)"
+      },
+      {
+        "command": "voxpilot.exportTranscriptToClipboard",
+        "title": "VoxPilot: Export Transcript to Clipboard",
+        "icon": "$(clippy)"
       }
     ],
     "keybindings": [
@@ -1056,6 +1071,11 @@
               }
             }
           }
+        },
+        "voxpilot.transcriptionExport": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable transcription export — export session transcripts as markdown, JSON, SRT subtitles, or plain text via commands or voice ('export transcript')."
         }
       }
     }
