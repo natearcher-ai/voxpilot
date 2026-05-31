@@ -2,6 +2,22 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.128] - 2026-05-31
+
+### Added
+- Enhanced voice-driven git with 10 new commands for complete repository control by voice
+- `amend` / `amend <message>` — amend the last commit (with or without new message)
+- `force push` — git push --force-with-lease (with safety confirmation)
+- `fetch` — git fetch from remote
+- `cherry pick <ref>` — cherry-pick a specific commit
+- `rebase <branch>` — rebase onto a branch (with safety confirmation)
+- `blame` — git blame on the current file
+- `branches` / `list branches` — show all branches (local + remote)
+- `stage file <path>` — stage a specific file instead of all
+- `tag <name>` — create a lightweight tag
+- Dangerous operations (force push, rebase, discard) now all require explicit confirmation
+- Branch name sanitization for cherry-pick refs and tag names
+
 ## [0.7.126] - 2026-05-30
 
 ### Added

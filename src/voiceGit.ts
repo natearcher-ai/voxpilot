@@ -3,21 +3,31 @@
  *
  * Say commands like:
  *   "commit <message>"           → git commit -m "<message>"
+ *   "amend <message>"            → git commit --amend -m "<message>"
+ *   "amend"                      → git commit --amend --no-edit
  *   "push"                       → git push
+ *   "force push"                 → git push --force-with-lease (with confirmation)
  *   "pull"                       → git pull
+ *   "fetch"                      → git fetch
  *   "stash"                      → git stash
  *   "stash pop"                  → git stash pop
  *   "checkout <branch>"          → git checkout <branch>
  *   "create branch <name>"       → git checkout -b <name>
+ *   "cherry pick <ref>"          → git cherry-pick <ref>
+ *   "rebase <branch>"            → git rebase <branch> (with confirmation)
  *   "merge <branch>"             → git merge <branch>
  *   "status"                     → git status (show in output channel)
  *   "diff"                       → git diff (open diff view)
  *   "log"                        → git log --oneline -10
+ *   "blame"                      → git blame (current file)
+ *   "branches"                   → git branch -a
+ *   "stage file <path>"          → git add <path>
  *   "stage all"                  → git add -A
  *   "unstage all"                → git reset HEAD
+ *   "tag <name>"                 → git tag <name>
  *   "discard changes"            → git checkout -- . (with confirmation)
  *
- * Dangerous operations (discard, force push) require confirmation.
+ * Dangerous operations (discard, force push, rebase) require confirmation.
  *
  * Enable via `voxpilot.voiceGit` setting (default: true).
  */
@@ -27,7 +37,9 @@ import * as vscode from 'vscode';
 export type GitCommandType =
   | 'commit' | 'push' | 'pull' | 'stash' | 'stash-pop'
   | 'checkout' | 'create-branch' | 'merge' | 'status'
-  | 'diff' | 'log' | 'stage-all' | 'unstage-all' | 'discard';
+  | 'diff' | 'log' | 'stage-all' | 'unstage-all' | 'discard'
+  | 'amend' | 'cherry-pick' | 'rebase' | 'fetch' | 'blame'
+  | 'tag' | 'branch-list' | 'stage-file' | 'force-push';
 
 export interface GitMatch {
   type: GitCommandType;
@@ -37,19 +49,28 @@ export interface GitMatch {
 }
 
 const GIT_TRIGGERS: Array<{ phrases: string[]; type: GitCommandType; dangerous?: boolean }> = [
+  { phrases: ['amend commit', 'amend last commit', 'amend'], type: 'amend' },
   { phrases: ['commit'], type: 'commit' },
+  { phrases: ['force push', 'push force'], type: 'force-push', dangerous: true },
   { phrases: ['push', 'git push'], type: 'push' },
   { phrases: ['pull', 'git pull'], type: 'pull' },
+  { phrases: ['fetch', 'git fetch'], type: 'fetch' },
   { phrases: ['stash pop', 'pop stash', 'unstash'], type: 'stash-pop' },
   { phrases: ['stash', 'git stash'], type: 'stash' },
   { phrases: ['checkout branch', 'switch to branch', 'switch branch', 'checkout'], type: 'checkout' },
   { phrases: ['create branch', 'new branch'], type: 'create-branch' },
+  { phrases: ['cherry pick', 'cherry-pick'], type: 'cherry-pick' },
+  { phrases: ['rebase on', 'rebase onto', 'rebase'], type: 'rebase', dangerous: true },
   { phrases: ['merge branch', 'merge'], type: 'merge' },
   { phrases: ['git status', 'status'], type: 'status' },
   { phrases: ['git diff', 'show diff', 'diff'], type: 'diff' },
   { phrases: ['git log', 'show log', 'log'], type: 'log' },
+  { phrases: ['git blame', 'blame', 'annotate'], type: 'blame' },
+  { phrases: ['list branches', 'show branches', 'branches'], type: 'branch-list' },
+  { phrases: ['stage file', 'add file', 'stage'], type: 'stage-file' },
   { phrases: ['stage all', 'add all', 'stage everything'], type: 'stage-all' },
   { phrases: ['unstage all', 'unstage everything', 'reset stage'], type: 'unstage-all' },
+  { phrases: ['create tag', 'tag'], type: 'tag' },
   { phrases: ['discard changes', 'discard all changes', 'reset changes'], type: 'discard', dangerous: true },
 ];
 
@@ -142,6 +163,44 @@ export function buildGitCommand(match: GitMatch): string | null {
     case 'discard':
       return 'git checkout -- .';
 
+    case 'amend':
+      if (match.argument) {
+        const amendMsg = match.argument.replace(/'/g, "'\\''");
+        return `git commit --amend -m '${amendMsg}'`;
+      }
+      return 'git commit --amend --no-edit';
+
+    case 'cherry-pick':
+      if (!match.argument) { return null; }
+      const commitRef = match.argument.replace(/[^a-zA-Z0-9_\-/.~^]/g, '');
+      return `git cherry-pick ${commitRef}`;
+
+    case 'rebase':
+      if (!match.argument) { return null; }
+      const rebaseBranch = match.argument.replace(/[^a-zA-Z0-9_\-/.]/g, '');
+      return `git rebase ${rebaseBranch}`;
+
+    case 'fetch':
+      return 'git fetch';
+
+    case 'blame':
+      return 'git blame';
+
+    case 'tag':
+      if (!match.argument) { return null; }
+      const tagName = match.argument.replace(/[^a-zA-Z0-9_\-/.]/g, '');
+      return `git tag ${tagName}`;
+
+    case 'branch-list':
+      return 'git branch -a';
+
+    case 'stage-file':
+      if (!match.argument) { return null; }
+      return `git add ${match.argument}`;
+
+    case 'force-push':
+      return 'git push --force-with-lease';
+
     default:
       return null;
   }
@@ -193,8 +252,14 @@ export async function executeGitCommand(match: GitMatch): Promise<boolean> {
       case 'push':
         await vscode.commands.executeCommand('git.push');
         return true;
+      case 'force-push':
+        await vscode.commands.executeCommand('git.pushForce');
+        return true;
       case 'pull':
         await vscode.commands.executeCommand('git.pull');
+        return true;
+      case 'fetch':
+        await vscode.commands.executeCommand('git.fetch');
         return true;
       case 'stash':
         await vscode.commands.executeCommand('git.stash');
@@ -204,6 +269,9 @@ export async function executeGitCommand(match: GitMatch): Promise<boolean> {
         return true;
       case 'diff':
         await vscode.commands.executeCommand('git.openAllChanges');
+        return true;
+      case 'branch-list':
+        await vscode.commands.executeCommand('git.branchFrom');
         return true;
     }
   } catch {
