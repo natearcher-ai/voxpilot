@@ -33,6 +33,7 @@ import { VoxPilotEventEmitter, VoxPilotEvent, TranscriptEvent } from './extensio
 import { correctTranscript, getLlmCorrectionConfig, showCorrectionDiff } from './llmPostCorrection';
 import { DictationProfileManager, DictationProfileStatusBar } from './dictationProfiles';
 import { ConfidenceIndicatorManager, analyzeConfidence } from './confidenceIndicators';
+import { AmbientListeningManager, AmbientStatusIndicator } from './ambientListening';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -97,6 +98,8 @@ export class VoxPilotEngine {
   private confidenceManager: ConfidenceIndicatorManager;
   private adaptiveLearningStore: AdaptiveLearningStore;
   private correctionTracker: CorrectionTracker;
+  private ambientManager: AmbientListeningManager;
+  private ambientIndicator: AmbientStatusIndicator;
 
   /** Expose pipeline for settings UI */
   get pipeline(): PostProcessingPipeline { return this._pipeline; }
@@ -168,6 +171,26 @@ export class VoxPilotEngine {
     // Adaptive learning
     this.adaptiveLearningStore = new AdaptiveLearningStore(context);
     this.correctionTracker = new CorrectionTracker(this.adaptiveLearningStore);
+    // Ambient listening mode
+    const ambientEnabled = config.get<boolean>('ambientListening', false);
+    const ambientPowerMode = config.get<string>('ambientListening.powerMode', 'balanced') as 'low' | 'balanced' | 'performance';
+    const ambientShowIndicator = config.get<boolean>('ambientListening.showIndicator', true);
+    const ambientAutoResume = config.get<boolean>('ambientListening.autoResume', true);
+    const ambientSuspendOnBlur = config.get<boolean>('ambientListening.suspendOnBlur', false);
+    this.ambientManager = new AmbientListeningManager({
+      enabled: ambientEnabled,
+      powerMode: ambientPowerMode,
+      showIndicator: ambientShowIndicator,
+      autoResume: ambientAutoResume,
+      suspendOnBlur: ambientSuspendOnBlur,
+    });
+    this.ambientIndicator = new AmbientStatusIndicator();
+    this.ambientManager.onWake(() => this.onAmbientWakeDetected());
+    this.ambientManager.onSuspendChange((suspended) => {
+      if (this.ambientIndicator.visible) {
+        this.ambientIndicator.show(suspended);
+      }
+    });
     this.partialOverlay = new PartialOverlay();
     this._pipeline = new PostProcessingPipeline();
     // Bind adaptive learning store to the pipeline processor
@@ -230,6 +253,11 @@ export class VoxPilotEngine {
     const wakeWordEnabled = config.get<boolean>('wakeWord', false);
     if (wakeWordEnabled) {
       setTimeout(() => this.startWakeWordListening(), 500);
+    }
+
+    // Start ambient listening if enabled (takes priority over basic wake word)
+    if (ambientEnabled) {
+      setTimeout(() => this.startAmbientListening(), 600);
     }
 
     // Restore saved audio device preference
@@ -913,9 +941,17 @@ export class VoxPilotEngine {
     this.log('Listening stopped');
 
     // Resume wake word listening if enabled
-    const wakeEnabled = vscode.workspace.getConfiguration('voxpilot').get<boolean>('wakeWord', false);
-    if (wakeEnabled) {
-      this.startWakeWordListening();
+    const config = vscode.workspace.getConfiguration('voxpilot');
+    const ambientEnabled = config.get<boolean>('ambientListening', false);
+    if (ambientEnabled && this.ambientManager.config.autoResume) {
+      // Resume ambient listening (which includes wake word detection)
+      this.ambientManager.resume('recording-stopped');
+      this.startAmbientListening();
+    } else {
+      const wakeEnabled = config.get<boolean>('wakeWord', false);
+      if (wakeEnabled) {
+        this.startWakeWordListening();
+      }
     }
   }
 
@@ -2054,8 +2090,125 @@ export class VoxPilotEngine {
     await this.startListening();
   }
 
+  // --- Ambient Listening Mode ---
+
+  /** Start ambient listening (low-power always-on mode) */
+  private startAmbientListening(): void {
+    if (this.isListening) { return; }
+
+    // Stop basic wake word listening if active (ambient supersedes it)
+    if (this.wakeWordActive) {
+      this.stopWakeWordListening();
+    }
+
+    this.ambientManager.start();
+
+    // Start a dedicated audio capture for ambient mode
+    if (!this.wakeWordAudio) {
+      const { AudioCapture } = require('./audioCapture');
+      this.wakeWordAudio = new AudioCapture();
+      const config = vscode.workspace.getConfiguration('voxpilot');
+      const savedDevice = config.get<string>('audioDevice', '');
+      if (savedDevice) {
+        this.wakeWordAudio!.setDevice(savedDevice);
+      }
+      this.wakeWordAudio!.on('audio', (chunk: Buffer) => this.onAmbientAudioChunk(chunk));
+      this.wakeWordAudio!.on('error', (err: Error) => {
+        this.log(`Ambient audio error: ${err.message}`);
+        this.stopAmbientListening();
+      });
+    }
+
+    this.wakeWordAudio!.start();
+    this.wakeWordActive = true;
+
+    if (this.ambientManager.config.showIndicator) {
+      this.ambientIndicator.show();
+    }
+
+    this.log(`Ambient listening started (power mode: ${this.ambientManager.config.powerMode})`);
+  }
+
+  /** Stop ambient listening */
+  private stopAmbientListening(): void {
+    this.ambientManager.stop();
+
+    if (this.wakeWordAudio) {
+      this.wakeWordAudio.stop();
+      this.wakeWordAudio.dispose();
+      this.wakeWordAudio = null;
+    }
+    this.wakeWordActive = false;
+    this.ambientIndicator.hide();
+    this.log('Ambient listening stopped');
+  }
+
+  /** Process audio chunks in ambient mode */
+  private onAmbientAudioChunk(chunk: Buffer): void {
+    // Feed frames to the ambient manager's power-aware processor
+    const frameSize = this.FRAME_SIZE;
+    this.wakeWordPendingAudio = Buffer.concat([this.wakeWordPendingAudio, chunk]);
+
+    while (this.wakeWordPendingAudio.length >= frameSize) {
+      const frame = this.wakeWordPendingAudio.subarray(0, frameSize);
+      this.wakeWordPendingAudio = this.wakeWordPendingAudio.subarray(frameSize);
+
+      const result = this.ambientManager.processFrame(Buffer.from(frame));
+      if (result.shouldTranscribe && result.audioData) {
+        this.transcribeAmbientBuffer(result.audioData);
+      }
+    }
+  }
+
+  /** Transcribe audio from ambient mode and check for wake word */
+  private async transcribeAmbientBuffer(audioData: Buffer): Promise<void> {
+    try {
+      await this.ensureTranscriber();
+      const result = await this.transcriber!.transcribeStreaming(audioData, {}, this.currentLanguage);
+      const text = result.text.trim();
+      if (text) {
+        this.log(`Ambient heard: "${text}"`);
+        if (this.wakeWordDetector.checkTranscript(text)) {
+          this.ambientManager.notifyWakeDetected();
+        }
+      }
+    } catch (err: any) {
+      this.log(`Ambient transcription error: ${err.message}`);
+    }
+  }
+
+  /** Called when wake word is detected in ambient mode */
+  private async onAmbientWakeDetected(): Promise<void> {
+    this.log('Ambient mode: wake word detected! Starting recording...');
+    // Suspend ambient listening while recording
+    this.ambientManager.suspend('recording');
+    if (this.wakeWordAudio) {
+      this.wakeWordAudio.stop();
+    }
+    this.wakeWordActive = false;
+    this.ambientIndicator.show(true);
+
+    vscode.window.showInformationMessage('🎙️ VoxPilot: Wake word detected — listening...');
+    await this.startListening();
+  }
+
+  /** Toggle ambient listening on/off (for command) */
+  async toggleAmbientListening(): Promise<void> {
+    if (this.ambientManager.active) {
+      this.stopAmbientListening();
+    } else {
+      this.startAmbientListening();
+    }
+  }
+
+  /** Get ambient listening stats (for command/dashboard) */
+  getAmbientStats() {
+    return this.ambientManager.stats;
+  }
+
   dispose(): void {
     this.stopWakeWordListening();
+    this.stopAmbientListening();
     if (this.walkyTalkyDetector) { this.walkyTalkyDetector.reset(); }
     void this.stopListening();
     this._eventEmitter.removeAll();
@@ -2067,6 +2220,8 @@ export class VoxPilotEngine {
     this.dictationProfileManager.dispose();
     this.confidenceManager.dispose();
     this.correctionTracker.dispose();
+    this.ambientManager.dispose();
+    this.ambientIndicator.dispose();
     this.disposables.forEach(d => d.dispose());
     this.disposables = [];
     // Fire-and-forget async cleanup

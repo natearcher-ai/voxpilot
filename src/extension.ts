@@ -91,6 +91,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
     vscode.commands.registerCommand('voxpilot.exportTranscriptAs', () => exportTranscriptAs(context)),
     vscode.commands.registerCommand('voxpilot.exportTranscriptToClipboard', () => exportTranscriptToClipboard(context)),
     vscode.commands.registerCommand('voxpilot.listVoiceTemplates', () => listVoiceTemplates()),
+    vscode.commands.registerCommand('voxpilot.toggleAmbientListening', () => engine?.toggleAmbientListening()),
     registerAiCodeGenerationCommand(context),
     treeView,
     configWatcher,

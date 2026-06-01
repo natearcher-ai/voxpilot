@@ -2,6 +2,20 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.130] - 2026-06-01
+
+### Added
+- Ambient listening mode — always-on low-power background listener that activates full recording on wake word detection
+- Adaptive duty cycling: skips silent frames entirely, only processes audio above energy floor
+- Three power modes (low/balanced/performance) controlling CPU usage vs responsiveness
+- Auto-suspend when VS Code window loses focus (optional, saves battery)
+- Auto-resume after recording sessions end
+- Status bar indicator showing ambient state (active/paused)
+- Stats tracking: wake detections, windows processed/skipped, duty cycle percentage
+- New command: "VoxPilot: Toggle Ambient Listening Mode"
+- New settings: `voxpilot.ambientListening`, `ambientListening.powerMode`, `ambientListening.showIndicator`, `ambientListening.autoResume`, `ambientListening.suspendOnBlur`
+- Supersedes basic wake word detection with smarter power management
+
 ## [0.7.128] - 2026-05-31
 
 ### Added
