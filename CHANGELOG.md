@@ -2,6 +2,21 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.132] - 2026-06-02
+
+### Added
+- Multi-speaker diarization — identify and label different speakers in pair programming sessions
+- Automatic speaker segmentation using sliding-window classification (500ms windows)
+- Speaker labels on transcript segments (e.g. "[Alice] hello world [Bob] hi there")
+- Speaker change detection using energy + pitch + brightness transitions
+- Support for 2-4 speakers (pair and mob programming scenarios)
+- Real-time speaker tracking via `RealtimeSpeakerTracker` with majority-vote smoothing
+- Speaker timeline generation for the history panel (e.g. "Alice (0:00-0:15) → Bob (0:15-0:32)")
+- Multi-chunk calibration for more robust voice profiles (`buildProfileFromChunks`)
+- Minimum segment duration merging to eliminate noisy short classifications
+- Confidence-based speaker attribution (below threshold → "Unknown")
+- Builds on existing pair programming voice profiles — enable via `voxpilot.pairProgramming`
+
 ## [0.7.130] - 2026-06-01
 
 ### Added
