@@ -25,6 +25,7 @@ import { matchNavigation, executeNavigation } from './voiceNavigation';
 import { matchGitCommand, executeGitCommand } from './voiceGit';
 import { matchDebugCommand, executeDebugCommand } from './voiceDebugging';
 import { matchTestCommand, executeTestCommand } from './voiceTestRunner';
+import { parseTerminalCommand, executeTerminalCommand } from './voiceTerminal';
 import { NeuralNoiseReduction, RNNoiseModule } from './neuralNoiseReduction';
 import { PerformanceCollector, PerformanceDashboardPanel } from './performanceDashboard';
 import { BUILTIN_PACKS, searchPacks, filterByCategory, sortPacks, MacroPack, PackCategory, InstalledPack, getBuiltinPackMacros } from './snippetMarketplace';
@@ -1442,6 +1443,25 @@ export class VoxPilotEngine {
           const success = await executeTestCommand(testMatch);
           if (success) {
             this.statusBar.setSent(`🧪 ${testMatch.trigger}${testMatch.argument ? ' ' + testMatch.argument : ''}`);
+          }
+          if (this.isListening) {
+            this.statusBar.setListening();
+          } else {
+            this.statusBar.setIdle();
+          }
+          return;
+        }
+      }
+
+      // Check for voice-driven terminal commands
+      const termConfig = vscode.workspace.getConfiguration('voxpilot');
+      if (termConfig.get<boolean>('voiceTerminal', true)) {
+        const termCmd = parseTerminalCommand(text);
+        if (termCmd) {
+          this.log(`Voice terminal: "${termCmd.raw}"${termCmd.argument ? ` → "${termCmd.argument}"` : ''}`);
+          const success = await executeTerminalCommand(termCmd);
+          if (success) {
+            this.statusBar.setSent(`💻 ${termCmd.type}${termCmd.argument ? ' ' + termCmd.argument : ''}`);
           }
           if (this.isListening) {
             this.statusBar.setListening();

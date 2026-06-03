@@ -2,6 +2,20 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.134] - 2026-06-03
+
+### Added
+- Voice-driven terminal — run shell commands, navigate output, and manage terminals entirely by voice
+- Execute arbitrary commands: say "run <command>" or "terminal <command>" to run anything in the integrated terminal
+- npm shortcuts: "npm install <package>", "npm run <script>" for quick package management
+- Directory navigation: "change directory <path>" or "cd <path>"
+- Terminal management: "new terminal", "close terminal", "next terminal", "previous terminal"
+- Output navigation: "scroll up", "scroll down" to browse command output
+- Process control: "kill process" sends SIGINT (Ctrl+C) to stop running processes
+- Utility commands: "list files" (ls/dir), "clear terminal"
+- Safety checks: destructive commands (rm -rf, format, drop) require voice confirmation before execution
+- New setting: `voxpilot.voiceTerminal` (default: true) to enable/disable
+
 ## [0.7.132] - 2026-06-02
 
 ### Added
