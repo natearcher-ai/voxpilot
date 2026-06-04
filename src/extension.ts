@@ -18,6 +18,7 @@ import { aiVoiceShortcuts } from './aiVoiceShortcuts';
 import { remotePairVoice } from './remotePairVoice';
 import { voiceTemplates } from './voiceTemplates';
 import { transcriptionExporter, ExportFormat, TranscriptEntry } from './transcriptionExport';
+import { accessibilityAudit, executeAuditCommand, clearAuditDiagnostics, runFullAudit, showAuditResults, isAuditable, disposeAuditDiagnostics } from './accessibilityAudit';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
@@ -92,6 +93,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
     vscode.commands.registerCommand('voxpilot.exportTranscriptToClipboard', () => exportTranscriptToClipboard(context)),
     vscode.commands.registerCommand('voxpilot.listVoiceTemplates', () => listVoiceTemplates()),
     vscode.commands.registerCommand('voxpilot.toggleAmbientListening', () => engine?.toggleAmbientListening()),
+    vscode.commands.registerCommand('voxpilot.runAccessibilityAudit', () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) { vscode.window.showWarningMessage('VoxPilot: No active editor.'); return; }
+      if (!isAuditable(editor.document)) { vscode.window.showWarningMessage('VoxPilot: Current file is not markup.'); return; }
+      const issues = runFullAudit(editor.document.getText());
+      showAuditResults(editor.document, issues);
+      if (issues.length === 0) { vscode.window.showInformationMessage('VoxPilot: No accessibility issues found. ✅'); }
+      else { vscode.window.showInformationMessage(`VoxPilot: Found ${issues.length} accessibility issue(s).`); }
+      vscode.commands.executeCommand('workbench.actions.view.problems');
+    }),
+    vscode.commands.registerCommand('voxpilot.clearAccessibilityAudit', () => clearAuditDiagnostics()),
     registerAiCodeGenerationCommand(context),
     treeView,
     configWatcher,

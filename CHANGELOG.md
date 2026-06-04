@@ -2,6 +2,21 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.136] - 2026-06-04
+
+### Added
+- Accessibility audit mode — WCAG compliance checker triggered by voice commands
+- Say "check accessibility", "wcag check", or "a11y audit" to scan the current file for WCAG 2.1 issues
+- Category-specific audits: "check contrast", "check alt text", "check aria", "check headings", "check labels"
+- Checks 12 WCAG criteria: alt text (1.1.1), heading hierarchy (1.3.1), form labels (3.3.2), ARIA roles (4.1.2), color contrast hints (1.4.3), lang attribute (3.1.1), duplicate IDs (4.1.1), skip navigation (2.4.1), keyboard accessibility (2.1.1), page title (2.4.2), auto-play media (1.4.2), empty interactive elements (2.4.4)
+- Results appear as VS Code diagnostics in the Problems panel with WCAG criterion codes
+- "accessibility report" generates a summary report in a side panel
+- "clear accessibility" removes all audit diagnostics
+- "fix accessibility" triggers Quick Fix on the current issue
+- Supports HTML, JSX, TSX, Vue, Svelte, PHP templates, ERB, EJS, Handlebars, Razor
+- New commands: "VoxPilot: Run Accessibility Audit", "VoxPilot: Clear Accessibility Audit"
+- New setting: `voxpilot.accessibilityAudit` (default: true) to enable/disable
+
 ## [0.7.134] - 2026-06-03
 
 ### Added

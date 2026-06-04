@@ -2,7 +2,7 @@
   "name": "voxpilot",
   "displayName": "VoxPilot — Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
-  "version": "0.7.135",
+  "version": "0.7.136",
   "publisher": "natearcher-ai",
   "license": "MIT",
   "repository": {
@@ -266,6 +266,15 @@
         "command": "voxpilot.toggleAmbientListening",
         "title": "VoxPilot: Toggle Ambient Listening Mode",
         "icon": "$(eye)"
+      },
+      {
+        "command": "voxpilot.runAccessibilityAudit",
+        "title": "VoxPilot: Run Accessibility Audit",
+        "icon": "$(checklist)"
+      },
+      {
+        "command": "voxpilot.clearAccessibilityAudit",
+        "title": "VoxPilot: Clear Accessibility Audit"
       },
       {
         "command": "voxpilot.exportTranscript",
@@ -1121,6 +1130,11 @@
           "type": "boolean",
           "default": false,
           "description": "Suspend ambient listening when the VS Code window loses focus (saves power when switching to other apps)."
+        },
+        "voxpilot.accessibilityAudit": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable voice-triggered WCAG accessibility auditing — say 'check accessibility' to scan markup files for compliance issues."
         }
       }
     }
