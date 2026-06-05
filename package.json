@@ -2,7 +2,7 @@
   "name": "voxpilot",
   "displayName": "VoxPilot — Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
-  "version": "0.7.137",
+  "version": "0.7.138",
   "publisher": "natearcher-ai",
   "license": "MIT",
   "repository": {
@@ -662,8 +662,8 @@
         "voxpilot.customWakeWords.sensitivity": {
           "type": "number",
           "default": 0.5,
-          "minimum": 0.0,
-          "maximum": 1.0,
+          "minimum": 0,
+          "maximum": 1,
           "description": "Default sensitivity for custom wake words (0.0 = strict/fewer false positives, 1.0 = loose/fewer false negatives)."
         },
         "voxpilot.customWakeWords.trainingSamples": {
