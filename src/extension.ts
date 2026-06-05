@@ -19,6 +19,7 @@ import { remotePairVoice } from './remotePairVoice';
 import { voiceTemplates } from './voiceTemplates';
 import { transcriptionExporter, ExportFormat, TranscriptEntry } from './transcriptionExport';
 import { accessibilityAudit, executeAuditCommand, clearAuditDiagnostics, runFullAudit, showAuditResults, isAuditable, disposeAuditDiagnostics } from './accessibilityAudit';
+import { customWakeWordManager, CustomWakeWordManager } from './customWakeWords';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
@@ -38,6 +39,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
   engine = new VoxPilotEngine(context, statusBar);
   privacyDashboard.init(context);
   remotePairVoice.init(context);
+  customWakeWordManager.init(context);
 
   // Model manager sidebar panel
   const modelPanel = new ModelManagerPanel(context);
@@ -104,6 +106,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
       vscode.commands.executeCommand('workbench.actions.view.problems');
     }),
     vscode.commands.registerCommand('voxpilot.clearAccessibilityAudit', () => clearAuditDiagnostics()),
+    vscode.commands.registerCommand('voxpilot.trainWakeWord', () => trainCustomWakeWord(context)),
+    vscode.commands.registerCommand('voxpilot.manageWakeWords', () => manageWakeWords()),
+    vscode.commands.registerCommand('voxpilot.deleteWakeWord', () => deleteCustomWakeWord()),
     registerAiCodeGenerationCommand(context),
     treeView,
     configWatcher,
@@ -271,6 +276,154 @@ function getDirSize(dir: string): number {
     }
   } catch {}
   return size;
+}
+
+async function trainCustomWakeWord(context: vscode.ExtensionContext): Promise<void> {
+  const config = vscode.workspace.getConfiguration('voxpilot');
+  if (!config.get<boolean>('customWakeWords', true)) {
+    vscode.window.showWarningMessage('VoxPilot: Custom wake words are disabled. Enable via voxpilot.customWakeWords setting.');
+    return;
+  }
+
+  const phrase = await vscode.window.showInputBox({
+    prompt: 'Enter the wake word or phrase to train (e.g., "hey assistant", "start coding")',
+    placeHolder: 'Wake word phrase',
+    validateInput: (value) => {
+      if (!value || value.trim().length < 2) return 'Phrase must be at least 2 characters';
+      if (value.trim().length > 50) return 'Phrase must be under 50 characters';
+      return undefined;
+    },
+  });
+
+  if (!phrase) return;
+
+  const targetSamples = config.get<number>('customWakeWords.trainingSamples', 5);
+  customWakeWordManager.init(context);
+  const session = customWakeWordManager.startTraining(phrase.trim(), targetSamples);
+
+  vscode.window.showInformationMessage(
+    `VoxPilot: Training "${phrase.trim()}". Say the phrase ${targetSamples} times when prompted. ` +
+    `Use "VoxPilot: Toggle Voice Input" to record each sample.`
+  );
+
+  // Show progress notification
+  await vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: `Training wake word "${phrase.trim()}"`,
+      cancellable: true,
+    },
+    async (progress, token) => {
+      token.onCancellationRequested(() => {
+        customWakeWordManager.cancelTraining();
+        vscode.window.showInformationMessage('VoxPilot: Wake word training cancelled.');
+      });
+
+      progress.report({ message: `Say "${phrase.trim()}" — sample 0/${targetSamples} collected` });
+
+      // Wait for training to complete (poll session state)
+      let lastCount = 0;
+      while (customWakeWordManager.getTrainingSession()?.active && !token.isCancellationRequested) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const current = customWakeWordManager.getTrainingSession();
+        if (current && current.samplesCollected > lastCount) {
+          lastCount = current.samplesCollected;
+          progress.report({
+            message: `Say "${phrase.trim()}" — sample ${lastCount}/${targetSamples} collected`,
+            increment: (100 / targetSamples),
+          });
+        }
+      }
+
+      if (!token.isCancellationRequested) {
+        vscode.window.showInformationMessage(
+          `VoxPilot: Wake word "${phrase.trim()}" trained successfully! It's now active.`
+        );
+      }
+    }
+  );
+}
+
+async function manageWakeWords(): Promise<void> {
+  const wakeWords = customWakeWordManager.getWakeWords();
+  const items = wakeWords.map(ww => ({
+    label: `${ww.enabled ? '$(check)' : '$(circle-slash)'} ${ww.phrase}`,
+    description: ww.builtIn ? 'Built-in' : `Custom (${ww.sampleCount} samples)`,
+    detail: `Sensitivity: ${(ww.sensitivity * 100).toFixed(0)}% | ${ww.enabled ? 'Enabled' : 'Disabled'}`,
+    phrase: ww.phrase,
+    enabled: ww.enabled,
+  }));
+
+  const picked = await vscode.window.showQuickPick(items, {
+    placeHolder: 'Select a wake word to toggle or adjust',
+    matchOnDescription: true,
+  });
+
+  if (!picked) return;
+
+  const action = await vscode.window.showQuickPick(
+    [
+      { label: picked.enabled ? '$(circle-slash) Disable' : '$(check) Enable', action: 'toggle' },
+      { label: '$(settings-gear) Adjust Sensitivity', action: 'sensitivity' },
+    ],
+    { placeHolder: `Action for "${picked.phrase}"` }
+  );
+
+  if (!action) return;
+
+  if (action.action === 'toggle') {
+    if (picked.enabled) {
+      customWakeWordManager.disableWakeWord(picked.phrase);
+      vscode.window.showInformationMessage(`VoxPilot: Wake word "${picked.phrase}" disabled.`);
+    } else {
+      customWakeWordManager.enableWakeWord(picked.phrase);
+      vscode.window.showInformationMessage(`VoxPilot: Wake word "${picked.phrase}" enabled.`);
+    }
+  } else if (action.action === 'sensitivity') {
+    const input = await vscode.window.showInputBox({
+      prompt: `Sensitivity for "${picked.phrase}" (0-100, higher = more sensitive)`,
+      value: String(Math.round(customWakeWordManager.getWakeWords().find(w => w.phrase === picked.phrase)!.sensitivity * 100)),
+      validateInput: (v) => {
+        const n = parseInt(v, 10);
+        if (isNaN(n) || n < 0 || n > 100) return 'Enter a number between 0 and 100';
+        return undefined;
+      },
+    });
+    if (input) {
+      customWakeWordManager.setSensitivity(picked.phrase, parseInt(input, 10) / 100);
+      vscode.window.showInformationMessage(`VoxPilot: Sensitivity for "${picked.phrase}" set to ${input}%.`);
+    }
+  }
+}
+
+async function deleteCustomWakeWord(): Promise<void> {
+  const wakeWords = customWakeWordManager.getWakeWords().filter(w => !w.builtIn);
+  if (wakeWords.length === 0) {
+    vscode.window.showInformationMessage('VoxPilot: No custom wake words to delete.');
+    return;
+  }
+
+  const items = wakeWords.map(ww => ({
+    label: ww.phrase,
+    description: `${ww.sampleCount} training samples`,
+  }));
+
+  const picked = await vscode.window.showQuickPick(items, {
+    placeHolder: 'Select a custom wake word to delete',
+  });
+
+  if (!picked) return;
+
+  const confirm = await vscode.window.showWarningMessage(
+    `Delete wake word "${picked.label}"? Training data will be lost.`,
+    { modal: true },
+    'Delete'
+  );
+
+  if (confirm === 'Delete') {
+    customWakeWordManager.deleteWakeWord(picked.label);
+    vscode.window.showInformationMessage(`VoxPilot: Wake word "${picked.label}" deleted.`);
+  }
 }
 
 export function deactivate() {

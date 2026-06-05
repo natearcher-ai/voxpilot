@@ -2,6 +2,20 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.137] - 2026-06-05
+
+### Added
+- Custom wake words — train personalized wake word detection locally on-device
+- Record 3-5 voice samples to train any custom phrase (e.g., "hey assistant", "start coding")
+- Local MFCC feature extraction + Dynamic Time Warping matching — no cloud processing
+- Multiple wake words supported simultaneously with individual sensitivity controls
+- Built-in wake words: "hey voxpilot", "hey vox", "computer", "start listening"
+- Adjustable sensitivity per wake word (strict to loose, balancing false positives vs false negatives)
+- New commands: "VoxPilot: Train Custom Wake Word", "VoxPilot: Manage Wake Words", "VoxPilot: Delete Custom Wake Word"
+- New settings: `voxpilot.customWakeWords` (enable/disable), `voxpilot.customWakeWords.sensitivity`, `voxpilot.customWakeWords.trainingSamples`
+- Training progress UI with cancellation support
+- Wake words persist across sessions via workspace state
+
 ## [0.7.136] - 2026-06-04
 
 ### Added

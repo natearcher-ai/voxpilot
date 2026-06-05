@@ -277,6 +277,20 @@
         "title": "VoxPilot: Clear Accessibility Audit"
       },
       {
+        "command": "voxpilot.trainWakeWord",
+        "title": "VoxPilot: Train Custom Wake Word",
+        "icon": "$(record)"
+      },
+      {
+        "command": "voxpilot.manageWakeWords",
+        "title": "VoxPilot: Manage Wake Words",
+        "icon": "$(list-unordered)"
+      },
+      {
+        "command": "voxpilot.deleteWakeWord",
+        "title": "VoxPilot: Delete Custom Wake Word"
+      },
+      {
         "command": "voxpilot.exportTranscript",
         "title": "VoxPilot: Export Transcript",
         "icon": "$(export)"
@@ -639,6 +653,25 @@
           "type": "string",
           "default": "hey vox",
           "description": "Custom wake phrase to trigger recording (default: \"hey vox\"). Fuzzy matching handles common ASR misrecognitions."
+        },
+        "voxpilot.customWakeWords": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable custom wake word training — record personalized wake words detected locally via MFCC + DTW matching. No cloud processing."
+        },
+        "voxpilot.customWakeWords.sensitivity": {
+          "type": "number",
+          "default": 0.5,
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Default sensitivity for custom wake words (0.0 = strict/fewer false positives, 1.0 = loose/fewer false negatives)."
+        },
+        "voxpilot.customWakeWords.trainingSamples": {
+          "type": "number",
+          "default": 5,
+          "minimum": 3,
+          "maximum": 10,
+          "description": "Number of voice samples required to train a custom wake word."
         },
         "voxpilot.streamingTranscription": {
           "type": "boolean",
