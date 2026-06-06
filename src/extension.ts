@@ -20,6 +20,7 @@ import { voiceTemplates } from './voiceTemplates';
 import { transcriptionExporter, ExportFormat, TranscriptEntry } from './transcriptionExport';
 import { accessibilityAudit, executeAuditCommand, clearAuditDiagnostics, runFullAudit, showAuditResults, isAuditable, disposeAuditDiagnostics } from './accessibilityAudit';
 import { customWakeWordManager, CustomWakeWordManager } from './customWakeWords';
+import { voiceJournal } from './voiceJournal';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
@@ -40,6 +41,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
   privacyDashboard.init(context);
   remotePairVoice.init(context);
   customWakeWordManager.init(context);
+  voiceJournal.init(context);
 
   // Model manager sidebar panel
   const modelPanel = new ModelManagerPanel(context);
@@ -106,6 +108,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
       vscode.commands.executeCommand('workbench.actions.view.problems');
     }),
     vscode.commands.registerCommand('voxpilot.clearAccessibilityAudit', () => clearAuditDiagnostics()),
+    vscode.commands.registerCommand('voxpilot.openJournalPanel', () => openJournalPanel(context)),
+    vscode.commands.registerCommand('voxpilot.exportJournal', () => exportJournal()),
+    vscode.commands.registerCommand('voxpilot.clearJournal', () => clearJournal()),
     vscode.commands.registerCommand('voxpilot.trainWakeWord', () => trainCustomWakeWord(context)),
     vscode.commands.registerCommand('voxpilot.manageWakeWords', () => manageWakeWords()),
     vscode.commands.registerCommand('voxpilot.deleteWakeWord', () => deleteCustomWakeWord()),
@@ -423,6 +428,95 @@ async function deleteCustomWakeWord(): Promise<void> {
   if (confirm === 'Delete') {
     customWakeWordManager.deleteWakeWord(picked.label);
     vscode.window.showInformationMessage(`VoxPilot: Wake word "${picked.label}" deleted.`);
+  }
+}
+
+async function openJournalPanel(context: vscode.ExtensionContext): Promise<void> {
+  const entries = voiceJournal.getEntries();
+  if (entries.length === 0) {
+    vscode.window.showInformationMessage('VoxPilot: No journal entries yet. Say "note", "todo", "bug", "idea", or "question" followed by your text.');
+    return;
+  }
+
+  const items = entries.slice().reverse().map(e => {
+    const time = new Date(e.timestamp).toLocaleString();
+    const emoji = getJournalTagEmoji(e.tag);
+    const ctx = e.context.file ? ` (${e.context.file}${e.context.line ? ':' + e.context.line : ''})` : '';
+    return {
+      label: `${emoji} [${e.tag.toUpperCase()}] ${e.text}`,
+      description: time,
+      detail: `${ctx}${e.context.branch ? ' | branch: ' + e.context.branch : ''}`,
+      id: e.id,
+    };
+  });
+
+  const picked = await vscode.window.showQuickPick(items, {
+    placeHolder: `Voice Journal — ${entries.length} entries`,
+    matchOnDescription: true,
+    matchOnDetail: true,
+  });
+
+  if (picked) {
+    const entry = entries.find(e => e.id === picked.id);
+    if (entry?.context.file) {
+      const workspaceFolders = vscode.workspace.workspaceFolders;
+      if (workspaceFolders) {
+        const filePath = path.join(workspaceFolders[0].uri.fsPath, entry.context.file);
+        try {
+          const doc = await vscode.workspace.openTextDocument(filePath);
+          const editor = await vscode.window.showTextDocument(doc);
+          if (entry.context.line) {
+            const pos = new vscode.Position(entry.context.line - 1, 0);
+            editor.selection = new vscode.Selection(pos, pos);
+            editor.revealRange(new vscode.Range(pos, pos));
+          }
+        } catch {
+          // File may not exist anymore
+        }
+      }
+    }
+  }
+}
+
+async function exportJournal(): Promise<void> {
+  const entries = voiceJournal.getEntries();
+  if (entries.length === 0) {
+    vscode.window.showInformationMessage('VoxPilot: No journal entries to export.');
+    return;
+  }
+
+  const markdown = voiceJournal.exportAsMarkdown();
+  const doc = await vscode.workspace.openTextDocument({ content: markdown, language: 'markdown' });
+  await vscode.window.showTextDocument(doc);
+}
+
+async function clearJournal(): Promise<void> {
+  const entries = voiceJournal.getEntries();
+  if (entries.length === 0) {
+    vscode.window.showInformationMessage('VoxPilot: Journal is already empty.');
+    return;
+  }
+
+  const confirm = await vscode.window.showWarningMessage(
+    `VoxPilot: Clear all ${entries.length} journal entries? This cannot be undone.`,
+    { modal: true },
+    'Clear All',
+  );
+  if (confirm === 'Clear All') {
+    voiceJournal.clearAll();
+    vscode.window.showInformationMessage('VoxPilot: Voice journal cleared.');
+  }
+}
+
+function getJournalTagEmoji(tag: string): string {
+  switch (tag) {
+    case 'todo': return '📋';
+    case 'bug': return '🐛';
+    case 'idea': return '💡';
+    case 'question': return '❓';
+    case 'decision': return '⚖️';
+    case 'review': return '👀';
+    default: return '📝';
   }
 }
 

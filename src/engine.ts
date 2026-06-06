@@ -26,6 +26,7 @@ import { matchGitCommand, executeGitCommand } from './voiceGit';
 import { matchDebugCommand, executeDebugCommand } from './voiceDebugging';
 import { matchTestCommand, executeTestCommand } from './voiceTestRunner';
 import { parseTerminalCommand, executeTerminalCommand } from './voiceTerminal';
+import { parseJournalCommand, voiceJournal } from './voiceJournal';
 import { NeuralNoiseReduction, RNNoiseModule } from './neuralNoiseReduction';
 import { PerformanceCollector, PerformanceDashboardPanel } from './performanceDashboard';
 import { BUILTIN_PACKS, searchPacks, filterByCategory, sortPacks, MacroPack, PackCategory, InstalledPack, getBuiltinPackMacros } from './snippetMarketplace';
@@ -1080,6 +1081,18 @@ export class VoxPilotEngine {
     this.outputChannel.appendLine(`[${new Date().toISOString()}] ${this.currentModelId}: ${message}`);
   }
 
+  private getTagEmoji(tag: string): string {
+    switch (tag) {
+      case 'todo': return '📋';
+      case 'bug': return '🐛';
+      case 'idea': return '💡';
+      case 'question': return '❓';
+      case 'decision': return '⚖️';
+      case 'review': return '👀';
+      default: return '📝';
+    }
+  }
+
   /**
    * Initialize RNNoise WASM neural noise reduction.
    * Loads the WASM module lazily from extension assets.
@@ -1463,6 +1476,25 @@ export class VoxPilotEngine {
           if (success) {
             this.statusBar.setSent(`💻 ${termCmd.type}${termCmd.argument ? ' ' + termCmd.argument : ''}`);
           }
+          if (this.isListening) {
+            this.statusBar.setListening();
+          } else {
+            this.statusBar.setIdle();
+          }
+          return;
+        }
+      }
+
+      // Check for voice journal commands
+      const journalConfig = vscode.workspace.getConfiguration('voxpilot');
+      if (journalConfig.get<boolean>('voiceJournal', true)) {
+        const journalCmd = parseJournalCommand(text);
+        if (journalCmd) {
+          const ctx = voiceJournal.captureContext();
+          const entry = voiceJournal.addEntry(journalCmd.text || '(empty)', journalCmd.tag, ctx);
+          this.log(`Voice journal: [${journalCmd.tag}] "${journalCmd.text}" (${ctx.file ?? 'no file'}:${ctx.line ?? '?'}, branch: ${ctx.branch ?? 'unknown'})`);
+          this.statusBar.setSent(`📓 ${journalCmd.tag}: ${journalCmd.text || '(noted)'}`);
+          vscode.window.showInformationMessage(`VoxPilot: ${this.getTagEmoji(journalCmd.tag)} ${journalCmd.tag} added${ctx.file ? ` — ${ctx.file}` : ''}`);
           if (this.isListening) {
             this.statusBar.setListening();
           } else {

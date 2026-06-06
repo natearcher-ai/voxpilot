@@ -291,6 +291,20 @@
         "title": "VoxPilot: Delete Custom Wake Word"
       },
       {
+        "command": "voxpilot.openJournalPanel",
+        "title": "VoxPilot: Open Voice Journal",
+        "icon": "$(notebook)"
+      },
+      {
+        "command": "voxpilot.exportJournal",
+        "title": "VoxPilot: Export Voice Journal",
+        "icon": "$(export)"
+      },
+      {
+        "command": "voxpilot.clearJournal",
+        "title": "VoxPilot: Clear Voice Journal"
+      },
+      {
         "command": "voxpilot.exportTranscript",
         "title": "VoxPilot: Export Transcript",
         "icon": "$(export)"
@@ -1168,6 +1182,11 @@
           "type": "boolean",
           "default": true,
           "description": "Enable voice-triggered WCAG accessibility auditing — say 'check accessibility' to scan markup files for compliance issues."
+        },
+        "voxpilot.voiceJournal": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable voice journaling — dictate dev notes that auto-link to the current file, git branch, and commit. Say 'note', 'todo', 'bug', 'idea', or 'question' followed by your text."
         }
       }
     }

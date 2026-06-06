@@ -2,6 +2,20 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.138] - 2026-06-06
+
+### Added
+- Voice journaling — dictate dev notes that auto-link to current file, git branch, and commit
+- Say "note", "journal", or "dev note" followed by text to capture a quick note
+- Shortcut tags: "todo", "bug", "idea", "question", "decision", "review" for categorized entries
+- Each entry captures rich context: active file path, cursor line, git branch, latest commit, workspace name
+- "show notes" opens a searchable journal panel with click-to-navigate back to source location
+- "export notes" generates a markdown report grouped by date with full context
+- New commands: "VoxPilot: Open Voice Journal", "VoxPilot: Export Voice Journal", "VoxPilot: Clear Voice Journal"
+- New setting: `voxpilot.voiceJournal` (default: true) to enable/disable
+- Journal entries persist across sessions via workspace state
+- Tag statistics and filtering by file, branch, or date
+
 ## [0.7.137] - 2026-06-05
 
 ### Added
