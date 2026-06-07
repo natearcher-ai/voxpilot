@@ -21,6 +21,7 @@ import { transcriptionExporter, ExportFormat, TranscriptEntry } from './transcri
 import { accessibilityAudit, executeAuditCommand, clearAuditDiagnostics, runFullAudit, showAuditResults, isAuditable, disposeAuditDiagnostics } from './accessibilityAudit';
 import { customWakeWordManager, CustomWakeWordManager } from './customWakeWords';
 import { voiceJournal } from './voiceJournal';
+import { registerOfflineModelHubCommands } from './offlineModelHub';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
@@ -114,6 +115,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
     vscode.commands.registerCommand('voxpilot.trainWakeWord', () => trainCustomWakeWord(context)),
     vscode.commands.registerCommand('voxpilot.manageWakeWords', () => manageWakeWords()),
     vscode.commands.registerCommand('voxpilot.deleteWakeWord', () => deleteCustomWakeWord()),
+    ...registerOfflineModelHubCommands(context),
     registerAiCodeGenerationCommand(context),
     treeView,
     configWatcher,

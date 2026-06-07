@@ -2,6 +2,19 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.139] - 2026-06-07
+
+### Added
+- Offline model hub — download and manage ASR models for air-gapped environments without internet
+- Export downloaded models to portable bundles with manifest and checksums for sneakernet transfer
+- Import models from bundle directories with automatic SHA-256 integrity verification
+- Import models directly from local directories (manually downloaded ONNX models)
+- Verify installed model integrity at any time to detect corruption
+- Bulk export/import support for setting up multiple air-gapped workstations
+- New commands: "VoxPilot: Export Models for Offline Use", "VoxPilot: Import Models from Bundle", "VoxPilot: Import Model from Directory", "VoxPilot: Verify Model Integrity"
+- New setting: `voxpilot.offlineModelHub` (default: true) to enable/disable
+- Bundle manifest includes model metadata, checksums, and creation info for inventory tracking
+
 ## [0.7.138] - 2026-06-06
 
 ### Added

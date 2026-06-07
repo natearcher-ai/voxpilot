@@ -305,6 +305,26 @@
         "title": "VoxPilot: Clear Voice Journal"
       },
       {
+        "command": "voxpilot.offlineHub.export",
+        "title": "VoxPilot: Export Models for Offline Use",
+        "icon": "$(export)"
+      },
+      {
+        "command": "voxpilot.offlineHub.import",
+        "title": "VoxPilot: Import Models from Bundle",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "voxpilot.offlineHub.importDirectory",
+        "title": "VoxPilot: Import Model from Directory",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "voxpilot.offlineHub.verify",
+        "title": "VoxPilot: Verify Model Integrity",
+        "icon": "$(shield)"
+      },
+      {
         "command": "voxpilot.exportTranscript",
         "title": "VoxPilot: Export Transcript",
         "icon": "$(export)"
@@ -1187,6 +1207,11 @@
           "type": "boolean",
           "default": true,
           "description": "Enable voice journaling — dictate dev notes that auto-link to the current file, git branch, and commit. Say 'note', 'todo', 'bug', 'idea', or 'question' followed by your text."
+        },
+        "voxpilot.offlineModelHub": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the offline model hub — export, import, and verify ASR models for air-gapped environments without internet access."
         }
       }
     }
