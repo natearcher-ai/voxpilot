@@ -27,6 +27,7 @@ import { matchDebugCommand, executeDebugCommand } from './voiceDebugging';
 import { matchTestCommand, executeTestCommand } from './voiceTestRunner';
 import { parseTerminalCommand, executeTerminalCommand } from './voiceTerminal';
 import { parseJournalCommand, voiceJournal } from './voiceJournal';
+import { matchProfilerCommand, executeProfilerCommand, performanceProfiler } from './performanceProfiler';
 import { NeuralNoiseReduction, RNNoiseModule } from './neuralNoiseReduction';
 import { PerformanceCollector, PerformanceDashboardPanel } from './performanceDashboard';
 import { BUILTIN_PACKS, searchPacks, filterByCategory, sortPacks, MacroPack, PackCategory, InstalledPack, getBuiltinPackMacros } from './snippetMarketplace';
@@ -159,6 +160,8 @@ export class VoxPilotEngine {
     }
     // Performance metrics collector
     this.perfCollector = new PerformanceCollector();
+    // Performance profiler (voice-triggered)
+    performanceProfiler.init(context);
     // Extension API event emitter
     this._eventEmitter = new VoxPilotEventEmitter();
     // Dictation profiles
@@ -1495,6 +1498,25 @@ export class VoxPilotEngine {
           this.log(`Voice journal: [${journalCmd.tag}] "${journalCmd.text}" (${ctx.file ?? 'no file'}:${ctx.line ?? '?'}, branch: ${ctx.branch ?? 'unknown'})`);
           this.statusBar.setSent(`📓 ${journalCmd.tag}: ${journalCmd.text || '(noted)'}`);
           vscode.window.showInformationMessage(`VoxPilot: ${this.getTagEmoji(journalCmd.tag)} ${journalCmd.tag} added${ctx.file ? ` — ${ctx.file}` : ''}`);
+          if (this.isListening) {
+            this.statusBar.setListening();
+          } else {
+            this.statusBar.setIdle();
+          }
+          return;
+        }
+      }
+
+      // Check for performance profiler commands
+      const profilerConfig = vscode.workspace.getConfiguration('voxpilot');
+      if (profilerConfig.get<boolean>('performanceProfiler', true)) {
+        const profilerMatch = matchProfilerCommand(text);
+        if (profilerMatch) {
+          this.log(`Voice profiler: "${profilerMatch.trigger}"${profilerMatch.argument ? ` → "${profilerMatch.argument}"` : ''}`);
+          const success = await executeProfilerCommand(profilerMatch, performanceProfiler);
+          if (success) {
+            this.statusBar.setSent(`⚡ ${profilerMatch.trigger}${profilerMatch.argument ? ' ' + profilerMatch.argument : ''}`);
+          }
           if (this.isListening) {
             this.statusBar.setListening();
           } else {

@@ -2,6 +2,23 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.140] - 2026-06-08
+
+### Added
+- Performance profiler integration — voice-trigger profiling and read results aloud
+- Say "start profiling" to begin a CPU profiling session with automatic performance audit collection
+- Say "stop profiling" to end the session and hear a spoken summary of results
+- Say "profile for N seconds" to run a timed profiling session that auto-reports
+- Say "start memory profile" / "stop memory profile" for memory-focused profiling
+- Say "profile results" to re-hear the last session's results via TTS readback
+- Say "profile status" to check if profiling is active and see measurement count
+- Say "export profile" to save profiling data as JSON for external analysis
+- Performance score (0-100) calculated from pipeline latency, startup time, and slow operation ratio
+- Integrates with VoxPilot's performance audit system for real operation measurement
+- Results logged to dedicated "VoxPilot Profiler" output channel with detailed breakdown
+- New commands: "VoxPilot: Start Profiling", "VoxPilot: Stop Profiling", "VoxPilot: Show Profiling Results", "VoxPilot: Export Profile Data"
+- New setting: `voxpilot.performanceProfiler` (default: true) to enable/disable voice profiler commands
+
 ## [0.7.139] - 2026-06-07
 
 ### Added

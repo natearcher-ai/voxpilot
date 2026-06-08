@@ -338,6 +338,26 @@
         "command": "voxpilot.exportTranscriptToClipboard",
         "title": "VoxPilot: Export Transcript to Clipboard",
         "icon": "$(clippy)"
+      },
+      {
+        "command": "voxpilot.startProfiling",
+        "title": "VoxPilot: Start Profiling",
+        "icon": "$(debug-start)"
+      },
+      {
+        "command": "voxpilot.stopProfiling",
+        "title": "VoxPilot: Stop Profiling",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "voxpilot.showProfilingResults",
+        "title": "VoxPilot: Show Profiling Results",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "voxpilot.exportProfile",
+        "title": "VoxPilot: Export Profile Data",
+        "icon": "$(export)"
       }
     ],
     "keybindings": [
@@ -1212,6 +1232,11 @@
           "type": "boolean",
           "default": true,
           "description": "Enable the offline model hub — export, import, and verify ASR models for air-gapped environments without internet access."
+        },
+        "voxpilot.performanceProfiler": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable voice-triggered performance profiling. Say start profiling to begin, stop profiling to see results read aloud."
         }
       }
     }

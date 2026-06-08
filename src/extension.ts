@@ -22,6 +22,7 @@ import { accessibilityAudit, executeAuditCommand, clearAuditDiagnostics, runFull
 import { customWakeWordManager, CustomWakeWordManager } from './customWakeWords';
 import { voiceJournal } from './voiceJournal';
 import { registerOfflineModelHubCommands } from './offlineModelHub';
+import { performanceProfiler } from './performanceProfiler';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
@@ -116,6 +117,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
     vscode.commands.registerCommand('voxpilot.manageWakeWords', () => manageWakeWords()),
     vscode.commands.registerCommand('voxpilot.deleteWakeWord', () => deleteCustomWakeWord()),
     ...registerOfflineModelHubCommands(context),
+    vscode.commands.registerCommand('voxpilot.startProfiling', () => performanceProfiler.startCpuProfile()),
+    vscode.commands.registerCommand('voxpilot.stopProfiling', () => performanceProfiler.stopCpuProfile()),
+    vscode.commands.registerCommand('voxpilot.showProfilingResults', () => performanceProfiler.showResults()),
+    vscode.commands.registerCommand('voxpilot.exportProfile', () => performanceProfiler.exportProfile()),
     registerAiCodeGenerationCommand(context),
     treeView,
     configWatcher,
