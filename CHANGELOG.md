@@ -2,6 +2,20 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.141] - 2026-06-09
+
+### Added — VoxPilot 0.8 LTS Release
+- **Stable API (v0.8):** Extension API is now frozen and follows semantic versioning — breaking changes only in major versions
+- **Enterprise SSO:** SAML 2.0 and OIDC authentication via Okta, Azure AD, Google, Auth0, or custom providers
+- **Organization policies:** Centrally enforce feature flags, vocabulary packs, and cloud/local processing rules per user or group
+- **Telemetry opt-in:** Aggregate usage metrics (words/min, command counts, error rates) with explicit opt-in — never transcript content or audio
+- **Telemetry levels:** Configurable detail from crash-only to full usage metrics, always respecting VS Code telemetry settings
+- **LTS designation:** This release receives security and bug fixes for 12 months (until June 2027)
+- New commands: "VoxPilot: Enterprise SSO Login", "VoxPilot: Enterprise SSO Logout", "VoxPilot: Enterprise SSO Status", "VoxPilot: Telemetry Status"
+- New settings: `voxpilot.enterprise.enabled`, `voxpilot.enterprise.ssoProvider`, `voxpilot.enterprise.orgId`, `voxpilot.enterprise.discoveryUrl`, `voxpilot.enterprise.clientId`, `voxpilot.enterprise.enforced`, `voxpilot.enterprise.configUrl`, `voxpilot.telemetry.optIn`, `voxpilot.telemetry.level`
+- SSO tokens stored in VS Code SecretStorage (OS keychain) — no voice data sent to identity providers
+- Privacy-first telemetry: no transcript content, audio data, file contents, paths, or personal identifiers ever reported
+
 ## [0.7.140] - 2026-06-08
 
 ### Added

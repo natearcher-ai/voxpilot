@@ -358,6 +358,26 @@
         "command": "voxpilot.exportProfile",
         "title": "VoxPilot: Export Profile Data",
         "icon": "$(export)"
+      },
+      {
+        "command": "voxpilot.enterpriseSSOLogin",
+        "title": "VoxPilot: Enterprise SSO Login",
+        "icon": "$(key)"
+      },
+      {
+        "command": "voxpilot.enterpriseSSOLogout",
+        "title": "VoxPilot: Enterprise SSO Logout",
+        "icon": "$(sign-out)"
+      },
+      {
+        "command": "voxpilot.enterpriseSSOStatus",
+        "title": "VoxPilot: Enterprise SSO Status",
+        "icon": "$(shield)"
+      },
+      {
+        "command": "voxpilot.telemetryStatus",
+        "title": "VoxPilot: Telemetry Status",
+        "icon": "$(graph)"
       }
     ],
     "keybindings": [
@@ -1237,6 +1257,53 @@
           "type": "boolean",
           "default": true,
           "description": "Enable voice-triggered performance profiling. Say start profiling to begin, stop profiling to see results read aloud."
+        },
+        "voxpilot.enterprise.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable enterprise SSO integration. Requires voxpilot.enterprise.ssoProvider and voxpilot.enterprise.orgId."
+        },
+        "voxpilot.enterprise.ssoProvider": {
+          "type": "string",
+          "enum": ["okta", "azure-ad", "google", "auth0", "custom"],
+          "default": "custom",
+          "description": "SSO identity provider type."
+        },
+        "voxpilot.enterprise.orgId": {
+          "type": "string",
+          "default": "",
+          "description": "Organization ID for enterprise SSO."
+        },
+        "voxpilot.enterprise.discoveryUrl": {
+          "type": "string",
+          "default": "",
+          "description": "OIDC discovery URL or SAML metadata URL for the SSO provider."
+        },
+        "voxpilot.enterprise.clientId": {
+          "type": "string",
+          "default": "",
+          "description": "Client ID for OIDC authentication."
+        },
+        "voxpilot.enterprise.enforced": {
+          "type": "boolean",
+          "default": false,
+          "description": "Block VoxPilot usage until SSO authentication is complete."
+        },
+        "voxpilot.enterprise.configUrl": {
+          "type": "string",
+          "default": "",
+          "description": "URL of the organization's central VoxPilot configuration server."
+        },
+        "voxpilot.telemetry.optIn": {
+          "type": "boolean",
+          "default": false,
+          "description": "Opt-in to VoxPilot telemetry. Only aggregate usage metrics are sent — never transcript content, audio, or file paths. Respects VS Code telemetry settings."
+        },
+        "voxpilot.telemetry.level": {
+          "type": "string",
+          "enum": ["off", "crash", "error", "all"],
+          "default": "off",
+          "description": "Telemetry detail level. 'off' disables all telemetry, 'crash' reports only crashes, 'error' includes errors, 'all' includes usage metrics."
         }
       }
     }

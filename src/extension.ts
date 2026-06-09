@@ -23,6 +23,8 @@ import { customWakeWordManager, CustomWakeWordManager } from './customWakeWords'
 import { voiceJournal } from './voiceJournal';
 import { registerOfflineModelHubCommands } from './offlineModelHub';
 import { performanceProfiler } from './performanceProfiler';
+import { enterpriseSSO } from './enterpriseSSO';
+import { telemetryBridge } from './telemetryBridge';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
@@ -44,6 +46,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
   remotePairVoice.init(context);
   customWakeWordManager.init(context);
   voiceJournal.init(context);
+  enterpriseSSO.init(context);
+  telemetryBridge.init(context);
 
   // Model manager sidebar panel
   const modelPanel = new ModelManagerPanel(context);
@@ -121,6 +125,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
     vscode.commands.registerCommand('voxpilot.stopProfiling', () => performanceProfiler.stopCpuProfile()),
     vscode.commands.registerCommand('voxpilot.showProfilingResults', () => performanceProfiler.showResults()),
     vscode.commands.registerCommand('voxpilot.exportProfile', () => performanceProfiler.exportProfile()),
+    vscode.commands.registerCommand('voxpilot.enterpriseSSOLogin', () => enterpriseSSO.login()),
+    vscode.commands.registerCommand('voxpilot.enterpriseSSOLogout', () => enterpriseSSO.logout()),
+    vscode.commands.registerCommand('voxpilot.enterpriseSSOStatus', () => showSSOStatus()),
+    vscode.commands.registerCommand('voxpilot.telemetryStatus', () => showTelemetryStatus()),
     registerAiCodeGenerationCommand(context),
     treeView,
     configWatcher,
@@ -536,7 +544,34 @@ export function deactivate() {
     if (statusBar) {
       statusBar.dispose();
     }
+    telemetryBridge.dispose();
   } catch {
     // Safety net -- never throw during deactivation
+  }
+}
+
+async function showSSOStatus(): Promise<void> {
+  const state = enterpriseSSO.getState();
+  if (!state.configured) {
+    vscode.window.showInformationMessage('VoxPilot Enterprise SSO: Not configured. Set voxpilot.enterprise.enabled to true and configure your provider.');
+    return;
+  }
+  if (state.authenticated && state.user) {
+    const expiry = new Date(state.user.expiresAt).toLocaleString();
+    vscode.window.showInformationMessage(`VoxPilot SSO: Authenticated as ${state.user.name} (${state.user.email}) | Org: ${state.user.orgId} | Expires: ${expiry}`);
+  } else {
+    vscode.window.showInformationMessage(`VoxPilot SSO: Not authenticated.${state.error ? ' Error: ' + state.error : ''}`);
+  }
+}
+
+async function showTelemetryStatus(): Promise<void> {
+  const enabled = telemetryBridge.isEnabled();
+  const size = telemetryBridge.bufferSize;
+  if (!enabled) {
+    vscode.window.showInformationMessage('VoxPilot Telemetry: Disabled. Respects VS Code telemetry settings and voxpilot.telemetry.optIn.');
+  } else {
+    const summary = telemetryBridge.getBufferSummary();
+    const types = Object.entries(summary).map(([k, v]) => `${k}: ${v}`).join(', ');
+    vscode.window.showInformationMessage(`VoxPilot Telemetry: Active | Buffered: ${size} events${types ? ' (' + types + ')' : ''}`);
   }
 }
