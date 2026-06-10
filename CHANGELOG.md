@@ -2,6 +2,21 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.142] - 2026-06-10
+
+### Added
+- Usage analytics dashboard — opt-in local metrics for voice coding productivity insights
+- Track words per minute, transcription accuracy trends, and most-used voice commands over time
+- Daily/weekly/monthly activity breakdown with visual bar chart
+- Time saved estimates (voice vs typing) calculated automatically
+- Productivity insights: speed improvements, accuracy milestones, usage streaks
+- Model usage breakdown showing which ASR models you use most
+- Export analytics as JSON for external analysis or backup
+- Clear data or disable analytics at any time — your data, your choice
+- New command: "VoxPilot: Usage Analytics Dashboard" opens the interactive webview
+- New settings: `voxpilot.analytics.enabled` (default: false — opt-in), `voxpilot.analytics.retentionDays` (default: 90)
+- All data stays 100% local. No cloud. No telemetry. Just your personal productivity metrics.
+
 ## [0.7.141] - 2026-06-09
 
 ### Added — VoxPilot 0.8 LTS Release

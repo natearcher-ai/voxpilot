@@ -378,6 +378,11 @@
         "command": "voxpilot.telemetryStatus",
         "title": "VoxPilot: Telemetry Status",
         "icon": "$(graph)"
+      },
+      {
+        "command": "voxpilot.showUsageAnalytics",
+        "title": "VoxPilot: Usage Analytics Dashboard",
+        "icon": "$(graph-line)"
       }
     ],
     "keybindings": [
@@ -1315,6 +1320,18 @@
           ],
           "default": "off",
           "description": "Telemetry detail level. 'off' disables all telemetry, 'crash' reports only crashes, 'error' includes errors, 'all' includes usage metrics."
+        },
+        "voxpilot.analytics.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Opt-in to local usage analytics. Tracks words/min, accuracy trends, and most-used commands. All data stays on your machine — never sent anywhere."
+        },
+        "voxpilot.analytics.retentionDays": {
+          "type": "number",
+          "default": 90,
+          "minimum": 7,
+          "maximum": 365,
+          "description": "How many days of analytics data to keep locally before auto-pruning."
         }
       }
     }

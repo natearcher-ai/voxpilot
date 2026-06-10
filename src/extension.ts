@@ -25,6 +25,8 @@ import { registerOfflineModelHubCommands } from './offlineModelHub';
 import { performanceProfiler } from './performanceProfiler';
 import { enterpriseSSO } from './enterpriseSSO';
 import { telemetryBridge } from './telemetryBridge';
+import { showUsageAnalyticsDashboard } from './usageAnalyticsDashboard';
+import { usageAnalytics } from './usageAnalytics';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
@@ -48,6 +50,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
   voiceJournal.init(context);
   enterpriseSSO.init(context);
   telemetryBridge.init(context);
+  usageAnalytics.init(context);
 
   // Model manager sidebar panel
   const modelPanel = new ModelManagerPanel(context);
@@ -129,6 +132,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
     vscode.commands.registerCommand('voxpilot.enterpriseSSOLogout', () => enterpriseSSO.logout()),
     vscode.commands.registerCommand('voxpilot.enterpriseSSOStatus', () => showSSOStatus()),
     vscode.commands.registerCommand('voxpilot.telemetryStatus', () => showTelemetryStatus()),
+    vscode.commands.registerCommand('voxpilot.showUsageAnalytics', () => showUsageAnalyticsDashboard(context)),
     registerAiCodeGenerationCommand(context),
     treeView,
     configWatcher,
