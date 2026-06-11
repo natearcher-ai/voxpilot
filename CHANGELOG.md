@@ -2,6 +2,24 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.143] - 2026-06-11
+
+### Added
+- Voice command marketplace v2 — ratings, reviews, verified publishers, and revenue sharing
+- User ratings and written reviews for marketplace packs (1-5 stars)
+- Verified publisher badges — trust indicators for quality packs
+- Revenue sharing model (70/30 split) for premium voice command packs
+- Pack versioning with automatic update checks and one-click updates
+- Dependency resolution between packs — install prerequisites automatically
+- Usage statistics per pack (download count, active installs)
+- Report/flag system for quality control and community moderation
+- Featured packs and editor's picks for discovery
+- Advanced search with filters: category, language, rating, free/premium
+- Browse, install, enable/disable, and uninstall packs from a unified QuickPick UI
+- New commands: "VoxPilot: Voice Command Marketplace", "VoxPilot: Check Marketplace Updates"
+- New settings: `voxpilot.marketplace.enabled` (default: true), `voxpilot.marketplace.autoUpdate` (default: true)
+- All pack data cached locally — marketplace browsing works offline after first load
+
 ## [0.7.142] - 2026-06-10
 
 ### Added

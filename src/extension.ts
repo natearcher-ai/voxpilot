@@ -27,6 +27,7 @@ import { enterpriseSSO } from './enterpriseSSO';
 import { telemetryBridge } from './telemetryBridge';
 import { showUsageAnalyticsDashboard } from './usageAnalyticsDashboard';
 import { usageAnalytics } from './usageAnalytics';
+import { marketplaceClient } from './marketplaceV2';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
@@ -51,6 +52,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
   enterpriseSSO.init(context);
   telemetryBridge.init(context);
   usageAnalytics.init(context);
+  marketplaceClient.init(context);
 
   // Model manager sidebar panel
   const modelPanel = new ModelManagerPanel(context);
@@ -133,6 +135,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
     vscode.commands.registerCommand('voxpilot.enterpriseSSOStatus', () => showSSOStatus()),
     vscode.commands.registerCommand('voxpilot.telemetryStatus', () => showTelemetryStatus()),
     vscode.commands.registerCommand('voxpilot.showUsageAnalytics', () => showUsageAnalyticsDashboard(context)),
+    vscode.commands.registerCommand('voxpilot.browseMarketplaceV2', () => browseMarketplaceV2()),
+    vscode.commands.registerCommand('voxpilot.marketplaceCheckUpdates', () => marketplaceCheckUpdates()),
     registerAiCodeGenerationCommand(context),
     treeView,
     configWatcher,
@@ -577,5 +581,95 @@ async function showTelemetryStatus(): Promise<void> {
     const summary = telemetryBridge.getBufferSummary();
     const types = Object.entries(summary).map(([k, v]) => `${k}: ${v}`).join(', ');
     vscode.window.showInformationMessage(`VoxPilot Telemetry: Active | Buffered: ${size} events${types ? ' (' + types + ')' : ''}`);
+  }
+}
+
+async function browseMarketplaceV2(): Promise<void> {
+  const actions = ['🔍 Search Packs', '⭐ Featured', '📦 Installed', '🔄 Check Updates'];
+  const choice = await vscode.window.showQuickPick(actions, { placeHolder: 'Voice Command Marketplace v2' });
+  if (!choice) return;
+
+  if (choice.startsWith('🔍')) {
+    const query = await vscode.window.showInputBox({ prompt: 'Search voice command packs', placeHolder: 'e.g. react, python, productivity' });
+    if (!query) return;
+    const result = await marketplaceClient.search({ query });
+    if (result.packs.length === 0) {
+      vscode.window.showInformationMessage(`No packs found for "${query}".`);
+      return;
+    }
+    const items = result.packs.map(p => ({
+      label: `${p.publisher.verification === 'verified' ? '✓ ' : ''}${p.name}`,
+      description: `v${p.version} by ${p.publisher.displayName} — ⭐${p.rating.toFixed(1)} (${p.ratingCount}) — ${p.downloads} downloads`,
+      detail: p.description,
+      packId: p.id,
+    }));
+    const selected = await vscode.window.showQuickPick(items, { placeHolder: `${result.total} results` });
+    if (selected) {
+      const installed = await marketplaceClient.install(selected.packId);
+      if (installed) vscode.window.showInformationMessage(`Installed "${selected.label}" from marketplace.`);
+      else vscode.window.showErrorMessage(`Failed to install "${selected.label}".`);
+    }
+  } else if (choice.startsWith('⭐')) {
+    const featured = await marketplaceClient.getFeatured();
+    if (featured.length === 0) {
+      vscode.window.showInformationMessage('No featured packs available.');
+      return;
+    }
+    const items = featured.map(p => ({
+      label: `🌟 ${p.name}`,
+      description: `v${p.version} — ⭐${p.rating.toFixed(1)} — ${p.downloads} downloads`,
+      detail: p.description,
+      packId: p.id,
+    }));
+    const selected = await vscode.window.showQuickPick(items, { placeHolder: 'Featured Packs' });
+    if (selected) {
+      const installed = await marketplaceClient.install(selected.packId);
+      if (installed) vscode.window.showInformationMessage(`Installed "${selected.label}" from marketplace.`);
+      else vscode.window.showErrorMessage(`Failed to install "${selected.label}".`);
+    }
+  } else if (choice.startsWith('📦')) {
+    const installed = marketplaceClient.getInstalled();
+    if (installed.length === 0) {
+      vscode.window.showInformationMessage('No marketplace packs installed.');
+      return;
+    }
+    const items = installed.map(p => ({
+      label: `${p.enabled ? '✅' : '⏸️'} ${p.id}`,
+      description: `v${p.version} — installed ${new Date(p.installedAt).toLocaleDateString()}`,
+      packId: p.id,
+      enabled: p.enabled,
+    }));
+    const selected = await vscode.window.showQuickPick(items, { placeHolder: `${installed.length} installed pack(s)` });
+    if (selected) {
+      const action = await vscode.window.showQuickPick(
+        [selected.enabled ? '⏸️ Disable' : '▶️ Enable', '🗑️ Uninstall'],
+        { placeHolder: selected.packId },
+      );
+      if (action?.includes('Disable')) marketplaceClient.setEnabled(selected.packId, false);
+      else if (action?.includes('Enable')) marketplaceClient.setEnabled(selected.packId, true);
+      else if (action?.includes('Uninstall')) marketplaceClient.uninstall(selected.packId);
+    }
+  } else if (choice.startsWith('🔄')) {
+    await marketplaceCheckUpdates();
+  }
+}
+
+async function marketplaceCheckUpdates(): Promise<void> {
+  const updates = await marketplaceClient.checkUpdates();
+  if (updates.length === 0) {
+    vscode.window.showInformationMessage('All marketplace packs are up to date.');
+    return;
+  }
+  const items = updates.map(u => ({
+    label: `${u.id}`,
+    description: `${u.currentVersion} → ${u.latestVersion}`,
+    id: u.id,
+  }));
+  const selected = await vscode.window.showQuickPick(items, { placeHolder: `${updates.length} update(s) available`, canPickMany: true });
+  if (selected && selected.length > 0) {
+    for (const item of selected) {
+      await marketplaceClient.install(item.id);
+    }
+    vscode.window.showInformationMessage(`Updated ${selected.length} pack(s).`);
   }
 }

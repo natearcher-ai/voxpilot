@@ -383,6 +383,16 @@
         "command": "voxpilot.showUsageAnalytics",
         "title": "VoxPilot: Usage Analytics Dashboard",
         "icon": "$(graph-line)"
+      },
+      {
+        "command": "voxpilot.browseMarketplaceV2",
+        "title": "VoxPilot: Voice Command Marketplace",
+        "icon": "$(extensions)"
+      },
+      {
+        "command": "voxpilot.marketplaceCheckUpdates",
+        "title": "VoxPilot: Check Marketplace Updates",
+        "icon": "$(sync)"
       }
     ],
     "keybindings": [
@@ -1332,6 +1342,16 @@
           "minimum": 7,
           "maximum": 365,
           "description": "How many days of analytics data to keep locally before auto-pruning."
+        },
+        "voxpilot.marketplace.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the voice command marketplace v2 — browse, rate, and install community packs with verified publishers and revenue sharing."
+        },
+        "voxpilot.marketplace.autoUpdate": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically check for and apply updates to installed marketplace packs."
         }
       }
     }
