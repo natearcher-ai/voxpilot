@@ -393,6 +393,11 @@
         "command": "voxpilot.marketplaceCheckUpdates",
         "title": "VoxPilot: Check Marketplace Updates",
         "icon": "$(sync)"
+      },
+      {
+        "command": "voxpilot.configureEnsemble",
+        "title": "VoxPilot: Configure Multi-Model Ensemble",
+        "icon": "$(combine)"
       }
     ],
     "keybindings": [
@@ -1352,6 +1357,40 @@
           "type": "boolean",
           "default": true,
           "description": "Automatically check for and apply updates to installed marketplace packs."
+        },
+        "voxpilot.ensemble.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable multi-model ensemble — run multiple ASR models in parallel and pick the best result per segment. Adds 50-200ms latency but improves accuracy."
+        },
+        "voxpilot.ensemble.models": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "moonshine-base",
+            "whisper-small"
+          ],
+          "description": "ASR models to include in the ensemble. At least 2 required."
+        },
+        "voxpilot.ensemble.strategy": {
+          "type": "string",
+          "enum": [
+            "confidence",
+            "consensus",
+            "perplexity",
+            "hybrid"
+          ],
+          "default": "hybrid",
+          "description": "Selection strategy: confidence (highest score), consensus (majority vote), perplexity (most natural), hybrid (weighted combination)."
+        },
+        "voxpilot.ensemble.minConfidence": {
+          "type": "number",
+          "default": 0.7,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Minimum confidence threshold — results below this are flagged for review."
         }
       }
     }

@@ -2,6 +2,18 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.144] - 2026-06-12
+
+### Added
+- Multi-model ensemble — run multiple ASR models in parallel and pick the best result per segment
+- Four selection strategies: confidence (highest score), consensus (majority vote), perplexity (most natural language), hybrid (weighted combination of all three)
+- Configurable model list — mix Moonshine, Whisper, and other backends for optimal accuracy
+- Minimum confidence threshold — flag low-confidence results for manual review
+- Ensemble statistics tracking — see which models win most often and overall agreement ratios
+- Parallel execution — models run simultaneously, total latency equals the slowest model (50-200ms overhead)
+- New command: "VoxPilot: Configure Multi-Model Ensemble" for quick setup
+- New settings: `voxpilot.ensemble.enabled`, `voxpilot.ensemble.models`, `voxpilot.ensemble.strategy`, `voxpilot.ensemble.minConfidence`
+
 ## [0.7.143] - 2026-06-11
 
 ### Added

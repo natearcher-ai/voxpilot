@@ -28,6 +28,7 @@ import { telemetryBridge } from './telemetryBridge';
 import { showUsageAnalyticsDashboard } from './usageAnalyticsDashboard';
 import { usageAnalytics } from './usageAnalytics';
 import { marketplaceClient } from './marketplaceV2';
+import { modelEnsemble } from './modelEnsemble';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
@@ -137,6 +138,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
     vscode.commands.registerCommand('voxpilot.showUsageAnalytics', () => showUsageAnalyticsDashboard(context)),
     vscode.commands.registerCommand('voxpilot.browseMarketplaceV2', () => browseMarketplaceV2()),
     vscode.commands.registerCommand('voxpilot.marketplaceCheckUpdates', () => marketplaceCheckUpdates()),
+    vscode.commands.registerCommand('voxpilot.configureEnsemble', () => configureEnsemble()),
     registerAiCodeGenerationCommand(context),
     treeView,
     configWatcher,
@@ -671,5 +673,62 @@ async function marketplaceCheckUpdates(): Promise<void> {
       await marketplaceClient.install(item.id);
     }
     vscode.window.showInformationMessage(`Updated ${selected.length} pack(s).`);
+  }
+}
+
+async function configureEnsemble(): Promise<void> {
+  const config = vscode.workspace.getConfiguration('voxpilot.ensemble');
+  const enabled = config.get<boolean>('enabled', false);
+
+  const action = await vscode.window.showQuickPick([
+    { label: enabled ? '$(debug-pause) Disable Ensemble' : '$(play) Enable Ensemble', id: 'toggle' },
+    { label: '$(list-unordered) Select Models', id: 'models' },
+    { label: '$(settings-gear) Selection Strategy', id: 'strategy' },
+    { label: '$(graph-line) View Statistics', id: 'stats' },
+  ], { placeHolder: 'Configure Multi-Model Ensemble' });
+
+  if (!action) return;
+
+  switch (action.id) {
+    case 'toggle':
+      await config.update('enabled', !enabled, vscode.ConfigurationTarget.Global);
+      vscode.window.showInformationMessage(`Multi-model ensemble ${!enabled ? 'enabled' : 'disabled'}.`);
+      break;
+    case 'models': {
+      const current = config.get<string[]>('models', ['moonshine-base', 'whisper-small']);
+      const input = await vscode.window.showInputBox({
+        prompt: 'Enter model IDs (comma-separated)',
+        value: current.join(', '),
+        validateInput: (v) => v.split(',').filter(s => s.trim()).length < 2 ? 'At least 2 models required' : undefined,
+      });
+      if (input) {
+        const models = input.split(',').map(s => s.trim()).filter(Boolean);
+        await config.update('models', models, vscode.ConfigurationTarget.Global);
+        modelEnsemble.setConfig({ models });
+        vscode.window.showInformationMessage(`Ensemble models: ${models.join(', ')}`);
+      }
+      break;
+    }
+    case 'strategy': {
+      const strategies = ['confidence', 'consensus', 'perplexity', 'hybrid'];
+      const picked = await vscode.window.showQuickPick(
+        strategies.map(s => ({ label: s, description: s === 'hybrid' ? '(default — weighted combination)' : '' })),
+        { placeHolder: 'Select ensemble strategy' },
+      );
+      if (picked) {
+        await config.update('strategy', picked.label, vscode.ConfigurationTarget.Global);
+        modelEnsemble.setConfig({ strategy: picked.label as any });
+        vscode.window.showInformationMessage(`Ensemble strategy: ${picked.label}`);
+      }
+      break;
+    }
+    case 'stats': {
+      const stats = modelEnsemble.getStats();
+      const wins = Object.entries(stats.modelWins).map(([m, w]) => `${m}: ${w} wins`).join(', ') || 'No data yet';
+      vscode.window.showInformationMessage(
+        `Ensemble stats — Runs: ${stats.totalRuns}, Avg agreement: ${(stats.avgAgreement * 100).toFixed(1)}%, Model wins: ${wins}`,
+      );
+      break;
+    }
   }
 }
