@@ -398,6 +398,31 @@
         "command": "voxpilot.configureEnsemble",
         "title": "VoxPilot: Configure Multi-Model Ensemble",
         "icon": "$(combine)"
+      },
+      {
+        "command": "voxpilot.manageSpeakerProfiles",
+        "title": "VoxPilot: Manage Speaker Profiles",
+        "icon": "$(account)"
+      },
+      {
+        "command": "voxpilot.switchSpeakerProfile",
+        "title": "VoxPilot: Switch Speaker Profile",
+        "icon": "$(arrow-swap)"
+      },
+      {
+        "command": "voxpilot.createSpeakerProfile",
+        "title": "VoxPilot: Create Speaker Profile",
+        "icon": "$(add)"
+      },
+      {
+        "command": "voxpilot.exportSpeakerProfile",
+        "title": "VoxPilot: Export Speaker Profile",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "voxpilot.importSpeakerProfile",
+        "title": "VoxPilot: Import Speaker Profile",
+        "icon": "$(cloud-download)"
       }
     ],
     "keybindings": [
@@ -1391,6 +1416,21 @@
           "minimum": 0,
           "maximum": 1,
           "description": "Minimum confidence threshold — results below this are flagged for review."
+        },
+        "voxpilot.speakerProfiles.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable speaker profiles — different voice models and settings per user for shared workstations."
+        },
+        "voxpilot.speakerProfiles.autoDetect": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically detect and switch speaker profile based on voice fingerprint."
+        },
+        "voxpilot.speakerProfiles.showInStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the active speaker profile name in the status bar."
         }
       }
     }

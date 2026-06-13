@@ -29,6 +29,7 @@ import { showUsageAnalyticsDashboard } from './usageAnalyticsDashboard';
 import { usageAnalytics } from './usageAnalytics';
 import { marketplaceClient } from './marketplaceV2';
 import { modelEnsemble } from './modelEnsemble';
+import { speakerProfileManager } from './speakerProfiles';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
@@ -54,6 +55,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
   telemetryBridge.init(context);
   usageAnalytics.init(context);
   marketplaceClient.init(context);
+  speakerProfileManager.init(context);
 
   // Model manager sidebar panel
   const modelPanel = new ModelManagerPanel(context);
@@ -139,6 +141,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
     vscode.commands.registerCommand('voxpilot.browseMarketplaceV2', () => browseMarketplaceV2()),
     vscode.commands.registerCommand('voxpilot.marketplaceCheckUpdates', () => marketplaceCheckUpdates()),
     vscode.commands.registerCommand('voxpilot.configureEnsemble', () => configureEnsemble()),
+    vscode.commands.registerCommand('voxpilot.manageSpeakerProfiles', () => manageSpeakerProfiles()),
+    vscode.commands.registerCommand('voxpilot.switchSpeakerProfile', () => switchSpeakerProfile()),
+    vscode.commands.registerCommand('voxpilot.createSpeakerProfile', () => createSpeakerProfileCommand()),
+    vscode.commands.registerCommand('voxpilot.exportSpeakerProfile', () => exportSpeakerProfileCommand()),
+    vscode.commands.registerCommand('voxpilot.importSpeakerProfile', () => importSpeakerProfileCommand()),
     registerAiCodeGenerationCommand(context),
     treeView,
     configWatcher,
@@ -730,5 +737,222 @@ async function configureEnsemble(): Promise<void> {
       );
       break;
     }
+  }
+}
+
+async function manageSpeakerProfiles(): Promise<void> {
+  const profiles = speakerProfileManager.getProfiles();
+  const activeId = speakerProfileManager.getActiveProfileId();
+
+  const action = await vscode.window.showQuickPick([
+    { label: '$(account) Switch Profile', id: 'switch', description: `Active: ${profiles.find(p => p.id === activeId)?.name || 'Default'}` },
+    { label: '$(add) Create Profile', id: 'create' },
+    { label: '$(edit) Edit Profile', id: 'edit' },
+    { label: '$(trash) Delete Profile', id: 'delete' },
+    { label: '$(cloud-upload) Export Profile', id: 'export' },
+    { label: '$(cloud-download) Import Profile', id: 'import' },
+    { label: '$(graph-line) Usage Statistics', id: 'stats' },
+  ], { placeHolder: 'Manage Speaker Profiles' });
+
+  if (!action) return;
+
+  switch (action.id) {
+    case 'switch':
+      await switchSpeakerProfile();
+      break;
+    case 'create':
+      await createSpeakerProfileCommand();
+      break;
+    case 'edit':
+      await editSpeakerProfile();
+      break;
+    case 'delete':
+      await deleteSpeakerProfile();
+      break;
+    case 'export':
+      await exportSpeakerProfileCommand();
+      break;
+    case 'import':
+      await importSpeakerProfileCommand();
+      break;
+    case 'stats': {
+      const stats = speakerProfileManager.getStats();
+      const lines = stats.map(s => `${s.name}: ${s.usageCount} sessions`).join(', ') || 'No usage data';
+      vscode.window.showInformationMessage(`Speaker profile stats — ${lines}`);
+      break;
+    }
+  }
+}
+
+async function switchSpeakerProfile(): Promise<void> {
+  const profiles = speakerProfileManager.getProfiles();
+  const activeId = speakerProfileManager.getActiveProfileId();
+
+  const items = profiles.map(p => ({
+    label: p.name,
+    description: p.id === activeId ? '(active)' : '',
+    detail: `Model: ${p.preferredModel} | Mode: ${p.defaultMode} | Lang: ${p.language}`,
+    id: p.id,
+  }));
+
+  const picked = await vscode.window.showQuickPick(items, {
+    placeHolder: 'Select speaker profile to activate',
+  });
+
+  if (picked) {
+    speakerProfileManager.switchTo(picked.id, 'manual');
+    vscode.window.showInformationMessage(`VoxPilot: Switched to profile "${picked.label}".`);
+  }
+}
+
+async function createSpeakerProfileCommand(): Promise<void> {
+  const name = await vscode.window.showInputBox({
+    prompt: 'Enter a name for the new speaker profile',
+    placeHolder: 'e.g. Alice, Bob, Work, Home',
+    validateInput: (v) => v.trim().length === 0 ? 'Name cannot be empty' : undefined,
+  });
+
+  if (!name) return;
+
+  const profile = speakerProfileManager.createProfile(name.trim());
+
+  // Offer to configure basic settings
+  const configure = await vscode.window.showQuickPick(
+    [{ label: 'Yes', id: 'yes' }, { label: 'No, use defaults', id: 'no' }],
+    { placeHolder: `Profile "${name}" created. Configure settings now?` },
+  );
+
+  if (configure?.id === 'yes') {
+    await editProfileSettings(profile.id);
+  }
+
+  vscode.window.showInformationMessage(`VoxPilot: Profile "${name}" created and active.`);
+  speakerProfileManager.switchTo(profile.id, 'manual');
+}
+
+async function editSpeakerProfile(): Promise<void> {
+  const profiles = speakerProfileManager.getProfiles();
+  const items = profiles.map(p => ({ label: p.name, id: p.id }));
+  const picked = await vscode.window.showQuickPick(items, { placeHolder: 'Select profile to edit' });
+  if (picked) {
+    await editProfileSettings(picked.id);
+  }
+}
+
+async function editProfileSettings(profileId: string): Promise<void> {
+  const profile = speakerProfileManager.getProfile(profileId);
+  if (!profile) return;
+
+  const setting = await vscode.window.showQuickPick([
+    { label: 'Preferred Model', description: profile.preferredModel, id: 'model' },
+    { label: 'Language', description: profile.language, id: 'language' },
+    { label: 'Default Mode', description: profile.defaultMode, id: 'mode' },
+    { label: 'VAD Sensitivity', description: `${profile.vadSensitivity}`, id: 'vad' },
+    { label: 'Noise Gate Threshold', description: `${profile.noiseGateThreshold}`, id: 'noise' },
+    { label: 'Custom Vocabulary', description: `${profile.vocabulary.length} words`, id: 'vocab' },
+  ], { placeHolder: `Edit profile: ${profile.name}` });
+
+  if (!setting) return;
+
+  switch (setting.id) {
+    case 'model': {
+      const model = await vscode.window.showInputBox({ prompt: 'Preferred ASR model', value: profile.preferredModel });
+      if (model) speakerProfileManager.updateProfile(profileId, { preferredModel: model.trim() });
+      break;
+    }
+    case 'language': {
+      const lang = await vscode.window.showInputBox({ prompt: 'Language code (e.g. en, es, fr)', value: profile.language });
+      if (lang) speakerProfileManager.updateProfile(profileId, { language: lang.trim() });
+      break;
+    }
+    case 'mode': {
+      const mode = await vscode.window.showQuickPick(
+        [{ label: 'code' }, { label: 'prose' }, { label: 'command' }],
+        { placeHolder: 'Default dictation mode' },
+      );
+      if (mode) speakerProfileManager.updateProfile(profileId, { defaultMode: mode.label as any });
+      break;
+    }
+    case 'vad': {
+      const val = await vscode.window.showInputBox({ prompt: 'VAD sensitivity (0-1)', value: `${profile.vadSensitivity}` });
+      if (val) speakerProfileManager.updateProfile(profileId, { vadSensitivity: Math.max(0, Math.min(1, parseFloat(val) || 0.5)) });
+      break;
+    }
+    case 'noise': {
+      const val = await vscode.window.showInputBox({ prompt: 'Noise gate threshold (0-1)', value: `${profile.noiseGateThreshold}` });
+      if (val) speakerProfileManager.updateProfile(profileId, { noiseGateThreshold: Math.max(0, Math.min(1, parseFloat(val) || 0.01)) });
+      break;
+    }
+    case 'vocab': {
+      const input = await vscode.window.showInputBox({ prompt: 'Custom vocabulary (comma-separated)', value: profile.vocabulary.join(', ') });
+      if (input !== undefined) {
+        const words = input.split(',').map(w => w.trim()).filter(Boolean);
+        speakerProfileManager.updateProfile(profileId, { vocabulary: words });
+      }
+      break;
+    }
+  }
+
+  vscode.window.showInformationMessage(`VoxPilot: Profile "${profile.name}" updated.`);
+}
+
+async function deleteSpeakerProfile(): Promise<void> {
+  const profiles = speakerProfileManager.getProfiles().filter(p => p.id !== 'default');
+  if (profiles.length === 0) {
+    vscode.window.showInformationMessage('VoxPilot: No custom profiles to delete.');
+    return;
+  }
+
+  const items = profiles.map(p => ({ label: p.name, id: p.id }));
+  const picked = await vscode.window.showQuickPick(items, { placeHolder: 'Select profile to delete' });
+  if (!picked) return;
+
+  const confirm = await vscode.window.showWarningMessage(
+    `Delete profile "${picked.label}"? This cannot be undone.`,
+    { modal: true },
+    'Delete',
+  );
+  if (confirm === 'Delete') {
+    speakerProfileManager.deleteProfile(picked.id);
+    vscode.window.showInformationMessage(`VoxPilot: Profile "${picked.label}" deleted.`);
+  }
+}
+
+async function exportSpeakerProfileCommand(): Promise<void> {
+  const profiles = speakerProfileManager.getProfiles();
+  const items = profiles.map(p => ({ label: p.name, id: p.id }));
+  const picked = await vscode.window.showQuickPick(items, { placeHolder: 'Select profile to export' });
+  if (!picked) return;
+
+  const json = speakerProfileManager.exportProfile(picked.id);
+  if (!json) return;
+
+  const uri = await vscode.window.showSaveDialog({
+    defaultUri: vscode.Uri.file(`${picked.label.replace(/\s+/g, '-').toLowerCase()}-profile.json`),
+    filters: { 'JSON Files': ['json'] },
+  });
+  if (uri) {
+    await vscode.workspace.fs.writeFile(uri, Buffer.from(json, 'utf8'));
+    vscode.window.showInformationMessage(`VoxPilot: Profile exported to ${uri.fsPath}`);
+  }
+}
+
+async function importSpeakerProfileCommand(): Promise<void> {
+  const uris = await vscode.window.showOpenDialog({
+    canSelectFiles: true,
+    canSelectMany: false,
+    filters: { 'JSON Files': ['json'] },
+    openLabel: 'Import Profile',
+  });
+  if (!uris || uris.length === 0) return;
+
+  const data = await vscode.workspace.fs.readFile(uris[0]);
+  const json = Buffer.from(data).toString('utf8');
+  const profile = speakerProfileManager.importProfile(json);
+
+  if (profile) {
+    vscode.window.showInformationMessage(`VoxPilot: Imported profile "${profile.name}".`);
+  } else {
+    vscode.window.showErrorMessage('VoxPilot: Invalid profile file.');
   }
 }

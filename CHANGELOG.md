@@ -2,6 +2,20 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.145] - 2026-06-13
+
+### Added
+- Speaker profiles — different voice models and settings per user for shared workstations
+- Per-user ASR model selection optimized for individual voices
+- Per-user vocabulary, custom commands, and noise profile settings
+- Per-user dictation mode defaults (prose/code/command)
+- Quick profile switching via QuickPick UI or voice command ("switch to Alice's profile")
+- Optional voice fingerprint for automatic speaker detection
+- Profile import/export as JSON for backup and sharing across machines
+- Usage statistics tracking per profile (session count, last used)
+- New commands: "VoxPilot: Manage Speaker Profiles", "VoxPilot: Switch Speaker Profile", "VoxPilot: Create Speaker Profile", "VoxPilot: Export Speaker Profile", "VoxPilot: Import Speaker Profile"
+- New settings: `voxpilot.speakerProfiles.enabled`, `voxpilot.speakerProfiles.autoDetect`, `voxpilot.speakerProfiles.showInStatusBar`
+
 ## [0.7.144] - 2026-06-12
 
 ### Added
