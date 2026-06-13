@@ -1,0 +1,7 @@
+{
+  "task_id": "task-bug-audit-voxpilot",
+  "task_description": "Audit the voxpilot VS Code extension for remaining bugs and fix them properly, with real regression tests and full end-to-end verification. Because the npm registry is network-blocked (INTEGRATIONS_ONLY) and the pinned toolchain (vitest/esbuild/eslint/@types) cannot be installed, first build a faithful node:test-based host harness that runs the existing unmodified vitest suite and reproduces a fully-green baseline, then drive a systematic bug audit + fixes verified against that harness plus a bun build smoke check. No shortcuts, no behavior-faking mocks, no disabling tests.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002"],
+  "blocked_reason": null
+}
