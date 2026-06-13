@@ -127,6 +127,14 @@ export enum TreeItemCollapsibleState {
   Expanded = 2,
 }
 
+// Mirrors vscode.QuickPickItemKind (Separator = -1, Default = 0). Added so UI
+// flows that build separator items (e.g. showAdaptiveLearningPanel) can run
+// under the host harness; faithful to the real API, weakens nothing.
+export enum QuickPickItemKind {
+  Separator = -1,
+  Default = 0,
+}
+
 export class ThemeIcon {
   constructor(public id: string, public color?: any) {}
 }
