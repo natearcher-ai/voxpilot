@@ -62,7 +62,7 @@ function toSpokenForm(identifier: string): string | null {
   // Skip single-character identifiers and very short ones
   if (words.length < 2) { return null; }
   // Skip if any word is a single character (likely not useful)
-  if (words.some(w => w.length === 0)) { return null; }
+  if (words.some(w => w.length === 1)) { return null; }
   return words.join(' ');
 }
 
