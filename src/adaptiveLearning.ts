@@ -251,7 +251,14 @@ export class AdaptiveLearningStore {
 
   /** Import corrections from JSON (merges with existing) */
   async importJson(json: string): Promise<number> {
-    const imported = JSON.parse(json) as CorrectionDatabase;
+    let imported: CorrectionDatabase;
+    try {
+      imported = JSON.parse(json) as CorrectionDatabase;
+    } catch {
+      // A syntactically malformed file must surface the same controlled error
+      // as a structurally-invalid one, rather than leaking a raw SyntaxError.
+      throw new Error('Invalid correction database format');
+    }
     if (!imported || imported.version !== DB_VERSION || !Array.isArray(imported.entries)) {
       throw new Error('Invalid correction database format');
     }
