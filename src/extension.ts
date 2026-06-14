@@ -30,6 +30,7 @@ import { usageAnalytics } from './usageAnalytics';
 import { marketplaceClient } from './marketplaceV2';
 import { modelEnsemble } from './modelEnsemble';
 import { speakerProfileManager } from './speakerProfiles';
+import { voiceCodeReview } from './voiceCodeReview';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
@@ -56,6 +57,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
   usageAnalytics.init(context);
   marketplaceClient.init(context);
   speakerProfileManager.init(context);
+  // Voice code review is registered as a pipeline processor (auto-active via setting)
 
   // Model manager sidebar panel
   const modelPanel = new ModelManagerPanel(context);

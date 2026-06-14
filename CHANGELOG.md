@@ -2,6 +2,20 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.146] - 2026-06-14
+
+### Added
+- Voice-driven code review — navigate PR diffs, approve, request changes by voice
+- Voice commands: "next change", "previous change", "next file", "previous file" for diff navigation
+- "approve", "request changes", "submit review" with confirmation prompts for destructive actions
+- "comment <text>" and "suggest <text>" for inline review comments and code suggestions
+- "resolve thread", "mark as viewed", "show diff", "show files changed" for review management
+- "summarize changes" for AI-generated PR summaries
+- "what changed in <file>" to focus on specific file diffs
+- "start review" and "submit review" for full review workflow control
+- Integrates with VS Code's built-in Git and GitHub PR extension
+- New setting: `voxpilot.voiceCodeReview` (default: true)
+
 ## [0.7.145] - 2026-06-13
 
 ### Added
