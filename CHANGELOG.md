@@ -2,6 +2,21 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.147] - 2026-06-15
+
+### Added
+- Streaming collaboration — real-time transcript overlay for screen recordings and streams
+- Floating caption overlay panel with configurable position, size, opacity, and animation
+- Auto-fade after configurable timeout to keep screen clean
+- Speaker name prefix for multi-user streaming sessions
+- SRT and WebVTT export for post-production subtitles
+- Partial (in-progress) caption display with italic styling
+- Session statistics: caption count, word count, duration, words per minute
+- Customizable font size, colors, background opacity, and max width
+- Animation styles: none, fade, slide, typewriter
+- Commands: "VoxPilot: Start Stream Captions", "VoxPilot: Stop Stream Captions", "VoxPilot: Export Stream Captions"
+- New setting: `voxpilot.streamOverlay` (default: disabled)
+
 ## [0.7.146] - 2026-06-14
 
 ### Added
