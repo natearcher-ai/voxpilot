@@ -1441,6 +1441,11 @@
           "type": "boolean",
           "default": true,
           "description": "Enable voice-driven code review — navigate PR diffs, approve, request changes, add comments and suggestions by voice."
+        },
+        "voxpilot.contextGrammar.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable context-aware grammar — adapt punctuation, casing, and formatting rules based on the active file's language and framework conventions."
         }
       }
     }

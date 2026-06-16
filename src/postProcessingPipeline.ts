@@ -20,6 +20,7 @@ import { VocabularyBoostProcessor } from './vocabularyBoost';
 import { AdaptiveLearningProcessor } from './adaptiveLearning';
 import { TeamVocabularySyncProcessor } from './teamVocabularySync';
 import { AIVoiceShortcutsProcessor } from './aiVoiceShortcuts';
+import { ContextGrammarProcessor } from './contextGrammar';
 
 /**
  * Context passed to each processor — includes raw segments and metadata
@@ -241,6 +242,7 @@ const DEFAULT_ORDER: string[] = [
   'vocabularyBoost',
   'adaptiveLearning',
   'smartInsert',
+  'contextGrammar',
   'autoPunctuation',
   'autoCapitalize',
 ];
@@ -262,6 +264,7 @@ const BUILTIN_PROCESSORS: PostProcessor[] = [
   new VocabularyBoostProcessor(),
   new AdaptiveLearningProcessor(),
   new SmartInsertProcessor(),
+  new ContextGrammarProcessor(),
   new AutoPunctuationProcessor(),
   new AutoCapitalizeProcessor(),
   new AIVoiceShortcutsProcessor(),

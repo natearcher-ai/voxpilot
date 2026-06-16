@@ -2,6 +2,19 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.148] - 2026-06-16
+
+### Added
+- Context-aware grammar — adapt punctuation and formatting rules per language and framework
+- Language-specific identifier casing: camelCase for JS/TS/Go, snake_case for Python/Rust/Shell, UPPERCASE for SQL keywords
+- Auto-expand language idioms: "arrow" → `=>` in JS/TS, "self dot" → `self.` in Python, "mutable reference" → `&mut` in Rust
+- Keyword normalization: ensures language keywords use correct casing (lowercase `const`/`let` in JS, uppercase `SELECT`/`FROM` in SQL)
+- Markdown shortcuts: "heading one" → `# `, "bullet" → `- `, "code block" → `` ``` ``
+- Shell expansions: "pipe" → `|`, "redirect" → `>`, "and then" → `&&`
+- Framework-aware conventions for React, Express, Django, and Spring
+- Language aliases: TSX/JSX map to TypeScript/JavaScript rules, bash/zsh map to Shell rules
+- New setting: `voxpilot.contextGrammar.enabled` (default: true)
+
 ## [0.7.147] - 2026-06-15
 
 ### Added
