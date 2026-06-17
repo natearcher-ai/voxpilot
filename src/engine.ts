@@ -37,6 +37,7 @@ import { correctTranscript, getLlmCorrectionConfig, showCorrectionDiff } from '.
 import { DictationProfileManager, DictationProfileStatusBar } from './dictationProfiles';
 import { ConfidenceIndicatorManager, analyzeConfidence } from './confidenceIndicators';
 import { AmbientListeningManager, AmbientStatusIndicator } from './ambientListening';
+import { voiceMacroRecorder } from './voiceMacroRecorder';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -216,6 +217,9 @@ export class VoxPilotEngine {
 
     // Voice macros
     this.voiceMacroManager = new VoiceMacroManager();
+
+    // Voice macro recorder (live sequence recording)
+    voiceMacroRecorder.init(context);
 
     // Live rewriting zone
     this.liveRewritingEnabled = config.get<boolean>('liveRewriting', true);
@@ -1357,6 +1361,58 @@ export class VoxPilotEngine {
     }
 
     if (text) {
+      // Check for macro recorder commands (start/stop recording)
+      const recorderConfig = vscode.workspace.getConfiguration('voxpilot');
+      if (recorderConfig.get<boolean>('macroRecorder.enabled', true)) {
+        const lowerText = text.toLowerCase().trim();
+        if (lowerText.startsWith('start recording macro') || lowerText.startsWith('record macro')) {
+          const name = lowerText.replace(/^(start recording macro|record macro)\s*/, '').trim();
+          if (name) {
+            voiceMacroRecorder.startRecording(name);
+            this.log(`Macro recorder: started recording "${name}"`);
+            this.statusBar.setSent(`🔴 Recording: ${name}`);
+            vscode.window.showInformationMessage(`VoxPilot: Recording macro "${name}" — perform actions, then say "stop recording".`);
+            if (this.isListening) { this.statusBar.setListening(); } else { this.statusBar.setIdle(); }
+            return;
+          }
+        }
+        if (lowerText === 'stop recording' || lowerText === 'stop recording macro') {
+          if (voiceMacroRecorder.isRecording()) {
+            const macro = voiceMacroRecorder.stopRecording();
+            if (macro) {
+              this.log(`Macro recorder: saved "${macro.triggerPhrase}" with ${macro.steps.length} step(s)`);
+              this.statusBar.setSent(`✅ Macro saved: ${macro.triggerPhrase}`);
+              vscode.window.showInformationMessage(`VoxPilot: Macro "${macro.triggerPhrase}" saved with ${macro.steps.length} step(s). Say it to replay.`);
+            }
+            if (this.isListening) { this.statusBar.setListening(); } else { this.statusBar.setIdle(); }
+            return;
+          }
+        }
+
+        // If currently recording, capture the action as a step
+        if (voiceMacroRecorder.isRecording()) {
+          voiceMacroRecorder.addStep({ type: 'voice-command', voicePhrase: text });
+          this.log(`Macro recorder: captured step "${text}"`);
+          this.statusBar.setSent(`🔴 +step: ${text}`);
+          if (this.isListening) { this.statusBar.setListening(); } else { this.statusBar.setIdle(); }
+          // Don't return — still execute the action so the user sees it happen
+        }
+      }
+
+      // Check for recorded macro trigger phrases
+      if (!voiceMacroRecorder.isRecording()) {
+        const recorderMatch = voiceMacroRecorder.findByPhrase(text);
+        if (recorderMatch) {
+          const success = await voiceMacroRecorder.execute(recorderMatch.id);
+          if (success) {
+            this.log(`Macro recorder: replayed "${recorderMatch.triggerPhrase}" (${recorderMatch.steps.length} steps)`);
+            this.statusBar.setSent(`⚡ ${recorderMatch.triggerPhrase}`);
+          }
+          if (this.isListening) { this.statusBar.setListening(); } else { this.statusBar.setIdle(); }
+          return;
+        }
+      }
+
       // Check for voice macro match before normal delivery
       try {
         const macroExecuted = await tryExecuteMacro(text);

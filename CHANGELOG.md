@@ -2,6 +2,20 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.149] - 2026-06-17
+
+### Added
+- Voice macros recorder — record a sequence of actions and replay them with a single phrase
+- Say "start recording macro <name>" to begin capturing actions as you perform them
+- All voice commands, text insertions, and editor actions are recorded as macro steps
+- Say "stop recording" to save the macro — then say the name anytime to replay
+- Supports step types: text insertion, VS Code commands, voice commands, pauses, conditional steps
+- Edit macros: reorder steps, delete steps, add pauses, set language filters
+- Export/import macros as JSON for sharing with teammates
+- Macro execution tracking: see most-used macros, execution counts, last used timestamps
+- Enable/disable individual macros without deleting them
+- New setting: `voxpilot.macroRecorder.enabled` (default: true)
+
 ## [0.7.148] - 2026-06-16
 
 ### Added
