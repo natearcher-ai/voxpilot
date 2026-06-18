@@ -2,6 +2,22 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.150] - 2026-06-18
+
+### Added
+- Noise profile calibration — one-time environment scan to optimize noise gate and VAD thresholds
+- Say "calibrate" or use command palette to start a 5-second ambient noise recording
+- Analyzes frequency spectrum, energy distribution, and periodicity of background noise
+- Auto-sets optimal noise gate threshold just above ambient floor
+- Configures VAD sensitivity based on detected noise level
+- Detects periodic noise patterns (fans, HVAC, keyboard clicks) via autocorrelation
+- Classifies environment as quiet, moderate, noisy, or very-noisy
+- Recommends ASR model based on noise conditions (Whisper for noisy environments)
+- Suggests neural denoiser when ambient level exceeds threshold
+- Store multiple named profiles (e.g., "Home Office", "Coffee Shop") and switch between them
+- Activate, rename, delete, import/export noise profiles
+- New setting: `voxpilot.noiseCalibration.enabled` (default: true)
+
 ## [0.7.149] - 2026-06-17
 
 ### Added
