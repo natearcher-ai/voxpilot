@@ -2,6 +2,18 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.151] - 2026-06-18
+
+### Added
+- IDE telemetry bridge — feed voice usage data into VS Code telemetry for enterprise dashboards
+- Bridges VoxPilot local analytics to VS Code's telemetry system for enterprise adoption tracking
+- Reports aggregate metrics only: transcriptions/day, commands/day, model distribution, feature adoption, error rates
+- Never reports transcript content, audio data, file paths, or personal identifiers
+- Respects VS Code's `telemetry.telemetryLevel` setting and VoxPilot's own `analytics.enabled`
+- Supports enterprise SSO policy `allowTelemetry` flag
+- Configurable flush interval and batch size for telemetry events
+- New setting: `voxpilot.telemetryBridge.enabled` (default: false — opt-in only)
+
 ## [0.7.150] - 2026-06-18
 
 ### Added
