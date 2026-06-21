@@ -2,7 +2,20 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
-## [0.7.151] - 2026-06-18
+## [0.7.153] - 2026-06-21
+
+### Added
+- OpenAI Whisper API backend — use OpenAI's cloud Whisper model as an alternative ASR engine for higher accuracy multilingual transcription
+- New settings: `voxpilot.whisperBackend.enabled`, `apiKey`, `baseUrl`, `temperature`, `prompt`, `fallbackToLocal`
+- Compatible with any OpenAI-compatible API endpoint (Azure OpenAI, Groq, local whisper-server, etc.)
+- Automatic fallback to local ASR model on API failure (network error, timeout, rate limit) when `fallbackToLocal` is true
+- Sends verbose JSON response format for language detection alongside transcription
+- Vocabulary hints via the `prompt` setting guide transcription style and proper noun spelling
+- Audio converted to WAV on-the-fly before sending — no temporary files written to disk
+- Privacy-aware: only activates when explicitly enabled and configured with an API key
+- Works alongside existing local models — switch between cloud and local per your needs
+
+## [0.7.152] - 2026-06-20
 
 ### Added
 - IDE telemetry bridge — feed voice usage data into VS Code telemetry for enterprise dashboards

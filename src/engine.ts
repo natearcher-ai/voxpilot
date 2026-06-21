@@ -38,6 +38,7 @@ import { DictationProfileManager, DictationProfileStatusBar } from './dictationP
 import { ConfidenceIndicatorManager, analyzeConfidence } from './confidenceIndicators';
 import { AmbientListeningManager, AmbientStatusIndicator } from './ambientListening';
 import { voiceMacroRecorder } from './voiceMacroRecorder';
+import { whisperBackend } from './whisperBackend';
 
 export class VoxPilotEngine {
   private audio: AudioCapture;
@@ -1231,7 +1232,7 @@ export class VoxPilotEngine {
           this.log(`Streaming partial: "${text}"`);
         },
       };
-      const result = await this.transcriber!.transcribeStreaming(audioData, callbacks, this.currentLanguage);
+      const result = await this.transcribeWithBackend(audioData, callbacks);
       if (result.text.trim()) {
         this.segmentTranscripts.push(result.text.trim());
         this.log(`Segment ${this.segmentTranscripts.length} stored: "${result.text.trim()}"`);
@@ -1245,6 +1246,37 @@ export class VoxPilotEngine {
     if (this.isListening) {
       this.statusBar.setSpeechDetected();
     }
+  }
+
+  /**
+   * Transcribe audio using the best available backend.
+   * If the OpenAI Whisper API backend is enabled and configured, uses it.
+   * Falls back to local ASR model on error (if fallbackToLocal is enabled).
+   */
+  private async transcribeWithBackend(audioData: Buffer, callbacks: StreamingCallbacks): Promise<TranscriptionResult> {
+    // Reload whisper backend config in case settings changed
+    whisperBackend.reload();
+
+    if (whisperBackend.available) {
+      try {
+        this.log('Using OpenAI Whisper API backend');
+        const result = await whisperBackend.transcribe(audioData, this.currentLanguage);
+        callbacks.onFinal?.(result.text);
+        return result;
+      } catch (err: any) {
+        this.log(`Whisper API error: ${err.message}`);
+        const config = vscode.workspace.getConfiguration('voxpilot');
+        const fallback = config.get<boolean>('whisperBackend.fallbackToLocal', true);
+        if (fallback) {
+          this.log('Falling back to local ASR model');
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    // Use local model
+    return this.transcriber!.transcribeStreaming(audioData, callbacks, this.currentLanguage);
   }
 
   private async finalizeSpeech(): Promise<void> {
@@ -1272,7 +1304,7 @@ export class VoxPilotEngine {
             this.log(`Streaming partial: "${text}"`);
           },
         };
-        const result = await this.transcriber!.transcribeStreaming(audioData, callbacks, this.currentLanguage);
+        const result = await this.transcribeWithBackend(audioData, callbacks);
         this.log(`Raw transcript: "${result.text}"`);
         finalSegment = result.text.trim();
         this.handleDetectedLanguage(result.language);

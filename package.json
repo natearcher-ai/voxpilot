@@ -2,7 +2,7 @@
   "name": "voxpilot",
   "displayName": "VoxPilot — Voice to Code",
   "description": "Talk to your IDE coding assistant. On-device voice transcription powered by Moonshine ASR. No API keys, no cloud, just your voice.",
-  "version": "0.7.152",
+  "version": "0.7.153",
   "publisher": "natearcher-ai",
   "license": "MIT",
   "repository": {
@@ -1451,6 +1451,38 @@
           "type": "boolean",
           "default": true,
           "description": "Enable voice macro recorder — say 'start recording macro <name>' to record a sequence of actions, then 'stop recording' to save. Say the macro name to replay all steps."
+        },
+        "voxpilot.whisperBackend.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable OpenAI Whisper API as an alternative ASR backend. When enabled and configured, uses the cloud API for higher accuracy multilingual transcription. Audio is sent to OpenAI's servers — check the Privacy Dashboard for details."
+        },
+        "voxpilot.whisperBackend.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "OpenAI API key for Whisper backend. Required when whisperBackend.enabled is true. Get yours at platform.openai.com."
+        },
+        "voxpilot.whisperBackend.baseUrl": {
+          "type": "string",
+          "default": "https://api.openai.com/v1",
+          "description": "Base URL for the Whisper API. Change for OpenAI-compatible providers (Azure, local whisper-server, Groq, etc.)."
+        },
+        "voxpilot.whisperBackend.temperature": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Sampling temperature for Whisper API (0 = deterministic, higher = more creative). Keep at 0 for best transcription accuracy."
+        },
+        "voxpilot.whisperBackend.prompt": {
+          "type": "string",
+          "default": "",
+          "description": "Optional prompt to guide Whisper's transcription style. Use for vocabulary hints, spelling of proper nouns, or style guidance (e.g. 'Technical programming discussion about Kubernetes and TypeScript')."
+        },
+        "voxpilot.whisperBackend.fallbackToLocal": {
+          "type": "boolean",
+          "default": true,
+          "description": "Fall back to local ASR model if the Whisper API request fails (network error, timeout, rate limit). When false, transcription fails on API error."
         }
       }
     }
