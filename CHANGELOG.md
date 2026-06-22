@@ -2,6 +2,21 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.154] - 2026-06-22
+
+### Added
+- Voice shortcuts editor — visual UI to create, edit, and test custom voice commands
+- Webview panel for browsing all registered voice commands (built-in + custom)
+- Create new custom commands with a form: trigger phrase, action type, replacement text
+- Edit existing commands (phrase, action, text, category, enabled state)
+- Test commands by typing the trigger phrase — see which shortcut matches in real-time
+- Enable/disable individual commands without deleting them
+- Import/export command sets as JSON for sharing and backup
+- Search and filter commands by category, action type, or enabled status
+- Usage statistics per command (usage count, last used timestamp)
+- Default categories: punctuation, editing, navigation, formatting, git, terminal, AI, documentation, testing, custom
+- New setting: `voxpilot.shortcutsEditor` (default: true)
+
 ## [0.7.153] - 2026-06-21
 
 ### Added
