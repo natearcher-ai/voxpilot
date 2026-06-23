@@ -2,6 +2,20 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.155] - 2026-06-23
+
+### Added
+- Batch transcription — process audio files (meetings, recordings) into searchable text
+- Drag-and-drop audio files into VS Code for offline transcription
+- Multi-file queue with configurable concurrency (default: 2 simultaneous jobs)
+- Support for WAV, MP3, M4A, OGG, FLAC, WebM, MP4, AAC, WMA formats
+- Progress tracking with cancel and retry support
+- Output formats: markdown, JSON, SRT subtitles, or plain text
+- Auto-save transcripts to configurable output directory
+- Queue statistics: total jobs, word count, duration tracking
+- Persistent job state across sessions via globalState
+- New setting: `voxpilot.batchTranscription.enabled` (default: true)
+
 ## [0.7.154] - 2026-06-22
 
 ### Added
