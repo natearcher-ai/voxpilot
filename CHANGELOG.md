@@ -2,6 +2,16 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.156] - 2026-06-24
+
+### Added
+- VoxPilot 0.9 milestone release — marketplace GA, multi-model ensemble, enterprise analytics, pre-1.0 stabilization
+- Voice command marketplace now generally available with ratings, reviews, and verified publishers
+- Multi-model ensemble mode promoted to stable — run multiple ASR backends and auto-select best result
+- Enterprise analytics dashboard with team-wide usage metrics, accuracy trends, and admin controls
+- Pre-1.0 stabilization pass: deprecated APIs removed, settings schema finalized, breaking changes documented
+- Migration guide from 0.8.x included in extension README
+
 ## [0.7.155] - 2026-06-23
 
 ### Added
