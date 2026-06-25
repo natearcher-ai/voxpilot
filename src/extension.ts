@@ -32,6 +32,7 @@ import { modelEnsemble } from './modelEnsemble';
 import { speakerProfileManager } from './speakerProfiles';
 import { voiceCodeReview } from './voiceCodeReview';
 import { batchTranscription } from './batchTranscription';
+import { performanceAudit, PerformanceAudit } from './performanceAudit';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
@@ -59,6 +60,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
   marketplaceClient.init(context);
   speakerProfileManager.init(context);
   batchTranscription.init(context);
+  performanceAudit.init(context);
   // Voice code review is registered as a pipeline processor (auto-active via setting)
 
   // Model manager sidebar panel
@@ -150,6 +152,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
     vscode.commands.registerCommand('voxpilot.createSpeakerProfile', () => createSpeakerProfileCommand()),
     vscode.commands.registerCommand('voxpilot.exportSpeakerProfile', () => exportSpeakerProfileCommand()),
     vscode.commands.registerCommand('voxpilot.importSpeakerProfile', () => importSpeakerProfileCommand()),
+    vscode.commands.registerCommand('voxpilot.runPerformanceAudit', () => runPerformanceAuditCommand()),
+    vscode.commands.registerCommand('voxpilot.showPerformanceAuditReport', () => showPerformanceAuditReport()),
+    vscode.commands.registerCommand('voxpilot.clearPerformanceAudit', () => { performanceAudit.clear(); vscode.window.showInformationMessage('VoxPilot: Performance audit data cleared.'); }),
     registerAiCodeGenerationCommand(context),
     treeView,
     configWatcher,
@@ -959,4 +964,70 @@ async function importSpeakerProfileCommand(): Promise<void> {
   } else {
     vscode.window.showErrorMessage('VoxPilot: Invalid profile file.');
   }
+}
+
+async function runPerformanceAuditCommand(): Promise<void> {
+  performanceAudit.enable();
+  const config = vscode.workspace.getConfiguration('voxpilot');
+  const targetStartup = config.get<number>('performanceAudit.targetStartupMs', 500);
+  const slowThreshold = config.get<number>('performanceAudit.slowThresholdMs', 100);
+  performanceAudit.setConfig({ targetStartupMs: targetStartup, slowThresholdMs: slowThreshold });
+
+  vscode.window.showInformationMessage(
+    `VoxPilot: Performance audit enabled. Slow threshold: ${slowThreshold}ms, startup target: ${targetStartup}ms. Use the extension normally, then view the report.`,
+  );
+}
+
+async function showPerformanceAuditReport(): Promise<void> {
+  const summary = performanceAudit.getSummary();
+  const panel = vscode.window.createWebviewPanel(
+    'voxpilotPerformanceAudit',
+    'VoxPilot Performance Audit',
+    vscode.ViewColumn.One,
+    { enableScripts: false },
+  );
+
+  const slowRows = summary.slowest
+    .map(m => `<tr><td>${m.name}</td><td>${m.category}</td><td class="${m.slow ? 'slow' : ''}">${m.durationMs}ms</td></tr>`)
+    .join('');
+
+  panel.webview.html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+body { font-family: var(--vscode-font-family); padding: 16px; color: var(--vscode-foreground); background: var(--vscode-editor-background); }
+h1 { font-size: 1.4em; }
+h2 { font-size: 1.1em; margin-top: 24px; }
+.score { font-size: 2em; font-weight: bold; }
+.score.good { color: #4caf50; }
+.score.ok { color: #ff9800; }
+.score.bad { color: #f44336; }
+table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+th, td { text-align: left; padding: 6px 12px; border-bottom: 1px solid var(--vscode-widget-border); }
+.slow { color: #f44336; font-weight: bold; }
+.metric { display: inline-block; margin: 8px 16px 8px 0; }
+.metric .value { font-size: 1.3em; font-weight: bold; }
+.metric .label { font-size: 0.85em; opacity: 0.7; }
+</style>
+</head>
+<body>
+<h1>⚡ Performance Audit Report</h1>
+<p class="score ${summary.score >= 80 ? 'good' : summary.score >= 50 ? 'ok' : 'bad'}">Score: ${summary.score}/100</p>
+<div>
+  <span class="metric"><span class="value">${summary.startupMs}ms</span><br><span class="label">Startup Time</span></span>
+  <span class="metric"><span class="value">${summary.avgPipelineMs}ms</span><br><span class="label">Avg Pipeline</span></span>
+  <span class="metric"><span class="value">${summary.p95PipelineMs}ms</span><br><span class="label">P95 Pipeline</span></span>
+  <span class="metric"><span class="value">${summary.avgAudioLatencyMs}ms</span><br><span class="label">Avg Audio Latency</span></span>
+  <span class="metric"><span class="value">${summary.modelLoadMs}ms</span><br><span class="label">Model Load</span></span>
+  <span class="metric"><span class="value">${summary.memoryMb}MB</span><br><span class="label">Heap Memory</span></span>
+</div>
+<div>
+  <span class="metric"><span class="value">${summary.totalMeasurements}</span><br><span class="label">Total Measurements</span></span>
+  <span class="metric"><span class="value ${summary.slowOperations > 0 ? 'slow' : ''}">${summary.slowOperations}</span><br><span class="label">Slow Operations (&gt;100ms)</span></span>
+</div>
+<h2>Slowest Operations (Top 10)</h2>
+${summary.slowest.length > 0 ? `<table><tr><th>Operation</th><th>Category</th><th>Duration</th></tr>${slowRows}</table>` : '<p>No measurements recorded yet. Use the extension to collect data.</p>'}
+</body>
+</html>`;
 }

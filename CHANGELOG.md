@@ -2,6 +2,22 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.157] - 2026-06-25
+
+### Added
+- Performance audit — identify and fix all operations exceeding 100ms, reduce startup time to under 500ms
+- High-resolution `PerfTimer` utility for instrumenting any code path
+- Automatic slow operation detection with configurable threshold (default: 100ms)
+- Startup time measurement (activation → ready) with target enforcement
+- Per-processor pipeline timing, model load tracking, and audio capture latency measurement
+- Memory usage snapshots and performance regression detection between versions
+- Performance score (0-100) combining startup, pipeline, slow-op ratio metrics
+- Webview report panel with score, metrics overview, and top-10 slowest operations table
+- Exportable performance report as JSON for CI integration
+- New commands: Start Performance Audit, Show Performance Audit Report, Clear Performance Audit Data
+- New settings: `voxpilot.performanceAudit.enabled`, `slowThresholdMs`, `targetStartupMs`
+- Output channel logging for slow operations in real-time
+
 ## [0.7.156] - 2026-06-24
 
 ### Added
