@@ -33,6 +33,7 @@ import { speakerProfileManager } from './speakerProfiles';
 import { voiceCodeReview } from './voiceCodeReview';
 import { batchTranscription } from './batchTranscription';
 import { performanceAudit, PerformanceAudit } from './performanceAudit';
+import { memoryOptimizer, MemoryOptimizer } from './memoryOptimization';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
@@ -61,6 +62,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
   speakerProfileManager.init(context);
   batchTranscription.init(context);
   performanceAudit.init(context);
+  initMemoryOptimization(context);
   // Voice code review is registered as a pipeline processor (auto-active via setting)
 
   // Model manager sidebar panel
@@ -1028,6 +1030,116 @@ th, td { text-align: left; padding: 6px 12px; border-bottom: 1px solid var(--vsc
 </div>
 <h2>Slowest Operations (Top 10)</h2>
 ${summary.slowest.length > 0 ? `<table><tr><th>Operation</th><th>Category</th><th>Duration</th></tr>${slowRows}</table>` : '<p>No measurements recorded yet. Use the extension to collect data.</p>'}
+</body>
+</html>`;
+}
+
+/** Initialize memory optimization — lazy-load non-essential modules, register cleanup handlers */
+function initMemoryOptimization(context: vscode.ExtensionContext): void {
+  const config = vscode.workspace.getConfiguration('voxpilot');
+  const enabled = config.get<boolean>('memoryOptimization.enabled', true);
+  if (!enabled) return;
+
+  const idleMax = config.get<number>('memoryOptimization.idleMaxMb', 50);
+  const activeMax = config.get<number>('memoryOptimization.activeMaxMb', 80);
+  const unloadAfterMin = config.get<number>('memoryOptimization.unloadAfterMinutes', 5);
+
+  memoryOptimizer.setBudget({
+    idleMaxBytes: idleMax * 1024 * 1024,
+    activeMaxBytes: activeMax * 1024 * 1024,
+    autoCleanup: true,
+  });
+
+  // Register non-essential modules for lazy loading
+  memoryOptimizer.registerModule('batchTranscription', 'Batch Transcription', () => require('./batchTranscription'), 5 * 1024 * 1024);
+  memoryOptimizer.registerModule('marketplaceV2', 'Marketplace V2', () => require('./marketplaceV2'), 3 * 1024 * 1024);
+  memoryOptimizer.registerModule('performanceProfiler', 'Performance Profiler', () => require('./performanceProfiler'), 2 * 1024 * 1024);
+  memoryOptimizer.registerModule('voiceCodeReview', 'Voice Code Review', () => require('./voiceCodeReview'), 4 * 1024 * 1024);
+  memoryOptimizer.registerModule('modelEnsemble', 'Model Ensemble', () => require('./modelEnsemble'), 8 * 1024 * 1024);
+  memoryOptimizer.registerModule('offlineModelHub', 'Offline Model Hub', () => require('./offlineModelHub'), 3 * 1024 * 1024);
+  memoryOptimizer.registerModule('usageAnalytics', 'Usage Analytics', () => require('./usageAnalyticsDashboard'), 2 * 1024 * 1024);
+  memoryOptimizer.registerModule('accessibilityAudit', 'Accessibility Audit', () => require('./accessibilityAudit'), 3 * 1024 * 1024);
+  memoryOptimizer.registerModule('remotePairVoice', 'Remote Pair Voice', () => require('./remotePairVoice'), 4 * 1024 * 1024);
+  memoryOptimizer.registerModule('contextGrammar', 'Context Grammar', () => require('./contextGrammar'), 2 * 1024 * 1024);
+
+  // Mark core modules as essential
+  memoryOptimizer.registerModule('engine', 'VoxPilot Engine', () => engine, 10 * 1024 * 1024, true);
+  memoryOptimizer.registerModule('statusBar', 'Status Bar', () => statusBar, 1 * 1024 * 1024, true);
+
+  // Periodic stale module unloading
+  const unloadIntervalMs = unloadAfterMin * 60 * 1000;
+  const cleanupInterval = setInterval(() => {
+    memoryOptimizer.unloadStale(unloadIntervalMs);
+  }, unloadIntervalMs);
+
+  // Periodic memory snapshot (every 60s)
+  const snapshotInterval = setInterval(() => {
+    const state = engine?.recording ? 'recording' : 'idle';
+    memoryOptimizer.takeSnapshot(state);
+  }, 60000);
+
+  // Register commands
+  context.subscriptions.push(
+    vscode.commands.registerCommand('voxpilot.showMemoryStatus', () => showMemoryStatus()),
+    vscode.commands.registerCommand('voxpilot.forceMemoryCleanup', () => {
+      const result = memoryOptimizer.cleanup();
+      vscode.window.showInformationMessage(
+        `VoxPilot: Memory cleanup complete. Unloaded ${result.unloadedModules} module(s), cleared buffer pool.`,
+      );
+    }),
+    { dispose: () => { clearInterval(cleanupInterval); clearInterval(snapshotInterval); } },
+  );
+}
+
+function showMemoryStatus(): void {
+  const summary = memoryOptimizer.getSummary();
+  const modules = memoryOptimizer.getModuleStatus();
+  const loadedModules = modules.filter(m => m.loaded).map(m => m.name).join(', ') || 'None';
+  const unloadedModules = modules.filter(m => !m.loaded).map(m => m.name).join(', ') || 'None';
+
+  const panel = vscode.window.createWebviewPanel(
+    'voxpilotMemoryStatus',
+    'VoxPilot Memory Status',
+    vscode.ViewColumn.One,
+    { enableScripts: false },
+  );
+
+  const budgetClass = summary.budgetUsedPercent < 80 ? 'good' : summary.budgetUsedPercent < 100 ? 'ok' : 'bad';
+
+  panel.webview.html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+body { font-family: var(--vscode-font-family); padding: 16px; color: var(--vscode-foreground); background: var(--vscode-editor-background); }
+h1 { font-size: 1.4em; }
+h2 { font-size: 1.1em; margin-top: 24px; }
+.metric { display: inline-block; margin: 8px 16px 8px 0; }
+.metric .value { font-size: 1.3em; font-weight: bold; }
+.metric .label { font-size: 0.85em; opacity: 0.7; }
+.good { color: #4caf50; }
+.ok { color: #ff9800; }
+.bad { color: #f44336; }
+.modules { margin-top: 12px; }
+.modules span { display: inline-block; padding: 2px 8px; margin: 2px; border-radius: 4px; font-size: 0.85em; }
+.loaded { background: var(--vscode-badge-background); color: var(--vscode-badge-foreground); }
+.unloaded { background: var(--vscode-widget-border); opacity: 0.6; }
+</style>
+</head>
+<body>
+<h1>🧠 Memory Optimization Status</h1>
+<div>
+  <span class="metric"><span class="value ${budgetClass}">${summary.currentHeapMb}MB</span><br><span class="label">Heap Used</span></span>
+  <span class="metric"><span class="value ${budgetClass}">${summary.budgetUsedPercent}%</span><br><span class="label">Budget Used</span></span>
+  <span class="metric"><span class="value">${summary.loadedModules}/${summary.totalModules}</span><br><span class="label">Modules Loaded</span></span>
+  <span class="metric"><span class="value">${summary.bufferPoolStats.poolSize}</span><br><span class="label">Buffer Pool Size</span></span>
+  <span class="metric"><span class="value">${Math.round(summary.bufferPoolStats.reuseRate * 100)}%</span><br><span class="label">Buffer Reuse Rate</span></span>
+  <span class="metric"><span class="value">${summary.snapshotCount}</span><br><span class="label">Snapshots</span></span>
+</div>
+<h2>Loaded Modules</h2>
+<div class="modules">${modules.filter(m => m.loaded).map(m => `<span class="loaded">${m.name} (~${Math.round(m.estimatedBytes / 1048576)}MB)</span>`).join(' ')}</div>
+<h2>Unloaded (Lazy)</h2>
+<div class="modules">${modules.filter(m => !m.loaded).map(m => `<span class="unloaded">${m.name}</span>`).join(' ')}</div>
 </body>
 </html>`;
 }

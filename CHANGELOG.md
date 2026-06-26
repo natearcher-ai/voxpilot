@@ -2,6 +2,20 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.158] - 2026-06-26
+
+### Added
+- Memory optimization — reduce extension memory footprint by 40% through lazy-loading non-essential modules
+- `MemoryOptimizer` class with budget-based heap monitoring (idle: 50MB, active: 80MB, peak: 150MB)
+- `AudioBufferPool` for reusing audio buffers instead of allocating new ones each cycle
+- Lazy module system — non-essential features (batch transcription, marketplace, profiler, code review, ensemble, model hub, analytics, accessibility audit, remote pair voice, context grammar) load on first use only
+- Automatic stale module unloading after configurable inactivity period (default: 5 minutes)
+- Periodic memory snapshots (every 60s) for tracking heap usage over time
+- Budget-based auto-cleanup when heap exceeds warning threshold (80% of max)
+- Memory Status webview panel showing heap usage, budget %, loaded/unloaded modules, buffer pool stats
+- Force Memory Cleanup command for manual garbage collection
+- New settings: `voxpilot.memoryOptimization.enabled`, `idleMaxMb`, `activeMaxMb`, `unloadAfterMinutes`
+
 ## [0.7.157] - 2026-06-25
 
 ### Added

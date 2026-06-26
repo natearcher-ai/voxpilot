@@ -443,6 +443,16 @@
         "command": "voxpilot.clearPerformanceAudit",
         "title": "VoxPilot: Clear Performance Audit Data",
         "icon": "$(trash)"
+      },
+      {
+        "command": "voxpilot.showMemoryStatus",
+        "title": "VoxPilot: Show Memory Status",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "voxpilot.forceMemoryCleanup",
+        "title": "VoxPilot: Force Memory Cleanup",
+        "icon": "$(trash)"
       }
     ],
     "keybindings": [
@@ -1513,6 +1523,26 @@
           "type": "number",
           "default": 500,
           "description": "Target startup time in milliseconds. Startup exceeding this is flagged."
+        },
+        "voxpilot.memoryOptimization.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable memory optimization. Lazy-loads non-essential modules and monitors heap usage against budget thresholds."
+        },
+        "voxpilot.memoryOptimization.idleMaxMb": {
+          "type": "number",
+          "default": 50,
+          "description": "Maximum heap memory (MB) allowed when idle. Exceeding this triggers automatic cleanup."
+        },
+        "voxpilot.memoryOptimization.activeMaxMb": {
+          "type": "number",
+          "default": 80,
+          "description": "Maximum heap memory (MB) allowed during active recording/processing."
+        },
+        "voxpilot.memoryOptimization.unloadAfterMinutes": {
+          "type": "number",
+          "default": 5,
+          "description": "Unload lazy modules not accessed within this many minutes to free memory."
         }
       }
     }
