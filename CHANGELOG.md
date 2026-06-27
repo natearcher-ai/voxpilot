@@ -2,6 +2,21 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.159] - 2026-06-27
+
+### Added
+- Error recovery — graceful degradation for all failure modes, auto-retry with exponential backoff
+- `ErrorRecoveryManager` with circuit breaker pattern for repeated failures
+- Categorized error types: transient (retryable), permanent, and degraded
+- Exponential backoff with jitter for transient failure retries (configurable max retries, delay, multiplier)
+- Circuit breaker per subsystem — opens after threshold failures, auto-resets after timeout
+- Graceful degradation — failing subsystems degrade without taking down core functionality
+- `isRetryable()` classifier for error messages (network, timeout, rate limit → retry; 404, permission → permanent)
+- `classifyError()` auto-categorizes errors into audio, model, pipeline, api, filesystem, network, config
+- Subsystem health monitoring with recent error counts and circuit state
+- `withRetry<T>()` wrapper for any async operation with automatic retry and circuit breaker integration
+- New settings: `voxpilot.errorRecovery.enabled`
+
 ## [0.7.158] - 2026-06-26
 
 ### Added
