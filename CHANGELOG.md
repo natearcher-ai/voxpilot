@@ -2,6 +2,21 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.160] - 2026-06-28
+
+### Added
+- Accessibility audit — WCAG 2.1 AA compliance verification and screen reader testing
+- Comprehensive ARIA label coverage verification across all UI surfaces (status bar, webviews, panels)
+- Screen reader announcement flow testing (polite/assertive live regions)
+- Keyboard navigation audit — all interactive elements reachable via Tab, operable via Enter/Space
+- High contrast theme validation — all colors meet 4.5:1 contrast ratio in HC modes
+- Focus indicator visibility checks for all focusable elements
+- `runAccessibilityAudit` enhanced to include self-audit of VoxPilot's own webview panels
+- Role and state attribute verification for dynamic UI (recording state, processing indicators)
+- Reduced motion respect — animations disabled when `prefers-reduced-motion` is active
+- Touch target size validation (minimum 44x44px for webview interactive elements)
+- New setting: `voxpilot.accessibility.wcagLevel` (A, AA, AAA — default AA)
+
 ## [0.7.159] - 2026-06-27
 
 ### Added
