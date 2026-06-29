@@ -2,6 +2,20 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.161] - 2026-06-29
+
+### Added
+- API documentation — complete TypeDoc for all public APIs with migration guide from 0.8.x
+- `generateApiDocs()` produces full documentation set (interfaces, functions, types, examples)
+- `exportAsMarkdown()` renders API reference as GitHub-wiki-ready Markdown
+- `exportAsJson()` exports structured documentation for programmatic consumption
+- `searchDocs()` enables full-text search across all API symbols and descriptions
+- Public API surface documented: VoxPilotAPI, onTranscript, registerProcessor, registerCommand, startRecording, stopRecording, getMetrics, listProcessors
+- Interface documentation: ExternalProcessor, ExternalVoiceCommand with all properties
+- Migration guide from 0.8.x to 0.9.x covering Extension API v2, SSO, analytics, and telemetry changes
+- Quick start guide with code examples for accessing the API, listening for transcripts, registering processors and commands
+- New setting: `voxpilot.apiDocs.enabled` (default: true)
+
 ## [0.7.160] - 2026-06-28
 
 ### Added
