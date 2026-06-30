@@ -34,6 +34,7 @@ import { voiceCodeReview } from './voiceCodeReview';
 import { batchTranscription } from './batchTranscription';
 import { performanceAudit, PerformanceAudit } from './performanceAudit';
 import { memoryOptimizer, MemoryOptimizer } from './memoryOptimization';
+import { runAllTests, formatReport, getTestCategories, getTestCount } from './integrationTests';
 
 let engine: VoxPilotEngine | undefined;
 let statusBar: StatusBarManager;
@@ -157,6 +158,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<VoxPil
     vscode.commands.registerCommand('voxpilot.runPerformanceAudit', () => runPerformanceAuditCommand()),
     vscode.commands.registerCommand('voxpilot.showPerformanceAuditReport', () => showPerformanceAuditReport()),
     vscode.commands.registerCommand('voxpilot.clearPerformanceAudit', () => { performanceAudit.clear(); vscode.window.showInformationMessage('VoxPilot: Performance audit data cleared.'); }),
+    vscode.commands.registerCommand('voxpilot.runIntegrationTests', () => runIntegrationTestsCommand(context)),
+    vscode.commands.registerCommand('voxpilot.runIntegrationTestsCategory', () => runIntegrationTestsCategoryCommand(context)),
     registerAiCodeGenerationCommand(context),
     treeView,
     configWatcher,
@@ -1142,4 +1145,93 @@ h2 { font-size: 1.1em; margin-top: 24px; }
 <div class="modules">${modules.filter(m => !m.loaded).map(m => `<span class="unloaded">${m.name}</span>`).join(' ')}</div>
 </body>
 </html>`;
+}
+
+function runIntegrationTestsCommand(context: vscode.ExtensionContext): void {
+  const processor = (text: string, _languageId?: string): string => {
+    if (!engine) { return text; }
+    return (engine as any).processTranscript?.(text) ?? text;
+  };
+
+  const suite = runAllTests(processor);
+  const report = formatReport(suite);
+
+  const panel = vscode.window.createWebviewPanel(
+    'voxpilotIntegrationTests',
+    `VoxPilot Integration Tests — ${suite.passed}/${suite.total - suite.skipped} passed`,
+    vscode.ViewColumn.One,
+    { enableScripts: false },
+  );
+
+  const statusIcon = suite.failed === 0 ? '✅' : '❌';
+  const categories = getTestCategories();
+
+  panel.webview.html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+body { font-family: var(--vscode-font-family); padding: 16px; color: var(--vscode-foreground); background: var(--vscode-editor-background); }
+h1 { font-size: 1.4em; }
+h2 { font-size: 1.1em; margin-top: 24px; }
+.summary { display: flex; gap: 24px; margin: 16px 0; }
+.stat { text-align: center; }
+.stat .value { font-size: 1.5em; font-weight: bold; }
+.stat .label { font-size: 0.8em; opacity: 0.7; }
+.pass { color: #4caf50; }
+.fail { color: #f44336; }
+.skip { color: #ff9800; }
+table { border-collapse: collapse; width: 100%; margin-top: 12px; }
+th, td { padding: 6px 12px; text-align: left; border-bottom: 1px solid var(--vscode-widget-border); }
+th { opacity: 0.8; font-size: 0.85em; }
+.result-pass { color: #4caf50; }
+.result-fail { color: #f44336; font-weight: bold; }
+.category { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; background: var(--vscode-badge-background); color: var(--vscode-badge-foreground); }
+pre { font-size: 0.85em; background: var(--vscode-textCodeBlock-background); padding: 8px; border-radius: 4px; overflow-x: auto; }
+</style>
+</head>
+<body>
+<h1>${statusIcon} VoxPilot Integration Tests</h1>
+<p>Run: ${new Date(suite.timestamp).toISOString()} | Duration: ${suite.durationMs}ms</p>
+<div class="summary">
+  <div class="stat"><div class="value pass">${suite.passed}</div><div class="label">Passed</div></div>
+  <div class="stat"><div class="value fail">${suite.failed}</div><div class="label">Failed</div></div>
+  <div class="stat"><div class="value skip">${suite.skipped}</div><div class="label">Skipped</div></div>
+  <div class="stat"><div class="value">${suite.total}</div><div class="label">Total</div></div>
+</div>
+<h2>Categories</h2>
+<p>${categories.map(c => `<span class="category">${c.category} (${c.count})</span>`).join(' ')}</p>
+${suite.failed > 0 ? `<h2>❌ Failures</h2><table><tr><th>Test</th><th>Category</th><th>Input</th><th>Expected</th><th>Actual</th></tr>${suite.results.filter(r => !r.passed).map(r => `<tr><td class="result-fail">${r.name}</td><td><span class="category">${r.category}</span></td><td><code>${r.input}</code></td><td><code>${r.expected}</code></td><td><code>${r.actual}</code></td></tr>`).join('')}</table>` : ''}
+<h2>All Results</h2>
+<table>
+<tr><th>Status</th><th>Test</th><th>Category</th><th>Duration</th></tr>
+${suite.results.map(r => `<tr><td class="${r.passed ? 'result-pass' : 'result-fail'}">${r.passed ? '✅' : '❌'}</td><td>${r.name}</td><td><span class="category">${r.category}</span></td><td>${r.durationMs}ms</td></tr>`).join('')}
+</table>
+</body>
+</html>`;
+
+  vscode.window.showInformationMessage(
+    `VoxPilot Integration Tests: ${suite.passed}/${suite.total - suite.skipped} passed, ${suite.failed} failed (${suite.durationMs}ms)`,
+  );
+}
+
+async function runIntegrationTestsCategoryCommand(context: vscode.ExtensionContext): Promise<void> {
+  const categories = getTestCategories();
+  const pick = await vscode.window.showQuickPick(
+    categories.map(c => ({ label: c.category, description: `${c.count} tests` })),
+    { placeHolder: 'Select test category to run' },
+  );
+  if (!pick) { return; }
+
+  const processor = (text: string, _languageId?: string): string => {
+    if (!engine) { return text; }
+    return (engine as any).processTranscript?.(text) ?? text;
+  };
+
+  const suite = runAllTests(processor, { category: pick.label });
+  const statusIcon = suite.failed === 0 ? '✅' : '❌';
+
+  vscode.window.showInformationMessage(
+    `${statusIcon} ${pick.label}: ${suite.passed}/${suite.total - suite.skipped} passed, ${suite.failed} failed (${suite.durationMs}ms)`,
+  );
 }

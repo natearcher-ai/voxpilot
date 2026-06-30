@@ -445,6 +445,16 @@
         "icon": "$(trash)"
       },
       {
+        "command": "voxpilot.runIntegrationTests",
+        "title": "VoxPilot: Run Integration Tests",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "voxpilot.runIntegrationTestsCategory",
+        "title": "VoxPilot: Run Integration Tests by Category",
+        "icon": "$(filter)"
+      },
+      {
         "command": "voxpilot.showMemoryStatus",
         "title": "VoxPilot: Show Memory Status",
         "icon": "$(dashboard)"

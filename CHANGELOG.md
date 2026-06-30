@@ -2,6 +2,19 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.162] - 2026-06-30
+
+### Added
+- Integration tests — end-to-end test suite covering all voice command categories
+- `runAllTests()` executes full test suite against the transcription pipeline
+- `runTestCase()` validates individual voice command → action flows
+- Built-in test cases covering: punctuation, editor, git, terminal, AI, documentation, template, review, journal, and passthrough categories
+- `formatReport()` generates markdown test reports with pass/fail details
+- `getTestCategories()` returns category breakdown with test counts
+- New command: `voxpilot.runIntegrationTests` — run full test suite with webview results panel
+- New command: `voxpilot.runIntegrationTestsCategory` — run tests filtered by category via quick pick
+- Webview results panel with summary stats, failure details, and full results table
+
 ## [0.7.161] - 2026-06-29
 
 ### Added
