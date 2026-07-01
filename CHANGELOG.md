@@ -2,6 +2,18 @@
 
 All notable changes to VoxPilot will be documented in this file.
 
+## [0.7.163] - 2026-07-01
+
+### Added
+- Localization — all UI strings externalized with initial translations (es, fr, de, ja, zh)
+- `L10n` class with locale detection, interpolation, and fallback to English
+- Supported locales: English, Spanish (95%), French (90%), German (90%), Japanese (85%), Chinese (85%)
+- `interpolate()` utility for dynamic variable substitution in translated strings
+- `detectLocale()` auto-detects language from VS Code environment
+- `getCompleteness()` reports translation coverage per locale
+- Fallback chain: custom overrides → current locale → English → key name
+- Community-friendly JSON locale file structure for contributions
+
 ## [0.7.162] - 2026-06-30
 
 ### Added
