@@ -251,9 +251,32 @@ export class AdaptiveLearningStore {
 
   /** Import corrections from JSON (merges with existing) */
   async importJson(json: string): Promise<number> {
-    const imported = JSON.parse(json) as CorrectionDatabase;
+    let imported: CorrectionDatabase;
+    try {
+      imported = JSON.parse(json) as CorrectionDatabase;
+    } catch {
+      // A syntactically malformed file must surface the same controlled error
+      // as a structurally-invalid one, rather than leaking a raw SyntaxError.
+      throw new Error('Invalid correction database format');
+    }
     if (!imported || imported.version !== DB_VERSION || !Array.isArray(imported.entries)) {
       throw new Error('Invalid correction database format');
+    }
+
+    // Validate each entry's shape before merging. A syntactically valid,
+    // top-level-valid payload can still carry a malformed entry (a missing or
+    // non-string `original`/`corrected`), which would otherwise reach the merge
+    // loop and leak a raw TypeError from `entry.original.toLowerCase()`. Reject
+    // the whole import with the same controlled error rather than partially
+    // merging or surfacing an uncontrolled error.
+    for (const entry of imported.entries) {
+      if (
+        !entry ||
+        typeof entry.original !== 'string' ||
+        typeof entry.corrected !== 'string'
+      ) {
+        throw new Error('Invalid correction database format');
+      }
     }
 
     let added = 0;
@@ -449,9 +472,17 @@ export async function showAdaptiveLearningPanel(store: AdaptiveLearningStore): P
       canSelectMany: false,
     });
     if (uris && uris[0]) {
-      const data = await vscode.workspace.fs.readFile(uris[0]);
-      const added = await store.importJson(Buffer.from(data).toString('utf-8'));
-      vscode.window.showInformationMessage(`Imported ${added} new corrections.`);
+      try {
+        const data = await vscode.workspace.fs.readFile(uris[0]);
+        const added = await store.importJson(Buffer.from(data).toString('utf-8'));
+        vscode.window.showInformationMessage(`Imported ${added} new corrections.`);
+      } catch (err: any) {
+        // Route failures (malformed file, invalid format) through a graceful
+        // error toast instead of letting them surface as an unhandled
+        // command-failure notification. Matches the offlineModelHub import
+        // command's delivery pattern.
+        vscode.window.showErrorMessage(`VoxPilot: Import failed — ${err.message}`);
+      }
     }
   } else if (selected.label.includes('Clear all corrections')) {
     const confirm = await vscode.window.showWarningMessage(
